@@ -1,10 +1,11 @@
 # SwiftMD
 
 SwiftMD is an early Swift 6 library for composing Markdown-to-HTML rendering.
-The current implementation is a baseline facade over SwiftGFM and its vendored
-cmark-gfm C backend. It does not yet implement syntax highlighting, MathML,
-Mermaid, block extensions, or `$$` mathematics. No conformance certification
-is claimed.
+The core is a baseline facade over SwiftGFM and its vendored cmark-gfm C
+backend. An optional separate package provides structured block processing and
+Swift-Highlight integration; see [its README](Adapters/SwiftMDBlocks/README.md).
+MathML, Mermaid and `$$` mathematics are not implemented. No conformance
+certification is claimed.
 
 ## Use
 
