@@ -65,6 +65,11 @@ enforces a deadline and per-process resource limits. It still does not contain
 detached descendants, impose aggregate quotas, or isolate the filesystem,
 network or credentials.
 
+An experimental separate systemd/cgroup-v2 profile and its fail-closed runtime
+guard are described in [process isolation](PROCESS_ISOLATION.md). They require
+system-manager privileges, a trusted root-owned installation and target-specific
+validation; they are not silently enabled by either adapter.
+
 ## License and fixture evidence
 
 `Scripts/audit-dependencies.py` compares the retained license/notice bytes with
@@ -72,14 +77,13 @@ the revisions in the SwiftPM lockfile. The original SwiftGFM `NOTICE`, which
 was missing from SwiftMD's inventory, is now retained unchanged. Its upstream
 paths are mapped in [the notice inventory](../ThirdPartyLicenses/README.md).
 
-The six cmark-gfm fixture SHA-256 values match the separately checked-out
+The four retained cmark-gfm fixture SHA-256 values match the separately checked-out
 upstream commit `27d942c8b0a62d192f616e5bf3578f4b6a89e180`; the published GFM
 HTML snapshot matches its recorded SHA-256. The spec and individually marked
 extension files retain their authors and CC BY-SA 4.0 notice in the fixture
-[README](../Tests/SwiftMDTests/Fixtures/cmark-gfm/README.md). The unmodified
-`regression.txt` and `smart_punct.txt` have no individual license header; retain
-the upstream COPYING notice and review their provenance for the chosen source
-distribution. For example, the latter contains the name “Shelob” in both input
+[README](../Tests/SwiftMDTests/Fixtures/cmark-gfm/README.md). The formerly
+bundled `regression.txt` and `smart_punct.txt` have no individual
+license header. For example, the latter contains the name “Shelob” in both input
 and expected output. That observation is not a conclusion about rights or
 infringement; assess whether the material may be distributed in the relevant
 jurisdictions and distribution format. This targeted text search is not an
@@ -105,12 +109,14 @@ import, before the cmark commit, in
 That file describes some tests as adaptations but does not identify the origin
 of this particular example. Its presence is evidence of an earlier occurrence,
 not proof of a transfer route, licensing terms, or a complete rights chain.
-Removing the two files from a future SwiftMD source snapshot could reduce that
-snapshot's scope but would also remove 42 expectation cases unless replaced;
-it would not erase earlier Git history, nor remove the files from the existing
-SwiftGFM 1.0.0 source tag. Fetching fixtures separately changes distribution,
-not the rights question for the fetch and use. Any such change needs an explicit
-coverage and distribution decision; the current fixtures are unchanged.
+At the user's direction the two files were removed from the current SwiftMD
+source snapshot; the four remaining fixtures are unmodified. This removed 42
+upstream expectation cases. Thirteen separately authored neutral cases cover
+selected behaviors, not the full removed corpus. The removal does not erase
+earlier SwiftMD history or remove the files from the existing SwiftGFM 1.0.0
+source tag. Fetching fixtures separately changes distribution, not the rights
+question for the fetch and use. Review the full distribution, including
+transitive source dependencies and history, before any release.
 
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
@@ -129,9 +135,10 @@ must be at the pinned commit. The CI job requires the complete audit.
 
 The locally generated CLI archive contains the executable, license inventory
 and Node lockfile but not npm packages or spec fixtures. The mirror generator
-does not export those spec fixtures. A SwiftMD **source repository/archive** does
-include the fixtures, the full published snapshot and Git history; review its
-complete file set and provenance separately. Swift-Highlight 1.0.1 replaces
+does not export those spec fixtures. The current SwiftMD source snapshot does
+include the four remaining fixtures and the full published snapshot; a Git
+clone also contains earlier history with the two removed files. Review each
+distribution's complete file set separately. Swift-Highlight 1.0.1 replaces
 identified fixture quotations, while its older tag and Git history still retain
 the originals. No statement here determines rights in those historic copies.
 

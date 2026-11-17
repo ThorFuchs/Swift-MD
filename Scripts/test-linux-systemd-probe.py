@@ -22,7 +22,10 @@ def run(code, seconds=10):
         'ProtectSystem=strict', 'ProtectHome=yes', 'ProtectControlGroups=yes',
         'PrivateDevices=yes', 'RestrictNamespaces=yes',
         'MemoryAccounting=yes', 'MemoryMax=128M', 'MemorySwapMax=0',
-        'TasksAccounting=yes', 'TasksMax=64', 'KillMode=control-group',
+        'TasksAccounting=yes', 'TasksMax=64', 'LimitFSIZE=8M',
+        'TemporaryFileSystem=/tmp:rw,nosuid,nodev,size=32M',
+        'TemporaryFileSystem=/var/tmp:rw,nosuid,nodev,size=32M',
+        'KillMode=control-group',
         'KillSignal=SIGKILL', 'TimeoutStopSec=1s', f'RuntimeMaxSec={seconds}s',
     )
     command = [SYSTEMD, '--system', '--quiet', '--wait', '--pipe', '--collect', '--service-type=exec']
@@ -34,9 +37,10 @@ def run(code, seconds=10):
 
 class SystemdProbe(unittest.TestCase):
     def test_effective_controls_and_unprivileged_worker(self):
-        code = '''import json,os,socket
+        code = '''import json,os,resource,socket
 from pathlib import Path
 group=Path("/sys/fs/cgroup" + Path("/proc/self/cgroup").read_text().strip().split("::",1)[1])
+mounts={line.split()[4]:line.split()[5].split(",") for line in Path("/proc/self/mountinfo").read_text().splitlines()}
 try:
  fd=os.open(group/"cgroup.procs",os.O_WRONLY); os.close(fd); writable=True
 except OSError: writable=False
@@ -45,7 +49,10 @@ try:
 except OSError: network=False
 print(json.dumps({"uid":os.getuid(),"memory":(group/"memory.max").read_text().strip(),
  "swap":(group/"memory.swap.max").read_text().strip(),"tasks":(group/"pids.max").read_text().strip(),
- "writable":writable,"network":network}))'''
+ "writable":writable,"network":network,"rootro":"ro" in mounts["/"],"cgro":"ro" in mounts["/sys/fs/cgroup"],
+ "file":resource.getrlimit(resource.RLIMIT_FSIZE)[0],
+ "tmp":os.statvfs("/tmp").f_blocks*os.statvfs("/tmp").f_frsize,
+ "vartmp":os.statvfs("/var/tmp").f_blocks*os.statvfs("/var/tmp").f_frsize}))'''
         result = run(code)
         self.assertEqual(result.returncode, 0, result.stderr)
         info = json.loads(result.stdout)
@@ -55,6 +62,10 @@ print(json.dumps({"uid":os.getuid(),"memory":(group/"memory.max").read_text().st
         self.assertEqual(info['tasks'], '64')
         self.assertFalse(info['writable'])
         self.assertFalse(info['network'])
+        self.assertTrue(info['rootro'] and info['cgro'])
+        self.assertEqual(info['file'], 8 * 1024 * 1024)
+        self.assertLessEqual(info['tmp'], 32 * 1024 * 1024)
+        self.assertLessEqual(info['vartmp'], 32 * 1024 * 1024)
 
     def test_cgroup_kills_new_session_descendant(self):
         code = '''import os,time

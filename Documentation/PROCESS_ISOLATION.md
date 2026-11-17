@@ -55,3 +55,50 @@ real Swift highlighting, KaTeX and Pele. The existing legacy
 `run-linux-constrained.sh` remains available with its narrower contract; the
 two helpers do not silently wrap normal SwiftMD calls. Recheck behavior and
 limits on the target host before relying on the worker in a deployment.
+
+## Experimental systemd/cgroup worker
+
+`run-linux-systemd.py` is a separate, opt-in profile for a host with systemd's
+system manager and cgroup v2. It requires manager privileges. Install the
+launcher, `run-linux-supervised.py`, and `systemd-worker-guard.py` together in
+a root-owned, non-group/world-writable, world-readable directory outside
+`/home`, `/root`, `/run/user`, and private temporary directories, such as
+`/opt/swiftmd`. The launcher rejects unsafe installation ownership or modes.
+Only an administrator should install and invoke these trusted scripts; do not
+run a user-writable copy with `sudo`. The executable, its arguments, Node and
+its modules must also be trusted and readable outside protected home folders.
+
+```sh
+sudo -n /usr/bin/python3 -I /opt/swiftmd/run-linux-systemd.py \
+  --seconds 30 --memory-mib 1024 --tasks 128 --file-mib 8 --tmp-mib 32 -- \
+  /opt/swiftmd/swift-md --strict --highlight < input.md > output.html
+```
+
+The launcher starts a uniquely named transient service as a dynamic unprivileged
+user, in a private network namespace, with IP socket creation restricted,
+read-only system and cgroup mounts, protected home directories, and no effective
+capabilities or new privileges. systemd applies cgroup-v2 memory, swap and task
+limits, a service deadline and control-group termination, plus per-file and
+temporary-filesystem size limits. It clears Node and dynamic-loader override
+variables. The inner guard verifies the actual cgroup, limits, mount modes,
+UID, privilege flags, IP socket restriction and temporary quotas **before** it
+executes the worker; missing controls fail closed. The stream supervisor provides
+the bounded stdin/stdout/stderr contract above. A worker's arguments are sent to
+the guard as structured data; document input remains on stdin.
+
+This profile still requires a trustworthy host, systemd and kernel, and is not
+an independent security certification. Read-only, world-readable host files
+outside protected home directories may still be visible; AF_UNIX sockets and
+other host interfaces are not a complete IPC policy. The worker shares the host
+kernel. File-size limits are per file, and `/tmp` and `/var/tmp` have separate
+quotas; assess other writable kernel interfaces and deployment-specific paths.
+A service started immediately before an uncatchable launcher kill may live until
+its own systemd deadline. Uninterruptible kernel work can delay termination.
+Do not use worker file input or `--output` when depending on the stream bounds.
+Install only reviewed root-owned code; the privileged launcher is itself part of
+the trusted computing base. Test this profile on each deployment host and do
+not treat other platforms, service managers or container configurations as
+validated merely because the code loads there.
+Do not grant untrusted users unrestricted `sudo` access to this launcher: its
+root-owned implementation and permitted worker arguments remain privileged
+configuration even though the worker itself runs unprivileged.

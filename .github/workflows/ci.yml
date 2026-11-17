@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   supervisor:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Exercise Linux supervisor process boundaries
@@ -27,6 +27,23 @@ jobs:
             LinuxSupervisor.test_sigterm_cleans_up_worker_group
       - name: Probe systemd cgroup boundaries on the disposable runner
         run: sudo -n python3 Scripts/test-linux-systemd-probe.py
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.22.1'
+      - name: Build installed systemd worker test dependencies
+        run: |
+          npm ci --ignore-scripts --prefix Tools/NodeDependencies
+          swift --version
+          swift build --package-path Tools/SwiftMDCLI -c debug -j 4 --static-swift-stdlib
+          BIN="$(swift build --package-path Tools/SwiftMDCLI -c debug --show-bin-path)/swift-md"
+          sudo install -d -m 0755 /opt/swiftmd-isolation-test
+          sudo install -m 0644 Scripts/run-linux-systemd.py Scripts/systemd-worker-guard.py Scripts/run-linux-supervised.py /opt/swiftmd-isolation-test/
+          sudo install -m 0755 "$BIN" /opt/swiftmd-isolation-test/swift-md
+          sudo install -m 0755 "$(command -v node)" /opt/swiftmd-isolation-test/node
+          sudo cp -R Tools/NodeDependencies/node_modules /opt/swiftmd-isolation-test/
+          sudo chmod -R a+rX /opt/swiftmd-isolation-test/node_modules
+      - name: Exercise systemd worker with the real CLI
+        run: sudo -n python3 Scripts/test-linux-systemd-worker.py
   core:
     runs-on: ubuntu-latest
     container: swift:6.2.4
