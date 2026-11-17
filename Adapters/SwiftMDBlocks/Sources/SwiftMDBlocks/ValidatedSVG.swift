@@ -69,7 +69,10 @@ private final class SVGValidator: NSObject, XMLParserDelegate {
             let parts = declaration.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
             guard parts.count == 2 else { return false }
             let name = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
-            guard names.contains(name) || name.hasPrefix("--_") else { return false }
+            let custom = name.hasPrefix("--_") && name.utf8.count > 3 && name.utf8.dropFirst(3).allSatisfy {
+                (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 45 || $0 == 95
+            }
+            guard names.contains(name) || custom else { return false }
             let value = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
             guard safeCSSValue(value) else { return false }
         }

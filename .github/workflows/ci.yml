@@ -34,6 +34,8 @@ jobs:
         env:
           SWIFTMD_CMARK_REFERENCE: /tmp/cmark-reference/build/src/cmark-gfm
         run: Scripts/test-all.sh
+      - name: Verify pinned notices, fixtures, and npm archives
+        run: python3 Scripts/audit-dependencies.py --cmark-source /tmp/cmark-reference --npm-tarballs
       - name: Test isolated version-based distribution consumers
         run: |
           SWIFTMD_NODE="$(command -v node)" \

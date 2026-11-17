@@ -1,0 +1,106 @@
+# SVG, process and source-distribution review
+
+Review scope: SwiftMD source and its pinned dependencies on 17 November 2026.
+This is a reproducible engineering review, not an independent penetration
+test, a general sanitizer certification, or legal advice. Changes in dependencies,
+distribution contents, host policy or browser engines require re-evaluation.
+
+## SVG boundary
+
+`PeleNodeRenderer` disables Pele links and images. Its output is limited to
+2,000,000 UTF-8 bytes before XML parsing, then `ValidatedSVG` requires one SVG
+root, the SVG namespace, the requested ID and a positive `viewBox`. It rejects
+DTDs, processing instructions, unknown elements and attributes, scripts,
+external/local resource references, event attributes, CSS escapes, comments
+and unknown CSS functions. IDs are restricted to the root and direct-child
+accessibility title/description; ARIA references must match. Validated bytes
+are inserted after HTML serialization, so attributes such as `viewBox` retain
+their original spelling. Invalid output produces a diagnostic and preserves
+the escaped original block.
+
+The validator has an intentionally narrow allowlist, not a general SVG
+sanitizer. It permits selected `var(...)` values required by Pele. CSS custom
+properties and classes can depend on **host CSS**, which may alter rendering
+or introduce resource references; do not treat this validator as isolating an
+SVG from untrusted host styles. Raw HTML and arbitrary renderer/plugin HTML are
+separate trust boundaries. The host must supply distinct page-level SVG prefixes.
+The tests exercise malicious tags, events, local/external references, namespace
+changes, encodings, CSS escapes, DTDs, accessibility ID collisions and actual
+Pele examples. They do not prove absence of all browser-parser differences,
+resource exhaustion or vulnerabilities in arbitrary renderers.
+
+## Process and resource boundary
+
+Node executable/module paths, module code and the inherited environment are
+trusted configuration. For example, Node interprets `NODE_OPTIONS` before the
+supplied program and can preload code; see the [Node CLI documentation](https://nodejs.org/api/cli.html#node_optionsoptions).
+JSON is used for Markdown-derived inputs, not JavaScript interpolation.
+Temporary files are held in a private directory. KaTeX and Pele each reject
+inputs above 16,384 UTF-8 bytes. Renderer stdout is size-checked after Node exits,
+and the Swift read itself is capped at 2,000,001 bytes to detect an over-limit
+file even if it grew after the metadata check. Renderer stderr retained in a
+failure diagnostic is capped at 4,096 bytes.
+
+Neither Node adapter kills a timed-out process, limits aggregate memory or disk,
+or prevents writes while the process runs. A child inheriting stdout can remain
+alive after its parent exits and keep writing; a bounded read is not a live
+output limit. `Scripts/run-linux-constrained.sh` is an opt-in outer worker:
+its process-group deadline and per-process address-space/file-size limits are
+not a sandbox. Descendants that create another session can escape the deadline;
+per-process limits do not bound aggregate use. An executable test demonstrates
+that known escape, rather than treating it as a security guarantee. Stronger
+isolation needs a separately configured and tested OS sandbox/cgroup policy.
+SwiftGFM's parser has its own resource boundaries; a Swift task cancellation
+does not stop synchronous foreign code.
+
+## License and fixture evidence
+
+`Scripts/audit-dependencies.py` compares the retained license/notice bytes with
+the revisions in the SwiftPM lockfile. The original SwiftGFM `NOTICE`, which
+was missing from SwiftMD's inventory, is now retained unchanged. Its upstream
+paths are mapped in [the notice inventory](../ThirdPartyLicenses/README.md).
+
+The six cmark-gfm fixture SHA-256 values match the separately checked-out
+upstream commit `27d942c8b0a62d192f616e5bf3578f4b6a89e180`; the published GFM
+HTML snapshot matches its recorded SHA-256. The spec and individually marked
+extension files retain their authors and CC BY-SA 4.0 notice in the fixture
+[README](../Tests/SwiftMDTests/Fixtures/cmark-gfm/README.md). The unmodified
+`regression.txt` and `smart_punct.txt` have no individual license header; retain
+the upstream COPYING notice and review their provenance for the chosen source
+distribution. For example, the latter contains the name “Shelob” in both input
+and expected output. That observation is not a conclusion about rights or
+infringement; assess whether the material may be distributed in the relevant
+jurisdictions and distribution format. This targeted text search is not an
+exhaustive review of every fixture or Git-history version. The
+[CC BY-SA legal code](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en)
+specifies attribution and applicable share-alike conditions; do not infer that
+a checksum alone establishes rights in all source material.
+
+With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
+their SHA-512 SRI values, and compares the installed regular-file contents with
+the archives. On 17 November 2026 it checked 655 installed files; all three
+package license files matched their retained copies. `npm audit --omit=dev
+--ignore-scripts` reported zero known advisories for the three-package lockfile
+at that time. This does not cover Swift dependencies or unknown vulnerabilities.
+
+```sh
+python3 Scripts/audit-dependencies.py --cmark-source /absolute/path/to/cmark-gfm --npm-tarballs
+```
+
+`--npm-tarballs` requires network access; omitting it explicitly reports that
+the archive and installed-byte check was not performed. The reference checkout
+must be at the pinned commit. The CI job requires the complete audit.
+
+The locally generated CLI archive contains the executable, license inventory
+and Node lockfile but not npm packages or spec fixtures. The mirror generator
+does not export those spec fixtures. A SwiftMD **source repository/archive** does
+include the fixtures, the full published snapshot and Git history; review its
+complete file set and provenance separately. Swift-Highlight 1.0.1 replaces
+identified fixture quotations, while its older tag and Git history still retain
+the originals. No statement here determines rights in those historic copies.
+
+Before a public release, obtain independent review of the SVG policy and
+deployment isolation, perform distribution-specific license/provenance review,
+verify a candidate built from the final commit on clean target systems, and
+recheck live vulnerability data and tag identities. Existing tests do not
+substitute for these gates.

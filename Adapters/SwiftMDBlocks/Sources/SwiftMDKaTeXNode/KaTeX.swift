@@ -53,7 +53,17 @@ public enum NodeProcess {
         }
         let size = try fm.attributesOfItem(atPath: output.path)[.size] as? NSNumber
         guard let size, size.intValue <= 2_000_000 else { throw NodeRendererError.outputTooLarge }
-        let data = try Data(contentsOf: output)
+        // The file may grow after the metadata check (for example if a child
+        // inherited stdout). Bound the bytes actually read into this process too.
+        let reader = try FileHandle(forReadingFrom: output); defer { try? reader.close() }
+        var data = Data()
+        while data.count <= 2_000_000 {
+            let remaining = 2_000_001 - data.count
+            let chunk = try reader.read(upToCount: min(remaining, 65_536)) ?? Data()
+            if chunk.isEmpty { break }
+            data.append(chunk)
+        }
+        guard data.count <= 2_000_000 else { throw NodeRendererError.outputTooLarge }
         guard let result = String(data: data, encoding: .utf8) else { throw NodeRendererError.invalidOutput }
         return result
     }

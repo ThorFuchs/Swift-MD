@@ -29,8 +29,11 @@ Unknown constructs and other references are rejected, preserving the original
 block. Validation rejects fragments over 2,000,000 UTF-8 bytes. The allowlist and Pele filtering are not a general SVG sanitizer
 or a security audit; host CSS and raw HTML remain separate trust boundaries.
 
-The Node executable and module path are trusted configuration. Both adapters
-reject input above 16,384 UTF-8 bytes and check output size after process exit.
+The Node executable, module path and inherited process environment are trusted
+configuration; `NODE_OPTIONS` can preload code before the renderer. Both
+adapters reject input above 16,384 UTF-8 bytes and check output size after
+process exit. The Swift read is also bounded if the output file grows after its
+metadata check. This does not prevent a child from continuing to write to disk.
 They do **not** themselves enforce a hard time, memory, disk or live output limit.
 On Linux, `Scripts/run-linux-constrained.sh` is an optional outer worker: GNU
 `timeout` kills the process group at a deadline and `prlimit` applies address-space

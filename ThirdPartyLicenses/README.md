@@ -4,9 +4,17 @@ The root and adapter `Package.resolved` and `Tools/NodeDependencies/package-lock
 are the source of exact dependency identities and npm integrity hashes. Copied
 notices here do not replace review before distribution.
 
+`SwiftGFM-NOTICE.txt` is the upstream notice, copied without changing its
+original paths. In a SwiftMD archive its `Vendor/GitHubCMark/COPYING` reference
+corresponds to `cmark-gfm-COPYING.txt` in this directory. SwiftMD's separately
+retained cmark fixtures and published GFM snapshot are test material, with
+provenance and CC BY-SA notices under `Tests/`; the candidate binary archive and
+generated adapter mirror do not include those fixtures. Reassess the notices
+and any fixture licensing whenever the distributed file set changes.
+
 | Dependency | Selected identity | License / notes |
 | --- | --- | --- |
-| SwiftGFM | 1.0.0, tag commit d1c262f42daa7a06f4612a94671e10740e26d09a | Apache-2.0 |
+| SwiftGFM | 1.0.0, tag commit d1c262f42daa7a06f4612a94671e10740e26d09a | Apache-2.0; see SwiftGFM-NOTICE.txt and cmark-gfm-COPYING.txt |
 | cmark-gfm | 27d942c8b0a62d192f616e5bf3578f4b6a89e180 | See cmark-gfm-COPYING.txt; fixtures have separate CC BY-SA notice |
 | Swift-Highlight | 1.0.1, tag commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564 | Apache-2.0; imported HighlightKit MIT and highlight.js BSD-3-Clause, see included notices |
 | SwiftSoup | d86f244ed497d48012782e2f59c985a55e77b3f5 (2.11.3) | MIT |

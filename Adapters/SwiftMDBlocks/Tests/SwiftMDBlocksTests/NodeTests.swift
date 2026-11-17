@@ -96,6 +96,11 @@ final class NodeTests: XCTestCase {
         let accepted = try NodeProcess.run(node: node, script: "process.stdout.write('a'.repeat(2000000))", request: [:])
         XCTAssertEqual(accepted.utf8.count, 2_000_000)
         XCTAssertThrowsError(try NodeProcess.run(node: node, script: "process.stdout.write('a'.repeat(2000001))", request: [:]))
+        XCTAssertThrowsError(try NodeProcess.run(node: node, script: "process.stdout.write(Buffer.from([255]))", request: [:]))
+        XCTAssertThrowsError(try NodeProcess.run(node: node, script: "process.stderr.write('e'.repeat(10000));process.exitCode=1", request: [:])) { error in
+            guard case NodeRendererError.processFailed(let message) = error else { return XCTFail("Unexpected error: \(error)") }
+            XCTAssertEqual(message.utf8.count, 4096)
+        }
     }
     func testPeleDisablesExternalLinksAndImages() throws {
         let (_, diagram) = try renderers()
@@ -119,9 +124,10 @@ final class NodeTests: XCTestCase {
     func testSVGRejectsDangerousContent() throws {
         let start = "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"page-0\" viewBox=\"0 0 10 10\">"
         XCTAssertNoThrow(try ValidatedSVG(start + "<text>hello</text></svg>", expectedID: "page-0"))
-        let attacks = ["<script>alert(1)</script>", "<image href=\"https://evil.test/a\"/>", "<a href=\"javascript:alert(1)\"><text>x</text></a>", "<rect onload=\"alert(1)\"/>", "<rect style=\"fill:url(https://evil.test)\"/>", "<rect style=\"fill:u\\72l(https://evil.test)\"/>", "<g id=\"page-0\"/>", "<g xmlns=\"http://www.w3.org/1999/xhtml\"/>", "<svg viewBox=\"0 0 1 1\"/>", "<path fill=\"url(#other)\"/>",
+        let attacks = ["<script>alert(1)</script>", "<foreignObject><div>bad</div></foreignObject>", "<animate attributeName=\"x\"/>", "<use href=\"#page-0\"/>", "<image href=\"https://evil.test/a\"/>", "<a href=\"javascript:alert(1)\"><text>x</text></a>", "<rect onload=\"alert(1)\"/>", "<rect style=\"fill:url(https://evil.test)\"/>", "<rect style=\"fill:u\\72l(https://evil.test)\"/>", "<g id=\"page-0\"/>", "<g xmlns=\"http://www.w3.org/1999/xhtml\"/>", "<svg viewBox=\"0 0 1 1\"/>", "<path fill=\"url(#other)\"/>",
                        "<path fill=\"&#117;rl(https://evil.test/a)\"/>",
                        "<path fill=\"u/**/rl(https://evil.test/a)\"/>",
+                       "<rect style=\"--_x/**/:red;fill:var(--_x)\"/>",
                        "<path fill=\"var(--x,u&#114;l(https://evil.test/a))\"/>",
                        "<rect style=\"fill:u&#92;72l(https://evil.test/a)\"/>",
                        "<rect style=\"fill:image(https://evil.test/a)\"/>",
@@ -137,5 +143,8 @@ final class NodeTests: XCTestCase {
         XCTAssertThrowsError(try ValidatedSVG(start.replacingOccurrences(of: "viewBox=", with: "aria-labelledby=\"other\" viewBox=") + "</svg>", expectedID: "page-0"))
         XCTAssertThrowsError(try ValidatedSVG(start.replacingOccurrences(of: "0 0 10 10", with: "0 0 0 10") + "</svg>", expectedID: "page-0"))
         XCTAssertThrowsError(try ValidatedSVG("<!DOCTYPE svg [<!ENTITY x SYSTEM 'file:///etc/passwd'>]>" + start + "&x;</svg>", expectedID: "page-0"))
+        XCTAssertThrowsError(try ValidatedSVG(start + "<![CDATA[<script>]]></svg>", expectedID: "page-0"))
+        XCTAssertThrowsError(try ValidatedSVG(start + "</svg><script>alert(1)</script>", expectedID: "page-0"))
+        XCTAssertThrowsError(try ValidatedSVG(start + "<path xmlns:xlink=\"http://www.w3.org/1999/xlink\" xlink:href=\"https://evil.test/a\"/></svg>", expectedID: "page-0"))
     }
 }

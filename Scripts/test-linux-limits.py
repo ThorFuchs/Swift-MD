@@ -49,4 +49,19 @@ class LinuxLimits(unittest.TestCase):
             time.sleep(2.2)
             self.assertFalse(sentinel.exists(), 'child escaped the timed process group')
 
+    def test_detached_descendant_is_not_a_sandbox(self):
+        # A deliberately detached child is outside timeout's process group. It
+        # exits by itself after recording this known isolation boundary.
+        with tempfile.TemporaryDirectory() as tmp:
+            sentinel = Path(tmp) / 'detached'
+            child = 'import time,pathlib,sys;time.sleep(2);pathlib.Path(sys.argv[1]).write_text("detached")'
+            parent = ('import os,subprocess,sys,time;'
+                      'subprocess.Popen([sys.executable,"-c",sys.argv[1],sys.argv[2]],'
+                      'preexec_fn=os.setsid,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);'
+                      'time.sleep(10)')
+            result = run('python3', '-c', parent, child, str(sentinel), seconds='1')
+            self.assertNotEqual(result.returncode, 0)
+            time.sleep(2.2)
+            self.assertTrue(sentinel.exists(), 'detached-child behavior changed; reassess the documented boundary')
+
 if __name__ == '__main__': unittest.main()

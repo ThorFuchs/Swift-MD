@@ -15,9 +15,19 @@ SwiftMD library target.
 | `extensions-full-info-string.txt` | `dec5fc65880d74f97d5181e0b75466fbe12662cda8383d8b51fd78e06191092f` |
 | `extensions-table-prefer-style-attributes.txt` | `3d902a4a1ce48df5dd7910647602fbae4535d8bac6700e918280fe1d928a4cee` |
 
-The spec and extension fixtures identify the CommonMark Spec and CC BY-SA 4.0;
-see the adjacent [LICENSE](LICENSE). Upstream's full source
-license notices are in `Vendor/GitHubCMark/COPYING`. The CR characters in the
+`spec.txt` is the GitHub Flavored Markdown Spec, based on the CommonMark Spec
+by John MacFarlane; its metadata identifies CC BY-SA 4.0. `extensions.txt`,
+`extensions-full-info-string.txt`, and `extensions-table-prefer-style-attributes.txt`
+identify their respective authors as Yuki Izumi, Ashe Connor, and FUJI Goro,
+and each declares CC BY-SA 4.0. These files are included unmodified. The full
+license is in the adjacent [LICENSE](LICENSE); the canonical license URL is
+https://creativecommons.org/licenses/by-sa/4.0/.
+
+`regression.txt` and `smart_punct.txt` have no individual license header; retain
+the upstream COPYING notice and assess their provenance for the distribution
+being prepared. Upstream's full source
+license notices are copied to `ThirdPartyLicenses/cmark-gfm-COPYING.txt` at the
+SwiftMD repository root. The CR characters in the
 regression fixture and the NUL in the full-info fixture are intentional; do not
 normalize fixture bytes.
 

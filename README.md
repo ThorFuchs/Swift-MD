@@ -59,3 +59,5 @@ coverage, known limitations, dependency provenance and release blockers are in
 The isolated version-based distribution gate is described in
 [release preparation](Documentation/RELEASE_PREPARATION.md). It creates only
 temporary local test tags and a local test mirror; it publishes nothing.
+See the [SVG, process and license review](Documentation/SECURITY_LICENSE_REVIEW.md)
+for the current evidence and remaining release boundaries.
