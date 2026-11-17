@@ -39,11 +39,15 @@ The independently published GFM specification examples have also been compared
 separately; their selected-profile byte comparison has known differences, so no
 complete GFM conformance claim is made.
 
-The six unmodified cmark-gfm fixtures and their licenses and hashes are in
-`Tests/SwiftMDTests/Fixtures/cmark-gfm`. The test compares 746 enabled examples
-with expected HTML. Two upstream-disabled examples are skipped; the `<IGNORE>`
-example has no expected-output assertion. The optional independent executable
-comparison includes it, for 747 cases. Build the *upstream* C program at the backend commit with CMake and run:
+The four retained, unmodified cmark-gfm fixtures and their licenses and hashes
+are in `Tests/SwiftMDTests/Fixtures/cmark-gfm`. The test compares 704 enabled
+examples with expected HTML. Two upstream-disabled examples are skipped; the
+`<IGNORE>` example has no expected-output assertion. The optional independent
+executable comparison includes it, for 705 cases. Thirteen separately authored
+neutral cases and their thirteen independent C comparisons are counted separately;
+they are not claimed as a complete replacement for the 42 removed examples.
+Without a configured reference, the comparison is explicitly skipped;
+`Scripts/test-all.sh` requires it. Build the *upstream* C program at the backend commit with CMake and run:
 
 ```sh
 git clone https://github.com/github/cmark-gfm.git /tmp/cmark-reference

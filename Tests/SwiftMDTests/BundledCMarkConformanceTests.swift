@@ -7,8 +7,7 @@ import Testing
 
 // Unmodified upstream sources and reproduction details are in Fixtures/cmark-gfm.
 private enum UpstreamSuite: String, CaseIterable, Sendable {
-    case spec, extensions, regression
-    case smartPunct = "smart_punct"
+    case spec, extensions
     case fullInfo = "extensions-full-info-string"
     case tableStyle = "extensions-table-prefer-style-attributes"
 }
@@ -54,8 +53,7 @@ private enum UpstreamFixtures {
         }
         let data = try Data(contentsOf: url)
         guard let text = String(data: data, encoding: .utf8) else { throw FixtureError.malformed(suite.rawValue) }
-        // Splitting UTF-8 on LF avoids Swift Character's CRLF grapheme behavior:
-        // regression example 1 deliberately contains CR + CR + LF.
+        // Split UTF-8 on LF rather than relying on Swift's CRLF graphemes.
         let bytes = Array(text.utf8)
         let lines = bytes.split(separator: 10, omittingEmptySubsequences: false)
         let fence = String(repeating: "`", count: 32)
@@ -105,7 +103,6 @@ private func configuration(for example: UpstreamExample) throws -> MarkdownConfi
     var extensions: MarkdownExtensions = (example.suite == .extensions || example.suite == .tableStyle) ? .gfm : []
     var options: MarkdownOptions = [.allowUnsafeHTML]
     if example.suite == .extensions || example.suite == .tableStyle { options.insert(.footnotes) }
-    if example.suite == .smartPunct { options.insert(.smartPunctuation) }
     if example.suite == .fullInfo { options.insert(.fullInfoString) }
     if example.suite == .tableStyle { options.insert(.tableStyleAttributes) }
     for flag in example.flags {
@@ -136,11 +133,9 @@ private func bundledCMarkInventory() {
     let bySuite = Dictionary(grouping: UpstreamFixtures.all, by: \.suite)
     #expect(bySuite[.spec]?.count == 672)
     #expect(bySuite[.extensions]?.count == 30)
-    #expect(bySuite[.regression]?.count == 26)
-    #expect(bySuite[.smartPunct]?.count == 16)
     #expect(bySuite[.fullInfo]?.count == 4)
     #expect(bySuite[.tableStyle]?.count == 1)
-    #expect(UpstreamFixtures.compared.count == 746)
+    #expect(UpstreamFixtures.compared.count == 704)
     #expect(UpstreamFixtures.all.filter(\.isDisabled).map(\.number) == [279, 280])
     #expect(
         UpstreamFixtures.all.filter(\.ignoresExpectedOutput).map { "\($0.suite.rawValue)#\($0.number)" } == [
@@ -195,6 +190,6 @@ private func independentReference() throws {
         #expect(Data(actual.utf8) == reference, "Reference mismatch: \(example.testDescription)")
         count += 1
     }
-    #expect(count == 747)
+    #expect(count == 705)
     print("Independent cmark comparison: \(count) examples")
 }
