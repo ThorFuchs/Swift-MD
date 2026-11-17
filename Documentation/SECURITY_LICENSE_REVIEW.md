@@ -59,6 +59,12 @@ isolation needs a separately configured and tested OS sandbox/cgroup policy.
 SwiftGFM's parser has its own resource boundaries; a Swift task cancellation
 does not stop synchronous foreign code.
 
+An additional [Linux supervised worker](PROCESS_ISOLATION.md) bounds live
+stdin/stdout/stderr and retains stdout until successful completion. It also
+enforces a deadline and per-process resource limits. It still does not contain
+detached descendants, impose aggregate quotas, or isolate the filesystem,
+network or credentials.
+
 ## License and fixture evidence
 
 `Scripts/audit-dependencies.py` compares the retained license/notice bytes with
@@ -92,6 +98,19 @@ and later received changes from multiple contributors. The pinned upstream
 identifies `test/spec.txt` and test software separately, without naming these
 two text files. Git attribution documents contribution history, not the rights
 chain of every example or a legal conclusion for a distribution.
+
+The same short `smart_punct.txt` example appears in the 2006 Pandoc initial
+import, before the cmark commit, in
+[tests/writer.markdown](https://github.com/jgm/pandoc/blob/df7b68225101966051f8b592a27127bf789eb81e/tests/writer.markdown).
+That file describes some tests as adaptations but does not identify the origin
+of this particular example. Its presence is evidence of an earlier occurrence,
+not proof of a transfer route, licensing terms, or a complete rights chain.
+Removing the two files from a future SwiftMD source snapshot could reduce that
+snapshot's scope but would also remove 42 expectation cases unless replaced;
+it would not erase earlier Git history, nor remove the files from the existing
+SwiftGFM 1.0.0 source tag. Fetching fixtures separately changes distribution,
+not the rights question for the fetch and use. Any such change needs an explicit
+coverage and distribution decision; the current fixtures are unchanged.
 
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with

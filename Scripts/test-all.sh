@@ -15,4 +15,7 @@ test -f "$SWIFTMD_KATEX/package.json" && test -f "$SWIFTMD_PELE" || { echo 'Run 
 python3 "$ROOT/Scripts/analyze-published-gfm.py" --reference "$SWIFTMD_CMARK_REFERENCE"
 python3 "$ROOT/Scripts/test-gfm029-profile.py" --candidate "$ROOT/Tools/SwiftMDCLI/.build/debug/swift-md" --reference "$SWIFTMD_CMARK_REFERENCE" --expect-baseline
 python3 "$ROOT/Scripts/test-cli.py"
-if [ "$(uname -s)" = Linux ]; then python3 "$ROOT/Scripts/test-linux-limits.py"; fi
+if [ "$(uname -s)" = Linux ]; then
+  python3 "$ROOT/Scripts/test-linux-limits.py"
+  python3 "$ROOT/Scripts/test-linux-supervisor.py"
+fi

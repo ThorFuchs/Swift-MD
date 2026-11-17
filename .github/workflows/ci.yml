@@ -6,6 +6,25 @@ on:
 permissions:
   contents: read
 jobs:
+  supervisor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Exercise Linux supervisor process boundaries
+        run: |
+          python3 Scripts/test-linux-supervisor.py \
+            LinuxSupervisor.test_empty_input_immediate_success \
+            LinuxSupervisor.test_binary_stream_and_inherited_limits \
+            LinuxSupervisor.test_input_limit_fails_without_output \
+            LinuxSupervisor.test_exact_stream_limits_succeed \
+            LinuxSupervisor.test_stdout_limit_fails_without_partial_output \
+            LinuxSupervisor.test_stderr_limit_fails_without_output \
+            LinuxSupervisor.test_worker_error_suppresses_partial_stdout \
+            LinuxSupervisor.test_deadline_kills_worker_group_and_discards_partial_output \
+            LinuxSupervisor.test_detached_child_remains_a_documented_boundary \
+            LinuxSupervisor.test_deadline_includes_slow_stdin \
+            LinuxSupervisor.test_deadline_includes_stalled_output_delivery \
+            LinuxSupervisor.test_sigterm_cleans_up_worker_group
   core:
     runs-on: ubuntu-latest
     container: swift:6.2.4

@@ -48,6 +48,10 @@ The Node adapters themselves enforce no hard process time, memory or live
 output limit. Linux deployments can opt into the constrained worker described
 in the adapter documentation; it is not a sandbox.
 
+For bounded stdin, stdout and stderr as well as a process-group deadline, see
+the optional [Linux supervised worker](Documentation/PROCESS_ISOLATION.md).
+It does not provide cgroup, filesystem or network isolation.
+
 Run `Scripts/test-all.sh` after installing the pinned npm packages and setting
 `SWIFTMD_CMARK_REFERENCE` to the independently built pinned C executable; the
 integration gate fails if it or a real renderer is missing. The optional

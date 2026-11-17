@@ -159,10 +159,13 @@ private func upstreamIgnoredExtension20() {}
 
 // Optional independent upstream executable; build it from the documented pinned
 // source commit. Include the <IGNORE> input because this is a backend comparison.
-@Test("Independent cmark-gfm executable comparison")
+@Test(
+    "Independent cmark-gfm executable comparison",
+    .enabled(if: ProcessInfo.processInfo.environment["SWIFTMD_CMARK_REFERENCE"] != nil,
+             "Set SWIFTMD_CMARK_REFERENCE to run the independent renderer comparison"))
 private func independentReference() throws {
     guard let executable = ProcessInfo.processInfo.environment["SWIFTMD_CMARK_REFERENCE"] else {
-        print("Independent cmark reference not configured; set SWIFTMD_CMARK_REFERENCE")
+        Issue.record("SWIFTMD_CMARK_REFERENCE disappeared after test selection")
         return
     }
     let dir = FileManager.default.temporaryDirectory.appendingPathComponent("swiftmd-reference-" + UUID().uuidString)
