@@ -9,6 +9,9 @@ from pathlib import Path
 import subprocess
 import sys
 
+# Keep release-gate imports from dirtying a clean source checkout.
+sys.dont_write_bytecode = True
+
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('published_gfm', ROOT / 'Scripts/test-published-gfm.py')
 MODULE = importlib.util.module_from_spec(SPEC)
