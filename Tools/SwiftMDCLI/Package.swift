@@ -8,7 +8,7 @@ let package = Package(
     dependencies: [
         .package(name: "Swift-MD", path: "../.."),
         .package(name: "SwiftMDBlocks", path: "../../Adapters/SwiftMDBlocks"),
-        .package(url: "https://github.com/ThorFuchs/Swift-GFM.git", revision: "d1c262f42daa7a06f4612a94671e10740e26d09a")
+        .package(url: "https://github.com/ThorFuchs/Swift-GFM.git", exact: "1.0.0")
     ],
     targets: [.executableTarget(name: "SwiftMDCLI", dependencies: [
         .product(name: "SwiftMD", package: "Swift-MD"),

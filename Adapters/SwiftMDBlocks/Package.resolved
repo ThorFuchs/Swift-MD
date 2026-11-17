@@ -1,5 +1,5 @@
 {
-  "originHash" : "ad7962269cc067501258e13d209bbfd83dc675015d1783041df46f7a3d7725b3",
+  "originHash" : "c1ac3bbda83d9484b22a86cdf279cbe49d9c15dcf74bdaa783c87c1aea2a4a8e",
   "pins" : [
     {
       "identity" : "lrucache",
@@ -24,7 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ThorFuchs/Swift-GFM.git",
       "state" : {
-        "revision" : "d1c262f42daa7a06f4612a94671e10740e26d09a"
+        "revision" : "d1c262f42daa7a06f4612a94671e10740e26d09a",
+        "version" : "1.0.0"
       }
     },
     {

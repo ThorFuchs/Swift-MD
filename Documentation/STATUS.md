@@ -3,8 +3,9 @@
 Core passes through SwiftGFM at `d1c262f42daa7a06f4612a94671e10740e26d09a`,
 whose cmark-gfm backend is `0.29.0.gfm.13` at
 `27d942c8b0a62d192f616e5bf3578f4b6a89e180`. SwiftGFM is Swift around C.
-The independently published GFM specification corpus has not been tested;
-no complete GFM conformance claim is made.
+The independently published GFM specification examples have also been compared
+separately; their selected-profile byte comparison has known differences, so no
+complete GFM conformance claim is made.
 
 The six unmodified cmark-gfm fixtures and their licenses and hashes are in
 `Tests/SwiftMDTests/Fixtures/cmark-gfm`. The test compares 746 enabled examples
@@ -26,6 +27,15 @@ flags add individual extensions. Smart punctuation, full info string and table
 style options apply only to their respective suites. These are test settings,
 not sanitizer recommendations. The reference process receives corresponding
 upstream CLI flags and is not the vendored library linked into SwiftMD.
+
+The separately preserved published GFM 0.29 HTML at `Tests/PublishedGFM` has
+677 examples. `Scripts/test-published-gfm.py` extracted and compared them on
+17 November 2026 using the standard five-extension GFM profile and
+`allowUnsafeHTML`: 651 byte-identical, 26 different, exit status 1. This includes
+raw tagfilter differences and checkbox serialization differences, as well as
+other cases requiring separate analysis. The published examples are not the
+bundled cmark fixture suite. The output comparison is byte-based, not an
+assessment of semantic equivalence. See `Tests/PublishedGFM/README.md`.
 
 ## Executed locally on 17 November 2026
 
@@ -75,14 +85,53 @@ sandboxing. This helper has not been validated on macOS or Linux x86_64.
 Release work remains: independently review the SVG policy and process isolation,
 extend adversarial and cross-browser coverage, run other claimed platforms,
 verify the generated adapter distribution mirror with released versions and consumers,
-and run the checked-in CI on GitHub and build release packaging. Swift-Highlight
+complete hosted CI for the final commit, and review release packaging. Swift-Highlight
 1.0.0 is public at commit 326a0085c05931b868f5bff084d51eca7584aad7; its
 Linux TSan findings remain unclassified and fixture provenance still requires
-review. SwiftGFM has no 1.0.0 tag. Its revision requirement
-prevents a stable version-based SwiftPM consumer. Do not replace it with a
-version until the actual public tag and commit are verified. The CI integration job no longer requires a private Swift-Highlight secret; its
+review. SwiftGFM 1.0.0 is public, and its annotated tag resolves to the previously
+tested backend-wrapper commit d1c262f42daa7a06f4612a94671e10740e26d09a.
+The manifests now use an exact version requirement. The CI integration job no longer requires a private Swift-Highlight secret; its
 hosted execution for these changes is unverified. No release, tag,
 remote mirror or push is performed by this work.
+
+## Hosted CI evidence
+
+The GitHub Actions run for SwiftMD commit
+`c441d526608b0c62abd9e3cbc029a24583a08731` completed successfully for both
+Core and integration on Linux x86_64 with Swift 6.2.4, including the 747-case
+independent C reference, real renderers, CLI and Linux process-limit tests.
+The result applies to that commit, not automatically to later changes.
+
+## Local release-candidate verification (17 November 2026)
+
+The source commit `468106c5a7acca2acdc7c230d13ec7b802062301` produced a local
+Linux aarch64 archive with `Scripts/build-linux-candidate.sh`. The archive is
+`.artifacts/SwiftMD-linux-arm64-candidate-468106c.tar.gz` and has SHA-256
+`c2dc65f79193b39c1f6d3dc174d3023155645c74d51140f700de9e4dc124a8db`.
+It contains the executable, source and build identity, checksums, notices,
+Swift runtime license, and npm lockfile. Node and npm dependencies are not bundled.
+It is a local candidate, not a release, and its license inventory still needs a
+final distribution review.
+
+A fresh debootstrap Ubuntu 24.04 ARM64 chroot with no Swift toolchain verified
+all archive checksums and ran seven CLI tests after installing Node 24.22.1,
+the locked npm packages (`npm ci --ignore-scripts`), and system libraries.
+`ldd` showed glibc, libstdc++, libgcc, libxml2, ICU 74, zlib and liblzma. This
+was an ARM64 VM and chroot, not a separate machine or an x86_64 test.
+
+The static Swift runtime link emitted a warning about `mktemp` in Foundation.
+The Swift 6.2.4 [Foundation source](https://github.com/swiftlang/swift-foundation/blob/swift-6.2.4-RELEASE/Sources/FoundationEssentials/Data/Data%2BWriting.swift)
+shows `mktemp` followed by `O_CREAT | O_EXCL`, with retries after `EEXIST`.
+This identifies the warning's mechanism; it is not an independent security
+audit or a general conclusion about safety.
+
+After the Swift-Highlight 1.0.0 update, Linux ARM64 ran the full gate: 746
+fixture expectations, 747 independently built C-reference comparisons, 16
+adapter tests, seven CLI tests and four Linux worker-limit tests passed. The
+combined CLI also ran all three real renderers under the worker limits. A
+fresh local-path Core consumer and a separate generated-mirror consumer passed;
+the latter used clearly marked local synthetic SwiftGFM and SwiftMD version
+tags, not public releases. No mirror was published.
 
 ## Adapter distribution generator
 
