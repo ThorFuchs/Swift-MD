@@ -22,7 +22,10 @@ with `--local-test` and is marked unpublishable. The gate resolves the actual
 public SwiftGFM and Swift-Highlight versions from the committed lockfile, checks
 that SwiftSoup 2.11.3 resolves to the locally tested revision, and runs all
 three real renderers in the adapter consumer. The Core consumer is a separate
-package and does not add the adapter dependencies.
+package and does not add the adapter dependencies. For containers with a
+different UID, Git is told to trust only the selected source checkout and its
+`.git` directory for the test subprocesses; no persistent global Git
+configuration is changed.
 
 ```sh
 (cd Tools/NodeDependencies && npm ci --ignore-scripts)

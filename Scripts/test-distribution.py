@@ -13,8 +13,20 @@ TEST_VERSION = '0.0.0'  # Only in disposable local repositories; never publish.
 
 
 def call(*args, cwd=None, capture=False):
+    # A container may run as a different UID from the explicitly selected
+    # workspace (e.g. actions/checkout). Trust only this exact source path for
+    # these subprocesses, without persisting global Git configuration. Preserve
+    # any command-scoped Git configuration already supplied by the caller.
+    env = os.environ.copy()
+    index = int(env.get('GIT_CONFIG_COUNT', '0'))
+    # Local clone invokes git-upload-pack on the checkout's .git directory.
+    for path in (ROOT, ROOT / '.git'):
+        env[f'GIT_CONFIG_KEY_{index}'] = 'safe.directory'
+        env[f'GIT_CONFIG_VALUE_{index}'] = str(path)
+        index += 1
+    env['GIT_CONFIG_COUNT'] = str(index)
     return subprocess.run(args, cwd=cwd, check=True, text=True,
-                          stdout=subprocess.PIPE if capture else None).stdout
+                          stdout=subprocess.PIPE if capture else None, env=env).stdout
 
 
 def pin(identity):
