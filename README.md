@@ -1,35 +1,53 @@
 # SwiftMD
 
-SwiftMD is an early Swift 6 library for composing Markdown-to-HTML rendering.
-The core is a baseline facade over SwiftGFM and its vendored cmark-gfm C
-backend. An optional separate package provides structured block processing and
-Swift-Highlight integration; see [its README](Adapters/SwiftMDBlocks/README.md).
-MathML, Mermaid and `$$` mathematics are not implemented. No conformance
-certification is claimed.
+SwiftMD compiles Markdown to HTML using SwiftGFM, a Swift wrapper around the
+pinned cmark-gfm C parser. The root SwiftPM product has no JavaScript runtime,
+browser UI, Apple framework, or optional renderer dependency. With no block
+renderers it returns the exact bytes produced by SwiftGFM for the configuration.
 
-## Use
-
-Add this repository as a Swift package dependency once an appropriate commit
-is available. The `SwiftMD` product depends on `SwiftGFM`; it does not depend
-on a JavaScript runtime or Apple UI frameworks.
+The opt-in `Adapters/SwiftMDBlocks` package adds structured HTML block processing,
+Swift-Highlight, KaTeX-to-MathML and Pele-to-SVG. The last two use explicitly
+configured local Node processes at compile time. The generated MathML and SVG
+are embedded in the HTML; their display does not require client-side JavaScript.
+These adapters and the CLI are experimental, not a security-reviewed release.
 
 ```swift
 import SwiftMD
-import SwiftGFM
-
-let compiler = MarkdownCompiler(configuration: .gfm)
-let result = try compiler.render("# Hello\n")
-print(result.html) // <h1>Hello</h1> followed by a newline
+let result = try MarkdownCompiler().render("# Hello\n")
+print(result.html)
 ```
 
-`MarkdownCompiler` takes a SwiftGFM `MarkdownConfiguration` and returns the
-unmodified HTML fragment and an empty diagnostics array. Errors from SwiftGFM
-are propagated. The compiler is a `Sendable` value; SwiftGFM serializes its C
-backend calls. Configuration, URL handling, raw HTML, and resource limits are
-those of SwiftGFM. Output is not a sanitizer, especially with unsafe HTML
-allowed. No assets are produced. No hard time or memory limits are added.
+## Local CLI
 
-Run `swift test` from the repository root. Swift language mode 6 is required.
-The manifest minimum of Swift 6.0 follows the pinned dependency; it is not a
-claim that all supported configurations have been tested with 6.0. See
-[implementation status](Documentation/STATUS.md) for verification and gaps.
+```sh
+(cd Tools/NodeDependencies && npm ci --ignore-scripts)
+(cd Tools/SwiftMDCLI && swift build -j 4)
+NODE="$(command -v node)"
+ROOT="$(pwd)"
+Tools/SwiftMDCLI/.build/debug/swift-md --document --highlight \
+  --katex-node "$NODE" --katex-module "$ROOT/Tools/NodeDependencies/node_modules/katex" \
+  --pele-node "$NODE" --pele-module "$ROOT/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
+  --svg-prefix my-page input.md --output output.html
+```
+
+Input is a UTF-8 file or stdin; output is a fragment on stdout by default.
+`--document` adds a minimal document. Use `--strict` to fail on any block
+issue before writing output. `--version` prints the backend identity.
+Highlighting supplies classes but no CSS. The page-unique `--svg-prefix`
+prevents collisions between separately rendered documents placed on one page.
+Both executable and module paths must be trusted absolute paths. Node 26.5.0 was
+used in the present local test; the lockfile requires Node >=22.12.0 for its
+`commander` dependency. See [adapter documentation](Adapters/SwiftMDBlocks/README.md).
+
+`math` and `mermaid` code fences opt into the respective renderer. `$$` block
+syntax and inline math are not implemented: SwiftGFM parses those as ordinary
+Markdown, so adding them correctly requires parser integration. `--unsafe-html`
+explicitly enables raw HTML and unsafe links; neither it nor ordinary rendering
+is a sanitizer. Extension renderers and host CSS are separate trust boundaries.
+No hard process time, memory, or output-during-execution limit is enforced.
+
+Run `Scripts/test-all.sh` after installing the pinned npm packages. The optional
+`node Scripts/test-browser.mjs` verifies a generated page in local Chromium with
+page JavaScript disabled. More precise
+coverage, known limitations, dependency provenance and release blockers are in
+[status](Documentation/STATUS.md) and [third-party notices](ThirdPartyLicenses/README.md).

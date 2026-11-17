@@ -1,72 +1,84 @@
-# Implementation status
+# Status and verification
 
-This is an initial baseline, not the completed implementation brief. SwiftGFM
-is pinned at `d1c262f42daa7a06f4612a94671e10740e26d09a`, Apache-2.0, with
-cmark-gfm 0.29.0.gfm.13 at `27d942c8b0a62d192f616e5bf3578f4b6a89e180`;
-its bundled C source retains the notices in its `Vendor/GitHubCMark/COPYING`.
-The wrapper is Swift around a C parser, not a pure Swift parser.
+Core passes through SwiftGFM at `d1c262f42daa7a06f4612a94671e10740e26d09a`,
+whose cmark-gfm backend is `0.29.0.gfm.13` at
+`27d942c8b0a62d192f616e5bf3578f4b6a89e180`. SwiftGFM is Swift around C.
+The independently published GFM specification corpus has not been tested;
+no complete GFM conformance claim is made.
 
-The default route delegates directly to SwiftGFM with precisely the supplied
-configuration. Tests compare representative inputs and options to SwiftGFM;
-this is not a full reference-backend parity run. The published GFM corpus and
-independent cmark-gfm fixture/reference runs are not yet imported or executed.
-There is no claim of strict GFM corpus conformance.
+The six unmodified cmark-gfm fixtures and their licenses and hashes are in
+`Tests/SwiftMDTests/Fixtures/cmark-gfm`. The test compares 746 enabled examples
+with expected HTML. Two upstream-disabled examples are skipped; the `<IGNORE>`
+example has no expected-output assertion. The optional independent executable
+comparison includes it, for 747 cases. Build the *upstream* C program at the backend commit with CMake and run:
 
-Swift-Highlight was observed at `be6b555fed12d15af337facfc0ca4b3d8b4ba6b5`;
-its README describes an HTML renderer and unresolved Linux concurrency
-warnings. An optional adapter now integrates it, with its own call lock but
-no guarantee covering independent upstream users. Swift-KaTeX at
-`b20e2c53760b91742ce641a5c43ee999c59122b3` and Swift-Mermaid at
-`2574531392677f7cf46bae7ac2191f458e61c74c` expose Apple WKWebView/PDF
-renderers, not the needed Linux MathML/SVG API. Neither is a dependency. Pele,
-KaTeX and a JS runtime have not been selected or integrated. SwiftSoup is
-used by the optional block adapter, never by the core.
-Their licensing, resource handling, security and runtime must be evaluated
-before distribution. No assets are supplied.
+```sh
+git clone https://github.com/github/cmark-gfm.git /tmp/cmark-reference
+git -C /tmp/cmark-reference checkout --detach 27d942c8b0a62d192f616e5bf3578f4b6a89e180
+cmake -S /tmp/cmark-reference -B /tmp/cmark-reference/build -DCMARK_TESTS=OFF
+cmake --build /tmp/cmark-reference/build -j 4
+SWIFTMD_CMARK_REFERENCE=/tmp/cmark-reference/build/src/cmark-gfm swift test --filter independentReference
+```
 
-## Integration decisions still required
+All fixtures enable `allowUnsafeHTML` to match their expectations. Extensions
+and footnotes are enabled for the extension and table-style suites; per-example
+flags add individual extensions. Smart punctuation, full info string and table
+style options apply only to their respective suites. These are test settings,
+not sanitizer recommendations. The reference process receives corresponding
+upstream CLI flags and is not the vendored library linked into SwiftMD.
 
-SwiftGFM's read-only AST is not renderable or mutable; parse and render are
-separate operations. HTML cannot distinguish an authored raw `<pre><code>`
-from equivalent rendered Markdown. The opt-in adapter processes all matching HTML code blocks, including raw HTML;
-its tested literal and option coverage remains incomplete. The baseline deliberately avoids HTML
-postprocessing and preserves backend bytes. A naive regex or source-range
-matching solution is not sufficient. `$$` is ordinary GFM input; supporting it
-requires a separately specified and tested parser integration. Inline math is
-also unsupported.
+## Executed locally on 17 November 2026
 
-A full implementation still needs broader block dispatch and fallback tests,
-independently optional MathML/SVG adapters, SVG sanitization
-and deterministic IDs, resource limits, documentation of licenses and assets,
-full fixture/reference comparisons, consumer builds and platform tests.
-Linux, Apple and WASI support must be reported only after actual builds and
-execution; no WASI runtime test has been performed.
+A Linux ARM64 VM ran Ubuntu 24.04, kernel 6.8.0-147, Swift 6.2.4 and
+Node 24.22.1. `Scripts/test-all.sh`, with an independently built reference
+executable, passed two Core XCTest cases, all 746 expected-output fixture
+cases, 747 independent C comparisons, 14 adapter XCTest cases and seven CLI
+integration tests. After the final SVG size-limit change, the adapter and CLI
+suites were rerun and passed. A separate `swift build -c release -j 2
+-Xswiftc -no-whole-module-optimization` also built the CLI, and its seven CLI
+tests passed against that binary. No static-link or standalone archive test was
+performed. Dependencies came from the pinned lockfiles;
+the private Swift-Highlight source was supplied to the VM from an isolated
+local Git mirror. This verifies Linux **aarch64**, not Linux x86_64.
 
-## Verified in this checkout
+On macOS arm64, Swift 6.4.2 and Node 26.5.0, the 14 adapter tests also passed.
+Chrome 157.0.8103.79 rendered a combined document with page JavaScript disabled.
+The automated test verified table and highlighting, MathML and SVG namespaces,
+`viewBox`, nonzero layout and path geometry, two distinct diagram IDs, title
+and description references, and absence of additional network requests. A page
+script sentinel confirmed that page scripts did not execute. This is a focused
+Chromium test, not a cross-browser or complete visual-accessibility audit.
 
-On Linux x86_64, official `swift:6.2.4` image (digest
-`sha256:3459518b2e723a7c363d0f8cfa44fc796c77ecd8c18e92fd10e6f92dd78c0b12`),
-`swift test -j 4` built the package and ran 2 XCTest cases, 0 failures and
-0 skips. One case makes 40 baseline comparisons across eight inputs and five
-configurations; the second checks known HTML and error propagation. These are
-comparisons to the Swift wrapper, not an independent C reference or corpus.
-A temporary separate SwiftPM consumer using a local path to this checkout was
-built and run in Debug and Release, asserting the rendered HTML. A published
-remote consumer has not been tested. Container Git used the host CA bundle
-for TLS verification. No macOS/iOS, WASI, or other Linux architectures were
-built or executed. Swift 6.0 and 6.4.2 were not tested.
+Reproduce the browser test on macOS after building the CLI and installing npm
+dependencies with:
 
-## Block adapter validation
+```sh
+node Scripts/test-browser.mjs
+```
 
-The optional `Adapters/SwiftMDBlocks` package uses SwiftSoup 2.11.3 at
-`d86f244ed497d48012782e2f59c985a55e77b3f5` and Swift-Highlight at the
-commit listed above. On Linux x86_64 with Swift 6.2.4, `swift test -j 4`
-executed 8 XCTest cases, 0 failures and 0 skips. They include real Swift
-highlighting, text reconstruction, raw HTML policy, selected options,
-priority, fallback, CRLF, repeated and empty blocks. A temporary local-path
-consumer built and executed the highlighting pipeline in Debug. Remote
-consumer resolution, Release, concurrency stress, full source-literal and
-option matrices, other hosts and production security qualification remain
-open. See the adapter README for trust, asset, serialization and dependency
-constraints. The adapter package resolves Swift-Highlight even if only its
-block product is selected; the root Core package does not.
+Set `SWIFTMD_CHROME` to a Chromium executable on another host, and optionally
+`SWIFTMD_BROWSER_SCREENSHOT` to a local PNG path. The test requires a Node version
+with a built-in WebSocket implementation. No WASI, iOS or other architecture
+execution is implied.
+
+Release work remains: independently review the SVG policy and process isolation,
+extend adversarial and cross-browser coverage, run other claimed platforms,
+verify the generated adapter distribution mirror with released versions and consumers,
+and run the checked-in CI on GitHub and build release packaging. Swift-Highlight is currently private
+and has no release tag; SwiftGFM has no 1.0.0 tag. Its revision requirement
+prevents a stable version-based SwiftPM consumer. Do not replace it with a
+version until the actual public tag and commit are verified. The CI integration job requires a repository secret granting read access to the private Swift-Highlight repository; its hosted execution is unverified. No release, tag,
+remote mirror or push is performed by this work.
+
+## Adapter distribution generator
+
+`Scripts/generate-adapter-mirror.py` exports only committed files from a clean
+checkout into a new directory and records the source commit and dependency
+requirements. It creates no repository or publication. Stable dependency
+versions must be verified against their actual release commits before distribution.
+The `--local-test` mode marks its output as never publishable and is the only
+mode permitting `file://` dependency URLs. A temporary mirror generated from a
+committed test snapshot passed 12 adapter tests against artificial local tags;
+a separate version-based consumer built and executed all three renderers against
+those artificial tags. This is not a released mirror or a verification of real
+public versions.

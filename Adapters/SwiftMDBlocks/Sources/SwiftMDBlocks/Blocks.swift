@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import Foundation
 import SwiftMD
 import SwiftSoup
 
@@ -8,6 +9,8 @@ public enum BlockReplacement: Sendable {
     case codeHTML(String)
     /// Replace the entire pre element.
     case blockHTML(String)
+    /// A fragment accepted by the strict SVG validator, preserved byte for byte.
+    case validatedSVG(ValidatedSVG)
 }
 
 /// A synchronous renderer. Calls occur in registration order; the first match wins.
@@ -50,6 +53,7 @@ public struct BlockCompiler: Sendable {
         doc.outputSettings().prettyPrint(pretty: false)
         guard let body = doc.body() else { throw BlockProcessingError.missingBody }
         var diagnostics: [BlockDiagnostic] = []
+        var fragments: [(String, String)] = []
         for (index, code) in try body.select("pre > code").array().enumerated() {
             guard let pre = code.parent() else { continue }
             let classes = try code.attr("class").split(whereSeparator: { $0.isWhitespace })
@@ -71,11 +75,21 @@ public struct BlockCompiler: Sendable {
                 switch try renderer.render(literal: literal, language: language, index: index) {
                 case .codeHTML(let html): _ = try code.html(html)
                 case .blockHTML(let html): _ = try pre.before(html); try pre.remove()
+                case .validatedSVG(let svg):
+                    var marker: String
+                    repeat { marker = "SWIFTMD" + UUID().uuidString.replacingOccurrences(of: "-", with: "") } while original.contains(marker)
+                    _ = try pre.before(marker); try pre.remove()
+                    fragments.append((marker, svg.html))
                 }
             } catch {
                 diagnostics.append(.init(kind: .renderFailed, blockIndex: index, language: language, message: String(describing: error)))
             }
         }
-        return BlockResult(html: try body.html(), diagnostics: diagnostics)
+        var html = try body.html()
+        for (marker, fragment) in fragments {
+            guard let range = html.range(of: marker), html.range(of: marker, range: range.upperBound..<html.endIndex) == nil else { throw BlockProcessingError.missingBody }
+            html.replaceSubrange(range, with: fragment)
+        }
+        return BlockResult(html: html, diagnostics: diagnostics)
     }
 }

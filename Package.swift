@@ -10,7 +10,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "SwiftMD", dependencies: [.product(name: "SwiftGFM", package: "Swift-GFM")]),
-        .testTarget(name: "SwiftMDTests", dependencies: ["SwiftMD", .product(name: "SwiftGFM", package: "Swift-GFM")]),
+        .testTarget(name: "SwiftMDTests", dependencies: ["SwiftMD", .product(name: "SwiftGFM", package: "Swift-GFM")], resources: [.copy("Fixtures")]),
     ],
     swiftLanguageModes: [.v6]
 )

@@ -3,9 +3,12 @@
 import PackageDescription
 let package = Package(
     name: "SwiftMDBlocks",
+    platforms: [.macOS(.v15), .iOS(.v18), .tvOS(.v18), .watchOS(.v11), .visionOS(.v2)],
     products: [
         .library(name: "SwiftMDBlocks", targets: ["SwiftMDBlocks"]),
         .library(name: "SwiftMDHighlight", targets: ["SwiftMDHighlight"]),
+        .library(name: "SwiftMDKaTeXNode", targets: ["SwiftMDKaTeXNode"]),
+        .library(name: "SwiftMDPeleNode", targets: ["SwiftMDPeleNode"]),
     ],
     dependencies: [
         .package(name: "Swift-MD", path: "../.."),
@@ -17,7 +20,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftSoup", package: "SwiftSoup")]),
+        .target(name: "SwiftMDPeleNode", dependencies: ["SwiftMDBlocks", "SwiftMDKaTeXNode"]),
+        .target(name: "SwiftMDKaTeXNode", dependencies: ["SwiftMDBlocks"]),
         .target(name: "SwiftMDHighlight", dependencies: ["SwiftMDBlocks", .product(name: "SwiftHighlight", package: "Swift-Highlight"), .product(name: "SwiftHighlightHTML", package: "Swift-Highlight")]),
-        .testTarget(name: "SwiftMDBlocksTests", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", .product(name: "SwiftSoup", package: "SwiftSoup"), .product(name: "SwiftGFM", package: "Swift-GFM"), .product(name: "SwiftMD", package: "Swift-MD")]),
+        .testTarget(name: "SwiftMDBlocksTests", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", .product(name: "SwiftSoup", package: "SwiftSoup"), .product(name: "SwiftGFM", package: "Swift-GFM"), .product(name: "SwiftMD", package: "Swift-MD")]),
     ], swiftLanguageModes: [.v6]
 )
