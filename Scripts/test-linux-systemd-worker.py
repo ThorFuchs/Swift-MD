@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -51,6 +52,7 @@ class SystemdWorker(unittest.TestCase):
             result = subprocess.run(['/usr/bin/python3', '-I', str(INSTALL / 'systemd-worker-guard.py'),
                                      '--unit', 'test.service', '--memory-bytes', '1024', '--tasks', '16',
                                      '--file-bytes', '1024', '--tmp-bytes', '1024', '--tmp-path', '/run/none',
+                                     '--host-net-inode', '1',
                                      '--command', encoded],
                                     capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 125)
@@ -132,15 +134,19 @@ sys.exit(0)'''
         self.assertEqual(result.stdout, b'')
         self.assertIn(b'ERRNO: 28', result.stderr)
 
-    def test_ip_sockets_are_blocked(self):
+    def test_host_loopback_is_unreachable(self):
         code = '''import socket,sys
 sys.stdin.buffer.read()
-try: socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-except OSError: print("blocked");sys.exit(0)
+try:
+ s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.settimeout(1);s.connect(("127.0.0.1",int(sys.argv[1])))
+except OSError: print("isolated");sys.exit(0)
 sys.exit(9)'''
-        result = run('/usr/bin/python3', '-c', code)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, b'blocked\n')
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.bind(('127.0.0.1', 0))
+            listener.listen()
+            result = run('/usr/bin/python3', '-c', code, str(listener.getsockname()[1]))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, b'isolated\n')
 
 
 if __name__ == '__main__':

@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--file-bytes', required=True, type=int)
     parser.add_argument('--tmp-bytes', required=True, type=int)
     parser.add_argument('--tmp-path', required=True)
+    parser.add_argument('--host-net-inode', required=True, type=int)
     parser.add_argument('--command', required=True)
     args = parser.parse_args()
     require(bool(sys.flags.isolated), 'Python isolated mode is required')
@@ -63,15 +64,23 @@ def main():
     else:
         os.close(fd)
         raise ValueError('worker can modify its cgroup')
-    for family in (socket.AF_INET, socket.AF_INET6):
-        try:
-            sock = socket.socket(family, socket.SOCK_STREAM)
-        except OSError as error:
-            require(error.errno in (errno.EPERM, errno.EACCES, errno.EAFNOSUPPORT, errno.EPROTONOSUPPORT),
-                    'could not verify IP socket restriction')
-            continue
+    require(os.stat('/proc/self/ns/net').st_ino != args.host_net_inode, 'network namespace is not private')
+    interfaces = {line.split(':', 1)[0].strip() for line in Path('/proc/net/dev').read_text().splitlines() if ':' in line}
+    require(interfaces == {'lo'}, 'private network has unexpected interfaces')
+    # Foundation on Linux uses IPv4 UDP loopback for Process wakeups.
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver, socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
+        receiver.settimeout(0.5)
+        receiver.bind(('127.0.0.1', 0))
+        sender.sendto(b'x', receiver.getsockname())
+        require(receiver.recv(1) == b'x', 'private loopback is not operational')
+    try:
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    except OSError as error:
+        require(error.errno in (errno.EPERM, errno.EACCES, errno.EAFNOSUPPORT, errno.EPROTONOSUPPORT),
+                'could not verify IPv6 socket restriction')
+    else:
         sock.close()
-        raise ValueError('IP socket creation is not restricted')
+        raise ValueError('IPv6 socket creation is not restricted')
     soft, hard = resource.getrlimit(resource.RLIMIT_FSIZE)
     require(0 < soft <= args.file_bytes and 0 < hard <= args.file_bytes, 'file-size limit missing')
     require(os.environ.get('TMPDIR') == args.tmp_path and Path(args.tmp_path).is_absolute(), 'temporary directory mismatch')

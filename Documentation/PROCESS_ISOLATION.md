@@ -75,7 +75,7 @@ sudo -n /usr/bin/python3 -I /usr/libexec/swiftmd/run-linux-systemd.py \
 ```
 
 The launcher starts a uniquely named transient service as a dynamic unprivileged
-user, in a private network namespace, with IP socket creation restricted,
+user, in a private network namespace, with IPv6 socket creation restricted,
 read-only system and cgroup mounts, protected home directories, and no effective
 capabilities or new privileges. systemd applies cgroup-v2 memory, swap and task
 limits, a service deadline and control-group termination, plus per-file and
@@ -83,7 +83,11 @@ temporary-filesystem size limits. The service's `TMPDIR` is a dedicated bounded
 tmpfs under `/run`; `/tmp` and `/var/tmp` are inaccessible. It clears Node and dynamic-loader override
 variables. The inner guard verifies the actual cgroup, limits, mount modes,
 UID, privilege flags, IP socket restriction and temporary quotas **before** it
-executes the worker; missing controls fail closed. The stream supervisor provides
+executes the worker; missing controls fail closed. The guard checks that the
+namespace differs from the system manager's and has only `lo`; IPv4 loopback is
+permitted because [Linux Foundation uses it for internal process wakeups](https://github.com/swiftlang/swift-corelibs-foundation/blob/main/Sources/CoreFoundation/CFSocket.c).
+The
+stream supervisor provides
 the bounded stdin/stdout/stderr contract above. A worker's arguments are sent to
 the guard as structured data; document input remains on stdin.
 

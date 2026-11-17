@@ -87,7 +87,7 @@ def launch(args, encoded, supervisor, guard, work):
     unit = 'swiftmd-' + uuid.uuid4().hex + '.service'
     properties = (
         'DynamicUser=yes', 'NoNewPrivileges=yes', 'CapabilityBoundingSet=',
-        'PrivateNetwork=yes', 'RestrictAddressFamilies=AF_UNIX',
+        'PrivateNetwork=yes', 'RestrictAddressFamilies=AF_UNIX AF_INET',
         'ProtectSystem=strict', 'ProtectHome=yes', 'ProtectControlGroups=yes',
         'PrivateDevices=yes', 'RestrictNamespaces=yes',
         'MemoryAccounting=yes', f'MemoryMax={args.memory_mib}M', 'MemorySwapMax=0',
@@ -105,7 +105,8 @@ def launch(args, encoded, supervisor, guard, work):
     systemd.extend(('--', '/usr/bin/python3', '-I', str(guard), '--unit', unit,
                     '--memory-bytes', str(args.memory_mib * 1024 * 1024), '--tasks', str(args.tasks),
                     '--file-bytes', str(args.file_mib * 1024 * 1024),
-                    '--tmp-bytes', str(args.tmp_mib * 1024 * 1024), '--tmp-path', work, '--command', encoded))
+                    '--tmp-bytes', str(args.tmp_mib * 1024 * 1024), '--tmp-path', work,
+                    '--host-net-inode', str(os.stat('/proc/1/ns/net').st_ino), '--command', encoded))
     wrapped = ['/usr/bin/python3', '-I', str(supervisor), '--seconds', str(args.seconds + 10),
                '--memory-mib', '8192', '--file-mib', '4096', '--input-bytes', str(args.input_bytes),
                '--output-bytes', str(args.output_bytes), '--error-bytes', str(args.error_bytes), '--', *systemd]

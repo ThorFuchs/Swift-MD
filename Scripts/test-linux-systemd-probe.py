@@ -20,13 +20,14 @@ def run(code, seconds=10):
     with tempfile.TemporaryDirectory(prefix='swiftmd-probe-', dir='/run') as work:
         properties = (
             'DynamicUser=yes', 'NoNewPrivileges=yes', 'CapabilityBoundingSet=',
-            'PrivateNetwork=yes', 'RestrictAddressFamilies=AF_UNIX',
+            'PrivateNetwork=yes', 'RestrictAddressFamilies=AF_UNIX AF_INET',
             'ProtectSystem=strict', 'ProtectHome=yes', 'ProtectControlGroups=yes',
             'PrivateDevices=yes', 'RestrictNamespaces=yes',
             'MemoryAccounting=yes', 'MemoryMax=128M', 'MemorySwapMax=0',
             'TasksAccounting=yes', 'TasksMax=64', 'LimitFSIZE=8M',
             f'TemporaryFileSystem={work}:rw,nosuid,nodev,size=32M,mode=1777',
             'InaccessiblePaths=/tmp /var/tmp', f'Environment=TMPDIR={work}',
+            f'Environment=SWIFTMD_HOST_NET_INODE={os.stat("/proc/1/ns/net").st_ino}',
             'KillMode=control-group',
             'KillSignal=SIGKILL', 'TimeoutStopSec=1s', f'RuntimeMaxSec={seconds}s',
         )
@@ -46,12 +47,17 @@ mounts={line.split()[4]:line.split()[5].split(",") for line in Path("/proc/self/
 try:
  fd=os.open(group/"cgroup.procs",os.O_WRONLY); os.close(fd); writable=True
 except OSError: writable=False
+interfaces={line.split(":",1)[0].strip() for line in Path("/proc/net/dev").read_text().splitlines() if ":" in line}
+with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as receiver, socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as sender:
+ receiver.settimeout(.5); receiver.bind(("127.0.0.1",0)); sender.sendto(b"x",receiver.getsockname()); loopback=receiver.recv(1)==b"x"
 try:
- s=socket.socket(socket.AF_INET,socket.SOCK_STREAM); s.close(); network=True
-except OSError: network=False
+ s=socket.socket(socket.AF_INET6,socket.SOCK_STREAM); s.close(); ipv6=True
+except OSError: ipv6=False
 print(json.dumps({"uid":os.getuid(),"memory":(group/"memory.max").read_text().strip(),
  "swap":(group/"memory.swap.max").read_text().strip(),"tasks":(group/"pids.max").read_text().strip(),
- "writable":writable,"network":network,"rootro":"ro" in mounts["/"],"cgro":"ro" in mounts["/sys/fs/cgroup"],
+ "writable":writable,"ipv6":ipv6,"loopback":loopback,"interfaces":sorted(interfaces),
+ "privateNet":os.stat("/proc/self/ns/net").st_ino!=int(os.environ["SWIFTMD_HOST_NET_INODE"]),
+ "rootro":"ro" in mounts["/"],"cgro":"ro" in mounts["/sys/fs/cgroup"],
  "file":resource.getrlimit(resource.RLIMIT_FSIZE)[0],
  "tmp":os.statvfs(os.environ["TMPDIR"]).f_blocks*os.statvfs(os.environ["TMPDIR"]).f_frsize,
  "tmpWritable":os.access("/tmp",os.W_OK),"vartmpWritable":os.access("/var/tmp",os.W_OK)}))'''
@@ -63,7 +69,9 @@ print(json.dumps({"uid":os.getuid(),"memory":(group/"memory.max").read_text().st
         self.assertEqual(info['swap'], '0')
         self.assertEqual(info['tasks'], '64')
         self.assertFalse(info['writable'])
-        self.assertFalse(info['network'])
+        self.assertFalse(info['ipv6'])
+        self.assertTrue(info['privateNet'] and info['loopback'])
+        self.assertEqual(info['interfaces'], ['lo'])
         self.assertTrue(info['rootro'] and info['cgro'])
         self.assertEqual(info['file'], 8 * 1024 * 1024)
         self.assertLessEqual(info['tmp'], 32 * 1024 * 1024)
