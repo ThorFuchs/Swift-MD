@@ -82,6 +82,17 @@ exhaustive review of every fixture or Git-history version. The
 specifies attribution and applicable share-alike conditions; do not infer that
 a checksum alone establishes rights in all source material.
 
+The Swift-GFM session independently traced both unchanged files in the pinned
+upstream history. `smart_punct.txt` was introduced by John MacFarlane in
+[commit 515e823](https://github.com/commonmark/cmark/commit/515e823051533a91cae322536e6926eea4c48113),
+including the example mentioned above. `regression.txt` was introduced by Nick
+Wellnhofer in [commit 848ca96](https://github.com/commonmark/cmark/commit/848ca96890db32eb98d44765886853bed626a4ee)
+and later received changes from multiple contributors. The pinned upstream
+[COPYING](https://github.com/github/cmark-gfm/blob/27d942c8b0a62d192f616e5bf3578f4b6a89e180/COPYING)
+identifies `test/spec.txt` and test software separately, without naming these
+two text files. Git attribution documents contribution history, not the rights
+chain of every example or a legal conclusion for a distribution.
+
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
 the archives. On 17 November 2026 it checked 655 installed files; all three
