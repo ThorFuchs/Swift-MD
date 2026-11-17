@@ -25,7 +25,7 @@ jobs:
       - name: Build independent cmark-gfm reference
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake
+          apt-get install -y --no-install-recommends cmake build-essential
           git clone --no-checkout https://github.com/github/cmark-gfm.git /tmp/cmark-reference
           git -C /tmp/cmark-reference checkout --detach 27d942c8b0a62d192f616e5bf3578f4b6a89e180
           cmake -S /tmp/cmark-reference -B /tmp/cmark-reference/build -DCMARK_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
