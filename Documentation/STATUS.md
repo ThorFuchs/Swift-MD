@@ -33,9 +33,10 @@ The separately preserved published GFM 0.29 HTML at `Tests/PublishedGFM` has
 17 November 2026 using the standard five-extension GFM profile and
 `allowUnsafeHTML`: 651 byte-identical, 26 different, exit status 1. This includes
 raw tagfilter differences and checkbox serialization differences, as well as
-other cases requiring separate analysis. The published examples are not the
-bundled cmark fixture suite. The output comparison is byte-based, not an
-assessment of semantic equivalence. See `Tests/PublishedGFM/README.md`.
+other cases involving renderer and parser behavior. The published examples are
+not the bundled cmark fixture suite. The output comparison is byte-based, not
+an assessment of semantic equivalence. See [the detailed case analysis](PUBLISHED_GFM_ANALYSIS.md)
+and `Tests/PublishedGFM/README.md`.
 
 ## Executed locally on 17 November 2026
 
@@ -68,8 +69,8 @@ node Scripts/test-browser.mjs
 ```
 
 Set `SWIFTMD_CHROME` to a Chromium executable on another host, and optionally
-`SWIFTMD_BROWSER_SCREENSHOT` to a local PNG path. The test requires a Node version
-with a built-in WebSocket implementation. No WASI, iOS or other architecture
+`SWIFTMD_BROWSER_SCREENSHOT` to a local PNG path. The test requires Python 3 and
+a Node version with a built-in WebSocket implementation. No WASI, iOS or other architecture
 execution is implied.
 
 Linux process-limit tests ran on the Ubuntu 24.04 ARM64 VM: Node inherited

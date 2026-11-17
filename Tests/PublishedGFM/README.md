@@ -19,3 +19,5 @@ checkbox inputs differently from cmark-gfm with this option set. Therefore
 byte differences need individual interpretation; this test does not establish
 semantic equivalence or full GFM conformance. It exits nonzero for any mismatch
 and is deliberately separate from the passing cmark fixture and C parity gate.
+Detailed case grouping, option experiments, Chromium checks and ownership are
+recorded in [the analysis](../../Documentation/PUBLISHED_GFM_ANALYSIS.md).

@@ -12,5 +12,6 @@ test -f "$SWIFTMD_KATEX/package.json" && test -f "$SWIFTMD_PELE" || { echo 'Run 
 (cd "$ROOT" && swift test -j 4)
 (cd "$ROOT/Adapters/SwiftMDBlocks" && swift test -j 4)
 (cd "$ROOT/Tools/SwiftMDCLI" && swift build -j 4)
+python3 "$ROOT/Scripts/analyze-published-gfm.py" --reference "$SWIFTMD_CMARK_REFERENCE"
 python3 "$ROOT/Scripts/test-cli.py"
 if [ "$(uname -s)" = Linux ]; then python3 "$ROOT/Scripts/test-linux-limits.py"; fi

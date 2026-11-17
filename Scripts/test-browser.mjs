@@ -69,10 +69,20 @@ try {
   await send('Emulation.setScriptExecutionDisabled', {value: true});
   await send('Page.navigate', {url: pathToFileURL(file).href});
   await Promise.race([loaded, new Promise((_, reject) => { const timer = setTimeout(() => reject(Error('page load timeout')), 10000); timer.unref(); })]);
+  const gfmCases = JSON.parse(execFileSync('python3', [join(root, 'Scripts/analyze-published-gfm.py'), '--browser-cases'], {encoding:'utf8', env:{...process.env, SWIFTMD_CLI:cli}}));
   const expression = `(() => {
     const math = document.querySelector('math'); const svgs = [...document.querySelectorAll('svg')];
     const box = el => { const r = el.getBoundingClientRect(); return {width:r.width,height:r.height}; };
-    return { scriptRan: window.__swiftmdPageScriptRan === true,
+    const inspect = html => {
+      const root = document.createElement('div'); root.innerHTML = html;
+      const visit = n => n.nodeType === 3 ? ['text', n.nodeValue] : n.nodeType === 8 ? ['comment', n.nodeValue] : [n.localName, [...n.attributes].map(a => [a.name, a.value]).sort((a,b) => a[0].localeCompare(b[0])), [...n.childNodes].map(visit)];
+      return {tree:[...root.childNodes].map(visit), text:root.textContent};
+    };
+    const gfm = ${JSON.stringify(gfmCases)}.map(({number, expected, actual}) => {
+      const e = inspect(expected), a = inspect(actual);
+      return {number, sameDOM:JSON.stringify(e.tree) === JSON.stringify(a.tree), expectedText:e.text, actualText:a.text};
+    });
+    return { scriptRan: window.__swiftmdPageScriptRan === true, gfm,
       math: math && {namespace:math.namespaceURI, box:box(math), text:math.textContent},
       svgs: svgs.map(s => ({namespace:s.namespaceURI, viewBox:s.getAttribute('viewBox'), id:s.id, labelledby:s.getAttribute('aria-labelledby'), describedby:s.getAttribute('aria-describedby'), title:s.querySelector('title')?.textContent, desc:s.querySelector('desc')?.textContent, box:box(s), geometry:s.querySelector('path')?.getBBox().width, text:s.textContent})),
       table:!!document.querySelector('table'), highlighted:!!document.querySelector('.hljs-keyword'),
@@ -82,6 +92,8 @@ try {
   if (evaluation.exceptionDetails || !evaluation.result.value) throw Error('DOM inspection failed: ' + JSON.stringify(evaluation));
   const report = evaluation.result.value;
   report.networkRequests = networkRequests;
+  const expectedGfm = new Map([[279, true], [280, true], [649, false], [650, false]]);
+  if (report.gfm.length !== expectedGfm.size || report.gfm.some(c => c.sameDOM !== expectedGfm.get(c.number))) throw Error('Unexpected GFM browser DOM comparison: ' + JSON.stringify(report.gfm));
   if (networkRequests.some(url => url !== pathToFileURL(file).href)) throw Error('Unexpected browser request: ' + JSON.stringify(networkRequests));
   if (report.scriptRan || report.scriptsInOutput || !report.table || !report.highlighted || report.math?.namespace !== 'http://www.w3.org/1998/Math/MathML' || report.math.box.width <= 0 || report.math.box.height <= 0 || report.svgs.length !== 2 || report.svgs.some(s => s.namespace !== 'http://www.w3.org/2000/svg' || !s.viewBox || s.box.width <= 0 || s.box.height <= 0 || !s.geometry || s.labelledby !== s.id + '-title' || s.describedby !== s.id + '-desc' || s.title !== 'Example diagram' || s.desc !== 'Two connected nodes' || !s.text.includes('Start') || !s.text.includes('Finish')) || report.svgs[0].id === report.svgs[1].id) throw Error('Browser assertions failed: ' + JSON.stringify(report));
   const screenshot = await send('Page.captureScreenshot', {format:'png'});
