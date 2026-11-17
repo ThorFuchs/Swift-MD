@@ -41,7 +41,8 @@ performed. Dependencies came from the pinned lockfiles;
 the private Swift-Highlight source was supplied to the VM from an isolated
 local Git mirror. This verifies Linux **aarch64**, not Linux x86_64.
 
-On macOS arm64, Swift 6.4.2 and Node 26.5.0, the 14 adapter tests also passed.
+On macOS arm64, Swift 6.4.2 and Node 26.5.0, 16 adapter tests passed after
+updating Swift-Highlight to 1.0.0.
 Chrome 157.0.8103.79 rendered a combined document with page JavaScript disabled.
 The automated test verified table and highlighting, MathML and SVG namespaces,
 `viewBox`, nonzero layout and path geometry, two distinct diagram IDs, title
@@ -61,13 +62,26 @@ Set `SWIFTMD_CHROME` to a Chromium executable on another host, and optionally
 with a built-in WebSocket implementation. No WASI, iOS or other architecture
 execution is implied.
 
+Linux process-limit tests ran on the Ubuntu 24.04 ARM64 VM: Node inherited
+`RLIMIT_AS` and `RLIMIT_FSIZE`; allocations and file writes over the configured
+per-process limits failed; and a deadline killed a worker and its ordinary
+child in the same process group. `Scripts/run-linux-constrained.sh` supplies
+these optional limits for a whole CLI worker. They do not bound aggregate
+memory, prevent descendants leaving the process group, or provide a sandbox.
+A kill can leave temporary files. The in-process Node adapters still do not
+supply these bounds themselves; stronger isolation requires cgroups and OS
+sandboxing. This helper has not been validated on macOS or Linux x86_64.
+
 Release work remains: independently review the SVG policy and process isolation,
 extend adversarial and cross-browser coverage, run other claimed platforms,
 verify the generated adapter distribution mirror with released versions and consumers,
-and run the checked-in CI on GitHub and build release packaging. Swift-Highlight is currently private
-and has no release tag; SwiftGFM has no 1.0.0 tag. Its revision requirement
+and run the checked-in CI on GitHub and build release packaging. Swift-Highlight
+1.0.0 is public at commit 326a0085c05931b868f5bff084d51eca7584aad7; its
+Linux TSan findings remain unclassified and fixture provenance still requires
+review. SwiftGFM has no 1.0.0 tag. Its revision requirement
 prevents a stable version-based SwiftPM consumer. Do not replace it with a
-version until the actual public tag and commit are verified. The CI integration job requires a repository secret granting read access to the private Swift-Highlight repository; its hosted execution is unverified. No release, tag,
+version until the actual public tag and commit are verified. The CI integration job no longer requires a private Swift-Highlight secret; its
+hosted execution for these changes is unverified. No release, tag,
 remote mirror or push is performed by this work.
 
 ## Adapter distribution generator

@@ -16,7 +16,7 @@ let package = Package(
         .package(url: "https://github.com/scinfu/SwiftSoup.git", revision: "d86f244ed497d48012782e2f59c985a55e77b3f5"),
         .package(url: "https://github.com/nicklockwood/LRUCache.git", exact: "1.3.0"),
         .package(url: "https://github.com/apple/swift-atomics.git", exact: "1.3.1"),
-        .package(url: "https://github.com/ThorFuchs/Swift-Highlight.git", revision: "be6b555fed12d15af337facfc0ca4b3d8b4ba6b5"),
+        .package(url: "https://github.com/ThorFuchs/Swift-Highlight.git", exact: "1.0.0"),
     ],
     targets: [
         .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftSoup", package: "SwiftSoup")]),

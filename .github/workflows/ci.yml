@@ -20,12 +20,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-      - name: Configure read access to private Swift-Highlight
-        env:
-          HIGHLIGHT_READ_TOKEN: ${{ secrets.SWIFT_HIGHLIGHT_READ_TOKEN }}
-        run: |
-          test -n "$HIGHLIGHT_READ_TOKEN" || { echo 'Configure Swift-Highlight read access for this private dependency.' >&2; exit 1; }
-          git config --global url."https://x-access-token:${HIGHLIGHT_READ_TOKEN}@github.com/ThorFuchs/Swift-Highlight.git".insteadOf https://github.com/ThorFuchs/Swift-Highlight.git
       - name: Install Node dependencies
         run: npm ci --ignore-scripts --prefix Tools/NodeDependencies
       - name: Build independent cmark-gfm reference

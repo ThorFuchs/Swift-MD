@@ -44,9 +44,13 @@ syntax and inline math are not implemented: SwiftGFM parses those as ordinary
 Markdown, so adding them correctly requires parser integration. `--unsafe-html`
 explicitly enables raw HTML and unsafe links; neither it nor ordinary rendering
 is a sanitizer. Extension renderers and host CSS are separate trust boundaries.
-No hard process time, memory, or output-during-execution limit is enforced.
+The Node adapters themselves enforce no hard process time, memory or live
+output limit. Linux deployments can opt into the constrained worker described
+in the adapter documentation; it is not a sandbox.
 
-Run `Scripts/test-all.sh` after installing the pinned npm packages. The optional
+Run `Scripts/test-all.sh` after installing the pinned npm packages and setting
+`SWIFTMD_CMARK_REFERENCE` to the independently built pinned C executable; the
+integration gate fails if it or a real renderer is missing. The optional
 `node Scripts/test-browser.mjs` verifies a generated page in local Chromium with
 page JavaScript disabled. More precise
 coverage, known limitations, dependency provenance and release blockers are in

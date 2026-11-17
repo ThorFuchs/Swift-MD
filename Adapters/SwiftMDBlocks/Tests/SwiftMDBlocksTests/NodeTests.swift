@@ -73,6 +73,30 @@ final class NodeTests: XCTestCase {
             XCTAssertTrue(result.html.contains("<desc id=\"page-\(index)-desc\">Two nodes</desc>"))
         }
     }
+    func testSeparatelyRenderedPagesHaveDistinctNamespaces() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let node = env["SWIFTMD_NODE"], let pele = env["SWIFTMD_PELE"] else { throw XCTSkip("Set real renderer paths") }
+        let source = "```mermaid\nflowchart LR\naccTitle: Diagram\nA-->B\n```\n"
+        let first = try BlockCompiler(renderers: [PeleNodeRenderer(node: node, module: pele, prefix: "document-one")]).render(source)
+        let second = try BlockCompiler(renderers: [PeleNodeRenderer(node: node, module: pele, prefix: "document-two")]).render(source)
+        XCTAssertTrue(first.diagnostics.isEmpty && second.diagnostics.isEmpty)
+        XCTAssertTrue(first.html.contains("id=\"document-one-0\""))
+        XCTAssertTrue(second.html.contains("id=\"document-two-0\""))
+        XCTAssertTrue(first.html.contains("aria-labelledby=\"document-one-0-title\""))
+        XCTAssertTrue(second.html.contains("aria-labelledby=\"document-two-0-title\""))
+        XCTAssertFalse(first.html.contains("document-two-0"))
+        XCTAssertFalse(second.html.contains("document-one-0"))
+    }
+    func testInputAndPostExitOutputLimits() throws {
+        let (math, diagram) = try renderers()
+        let huge = String(repeating: "x", count: 16_385)
+        XCTAssertThrowsError(try math.render(literal: huge, language: "math", index: 0))
+        XCTAssertThrowsError(try diagram.render(literal: huge, language: "mermaid", index: 0))
+        let node = try XCTUnwrap(ProcessInfo.processInfo.environment["SWIFTMD_NODE"])
+        let accepted = try NodeProcess.run(node: node, script: "process.stdout.write('a'.repeat(2000000))", request: [:])
+        XCTAssertEqual(accepted.utf8.count, 2_000_000)
+        XCTAssertThrowsError(try NodeProcess.run(node: node, script: "process.stdout.write('a'.repeat(2000001))", request: [:]))
+    }
     func testPeleDisablesExternalLinksAndImages() throws {
         let (_, diagram) = try renderers()
         let input = "flowchart LR\nA[Click] --> B[Target]\nclick A \"https://evil.test\""

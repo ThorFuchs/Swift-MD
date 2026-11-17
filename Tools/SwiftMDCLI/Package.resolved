@@ -32,7 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ThorFuchs/Swift-Highlight.git",
       "state" : {
-        "revision" : "be6b555fed12d15af337facfc0ca4b3d8b4ba6b5"
+        "revision" : "326a0085c05931b868f5bff084d51eca7584aad7",
+        "version" : "1.0.0"
       }
     },
     {

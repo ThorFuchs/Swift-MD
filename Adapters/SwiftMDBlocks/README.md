@@ -30,9 +30,15 @@ or a security audit; host CSS and raw HTML remain separate trust boundaries.
 
 The Node executable and module path are trusted configuration. Both adapters
 reject input above 16,384 UTF-8 bytes and check output size after process exit.
-They do **not** enforce a hard time, memory, disk or live output limit. Run them
-in an appropriately constrained worker when handling untrusted material.
+They do **not** themselves enforce a hard time, memory, disk or live output limit.
+On Linux, `Scripts/run-linux-constrained.sh` is an optional outer worker: GNU
+`timeout` kills the process group at a deadline and `prlimit` applies address-space
+and individual file-size limits to each process. This limits the CLI and its Node
+children, not their aggregate memory, and descendants that leave the process group
+can escape the timeout. It is not a sandbox. V8 reserves virtual address space,
+so too-small address-space limits can prevent Node from starting. Use cgroups and
+an OS sandbox for aggregate memory and stronger isolation.
 The optional package currently resolves Swift-Highlight even for other products;
-the root Core package avoids that dependency. It requires private Swift-Highlight
-access at the pinned revision. SwiftPM remote adapter distribution is not yet
+the root Core package avoids that dependency. Swift-Highlight is pinned to its
+public 1.0.0 tag (commit 326a0085c05931b868f5bff084d51eca7584aad7). SwiftPM remote adapter distribution is not yet
 available. No `$$` or inline mathematics is implemented.

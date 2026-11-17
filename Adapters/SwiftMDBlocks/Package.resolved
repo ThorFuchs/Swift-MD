@@ -1,5 +1,5 @@
 {
-  "originHash" : "237cee58a279cf165a4ed297c09b2faf6298643a9ea068685339e0980fbf0ee8",
+  "originHash" : "ad7962269cc067501258e13d209bbfd83dc675015d1783041df46f7a3d7725b3",
   "pins" : [
     {
       "identity" : "lrucache",
@@ -32,7 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ThorFuchs/Swift-Highlight.git",
       "state" : {
-        "revision" : "be6b555fed12d15af337facfc0ca4b3d8b4ba6b5"
+        "revision" : "326a0085c05931b868f5bff084d51eca7584aad7",
+        "version" : "1.0.0"
       }
     },
     {
@@ -40,7 +41,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scinfu/SwiftSoup.git",
       "state" : {
-        "branch" : "0a1cd58aec8774d4110b2ceb8971061eac964efd",
         "revision" : "d86f244ed497d48012782e2f59c985a55e77b3f5"
       }
     }
