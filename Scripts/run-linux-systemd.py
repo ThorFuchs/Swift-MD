@@ -10,6 +10,7 @@ import signal
 import stat
 import subprocess
 import sys
+import tempfile
 import uuid
 
 HERE = Path(__file__).resolve().parent
@@ -78,6 +79,11 @@ def main():
     root_controlled(Path(__file__))
     supervisor = root_controlled(HERE / 'run-linux-supervised.py')
     guard = root_controlled(HERE / 'systemd-worker-guard.py')
+    with tempfile.TemporaryDirectory(prefix='swiftmd-worker-', dir='/run') as work:
+        return launch(args, encoded, supervisor, guard, work)
+
+
+def launch(args, encoded, supervisor, guard, work):
     unit = 'swiftmd-' + uuid.uuid4().hex + '.service'
     properties = (
         'DynamicUser=yes', 'NoNewPrivileges=yes', 'CapabilityBoundingSet=',
@@ -86,8 +92,8 @@ def main():
         'PrivateDevices=yes', 'RestrictNamespaces=yes',
         'MemoryAccounting=yes', f'MemoryMax={args.memory_mib}M', 'MemorySwapMax=0',
         'TasksAccounting=yes', f'TasksMax={args.tasks}', f'LimitFSIZE={args.file_mib}M',
-        f'TemporaryFileSystem=/tmp:rw,nosuid,nodev,size={args.tmp_mib}M',
-        f'TemporaryFileSystem=/var/tmp:rw,nosuid,nodev,size={args.tmp_mib}M',
+        f'TemporaryFileSystem={work}:rw,nosuid,nodev,size={args.tmp_mib}M,mode=1777',
+        'InaccessiblePaths=/tmp /var/tmp', f'Environment=TMPDIR={work}',
         'UnsetEnvironment=NODE_OPTIONS NODE_PATH LD_PRELOAD LD_LIBRARY_PATH',
         'KillMode=control-group', 'KillSignal=SIGKILL', 'TimeoutStopSec=1s',
         f'TimeoutStartSec={args.seconds}s', f'RuntimeMaxSec={args.seconds}s',
@@ -99,7 +105,7 @@ def main():
     systemd.extend(('--', '/usr/bin/python3', '-I', str(guard), '--unit', unit,
                     '--memory-bytes', str(args.memory_mib * 1024 * 1024), '--tasks', str(args.tasks),
                     '--file-bytes', str(args.file_mib * 1024 * 1024),
-                    '--tmp-bytes', str(args.tmp_mib * 1024 * 1024), '--command', encoded))
+                    '--tmp-bytes', str(args.tmp_mib * 1024 * 1024), '--tmp-path', work, '--command', encoded))
     wrapped = ['/usr/bin/python3', '-I', str(supervisor), '--seconds', str(args.seconds + 10),
                '--memory-mib', '8192', '--file-mib', '4096', '--input-bytes', str(args.input_bytes),
                '--output-bytes', str(args.output_bytes), '--error-bytes', str(args.error_bytes), '--', *systemd]

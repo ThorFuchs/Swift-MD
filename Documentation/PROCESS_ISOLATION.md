@@ -79,7 +79,8 @@ user, in a private network namespace, with IP socket creation restricted,
 read-only system and cgroup mounts, protected home directories, and no effective
 capabilities or new privileges. systemd applies cgroup-v2 memory, swap and task
 limits, a service deadline and control-group termination, plus per-file and
-temporary-filesystem size limits. It clears Node and dynamic-loader override
+temporary-filesystem size limits. The service's `TMPDIR` is a dedicated bounded
+tmpfs under `/run`; `/tmp` and `/var/tmp` are inaccessible. It clears Node and dynamic-loader override
 variables. The inner guard verifies the actual cgroup, limits, mount modes,
 UID, privilege flags, IP socket restriction and temporary quotas **before** it
 executes the worker; missing controls fail closed. The stream supervisor provides
@@ -90,8 +91,8 @@ This profile still requires a trustworthy host, systemd and kernel, and is not
 an independent security certification. Read-only, world-readable host files
 outside protected home directories may still be visible; AF_UNIX sockets and
 other host interfaces are not a complete IPC policy. The worker shares the host
-kernel. File-size limits are per file, and `/tmp` and `/var/tmp` have separate
-quotas; assess other writable kernel interfaces and deployment-specific paths.
+kernel. File-size limits are per file; assess other writable kernel interfaces
+and deployment-specific paths.
 A service started immediately before an uncatchable launcher kill may live until
 its own systemd deadline. Uninterruptible kernel work can delay termination.
 Do not use worker file input or `--output` when depending on the stream bounds.

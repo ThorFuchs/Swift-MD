@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
 
@@ -16,23 +17,24 @@ SYSTEMD = '/usr/bin/systemd-run'
 
 
 def run(code, seconds=10):
-    properties = (
-        'DynamicUser=yes', 'NoNewPrivileges=yes', 'CapabilityBoundingSet=',
-        'PrivateNetwork=yes', 'RestrictAddressFamilies=AF_UNIX',
-        'ProtectSystem=strict', 'ProtectHome=yes', 'ProtectControlGroups=yes',
-        'PrivateDevices=yes', 'RestrictNamespaces=yes',
-        'MemoryAccounting=yes', 'MemoryMax=128M', 'MemorySwapMax=0',
-        'TasksAccounting=yes', 'TasksMax=64', 'LimitFSIZE=8M',
-        'TemporaryFileSystem=/tmp:rw,nosuid,nodev,size=32M',
-        'TemporaryFileSystem=/var/tmp:rw,nosuid,nodev,size=32M',
-        'KillMode=control-group',
-        'KillSignal=SIGKILL', 'TimeoutStopSec=1s', f'RuntimeMaxSec={seconds}s',
-    )
-    command = [SYSTEMD, '--system', '--quiet', '--wait', '--pipe', '--collect', '--service-type=exec']
-    for item in properties:
-        command.extend(('--property', item))
-    return subprocess.run([*command, '--', '/usr/bin/python3', '-c', code],
-                          input=b'', capture_output=True, timeout=seconds + 15)
+    with tempfile.TemporaryDirectory(prefix='swiftmd-probe-', dir='/run') as work:
+        properties = (
+            'DynamicUser=yes', 'NoNewPrivileges=yes', 'CapabilityBoundingSet=',
+            'PrivateNetwork=yes', 'RestrictAddressFamilies=AF_UNIX',
+            'ProtectSystem=strict', 'ProtectHome=yes', 'ProtectControlGroups=yes',
+            'PrivateDevices=yes', 'RestrictNamespaces=yes',
+            'MemoryAccounting=yes', 'MemoryMax=128M', 'MemorySwapMax=0',
+            'TasksAccounting=yes', 'TasksMax=64', 'LimitFSIZE=8M',
+            f'TemporaryFileSystem={work}:rw,nosuid,nodev,size=32M,mode=1777',
+            'InaccessiblePaths=/tmp /var/tmp', f'Environment=TMPDIR={work}',
+            'KillMode=control-group',
+            'KillSignal=SIGKILL', 'TimeoutStopSec=1s', f'RuntimeMaxSec={seconds}s',
+        )
+        command = [SYSTEMD, '--system', '--quiet', '--wait', '--pipe', '--collect', '--service-type=exec']
+        for item in properties:
+            command.extend(('--property', item))
+        return subprocess.run([*command, '--', '/usr/bin/python3', '-c', code],
+                              input=b'', capture_output=True, timeout=seconds + 15)
 
 
 class SystemdProbe(unittest.TestCase):
@@ -51,8 +53,8 @@ print(json.dumps({"uid":os.getuid(),"memory":(group/"memory.max").read_text().st
  "swap":(group/"memory.swap.max").read_text().strip(),"tasks":(group/"pids.max").read_text().strip(),
  "writable":writable,"network":network,"rootro":"ro" in mounts["/"],"cgro":"ro" in mounts["/sys/fs/cgroup"],
  "file":resource.getrlimit(resource.RLIMIT_FSIZE)[0],
- "tmp":os.statvfs("/tmp").f_blocks*os.statvfs("/tmp").f_frsize,
- "vartmp":os.statvfs("/var/tmp").f_blocks*os.statvfs("/var/tmp").f_frsize}))'''
+ "tmp":os.statvfs(os.environ["TMPDIR"]).f_blocks*os.statvfs(os.environ["TMPDIR"]).f_frsize,
+ "tmpWritable":os.access("/tmp",os.W_OK),"vartmpWritable":os.access("/var/tmp",os.W_OK)}))'''
         result = run(code)
         self.assertEqual(result.returncode, 0, result.stderr)
         info = json.loads(result.stdout)
@@ -65,7 +67,7 @@ print(json.dumps({"uid":os.getuid(),"memory":(group/"memory.max").read_text().st
         self.assertTrue(info['rootro'] and info['cgro'])
         self.assertEqual(info['file'], 8 * 1024 * 1024)
         self.assertLessEqual(info['tmp'], 32 * 1024 * 1024)
-        self.assertLessEqual(info['vartmp'], 32 * 1024 * 1024)
+        self.assertFalse(info['tmpWritable'] or info['vartmpWritable'])
 
     def test_cgroup_kills_new_session_descendant(self):
         code = '''import os,time

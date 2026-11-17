@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--tasks', required=True, type=int)
     parser.add_argument('--file-bytes', required=True, type=int)
     parser.add_argument('--tmp-bytes', required=True, type=int)
+    parser.add_argument('--tmp-path', required=True)
     parser.add_argument('--command', required=True)
     args = parser.parse_args()
     require(bool(sys.flags.isolated), 'Python isolated mode is required')
@@ -73,9 +74,11 @@ def main():
         raise ValueError('IP socket creation is not restricted')
     soft, hard = resource.getrlimit(resource.RLIMIT_FSIZE)
     require(0 < soft <= args.file_bytes and 0 < hard <= args.file_bytes, 'file-size limit missing')
-    for directory in ('/tmp', '/var/tmp'):
-        filesystem = os.statvfs(directory)
-        require(0 < filesystem.f_blocks * filesystem.f_frsize <= args.tmp_bytes, f'{directory} quota missing')
+    require(os.environ.get('TMPDIR') == args.tmp_path and Path(args.tmp_path).is_absolute(), 'temporary directory mismatch')
+    filesystem = os.statvfs(args.tmp_path)
+    require(0 < filesystem.f_blocks * filesystem.f_frsize <= args.tmp_bytes, 'temporary filesystem quota missing')
+    require(not os.access('/tmp', os.W_OK) and not os.access('/var/tmp', os.W_OK),
+            'unbounded temporary directory is writable')
     os.execv(command[0], command)
 
 

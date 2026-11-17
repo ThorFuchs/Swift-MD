@@ -37,7 +37,8 @@ class SystemdWorker(unittest.TestCase):
             encoded = base64.b64encode(json.dumps(['/usr/bin/touch', str(marker)]).encode()).decode()
             result = subprocess.run(['/usr/bin/python3', '-I', str(INSTALL / 'systemd-worker-guard.py'),
                                      '--unit', 'test.service', '--memory-bytes', '1024', '--tasks', '16',
-                                     '--file-bytes', '1024', '--tmp-bytes', '1024', '--command', encoded],
+                                     '--file-bytes', '1024', '--tmp-bytes', '1024', '--tmp-path', '/run/none',
+                                     '--command', encoded],
                                     capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 125)
             self.assertIn(b'must not run as root', result.stderr)
@@ -99,16 +100,16 @@ time.sleep(20)'''
             self.fail(f'detached child {child} remained alive after the service stopped')
 
     def test_individual_file_limit(self):
-        code = 'import sys;sys.stdin.buffer.read();open("/tmp/large","wb").write(b"x"*(2*1024*1024))'
+        code = 'import os,sys;sys.stdin.buffer.read();open(os.path.join(os.environ["TMPDIR"],"large"),"wb").write(b"x"*(2*1024*1024))'
         result = run('/usr/bin/python3', '-c', code, file_mib=1)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b'')
 
     def test_private_tmp_has_a_real_filesystem_quota(self):
-        code = '''import sys
+        code = '''import os,sys
 sys.stdin.buffer.read()
 try:
- with open("/tmp/bulk","wb") as f:
+ with open(os.path.join(os.environ["TMPDIR"],"bulk"),"wb") as f:
   for _ in range(40): f.write(b"x"*(1024*1024))
 except OSError as error:
  print("ERRNO:",error.errno,file=sys.stderr);sys.exit(9)
