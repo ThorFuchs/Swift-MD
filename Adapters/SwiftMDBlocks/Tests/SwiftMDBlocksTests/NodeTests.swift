@@ -124,6 +124,7 @@ final class NodeTests: XCTestCase {
     func testSVGRejectsDangerousContent() throws {
         let start = "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"page-0\" viewBox=\"0 0 10 10\">"
         XCTAssertNoThrow(try ValidatedSVG(start + "<text>hello</text></svg>", expectedID: "page-0"))
+        XCTAssertNoThrow(try ValidatedSVG(start.replacingOccurrences(of: "viewBox=", with: "aria-label=\"a > b\" viewBox=") + "</svg>", expectedID: "page-0"))
         let attacks = ["<script>alert(1)</script>", "<foreignObject><div>bad</div></foreignObject>", "<animate attributeName=\"x\"/>", "<use href=\"#page-0\"/>", "<image href=\"https://evil.test/a\"/>", "<a href=\"javascript:alert(1)\"><text>x</text></a>", "<rect onload=\"alert(1)\"/>", "<rect style=\"fill:url(https://evil.test)\"/>", "<rect style=\"fill:u\\72l(https://evil.test)\"/>", "<g id=\"page-0\"/>", "<g xmlns=\"http://www.w3.org/1999/xhtml\"/>", "<svg viewBox=\"0 0 1 1\"/>", "<path fill=\"url(#other)\"/>",
                        "<path fill=\"&#117;rl(https://evil.test/a)\"/>",
                        "<path fill=\"u/**/rl(https://evil.test/a)\"/>",
@@ -145,6 +146,9 @@ final class NodeTests: XCTestCase {
         XCTAssertThrowsError(try ValidatedSVG("<!DOCTYPE svg [<!ENTITY x SYSTEM 'file:///etc/passwd'>]>" + start + "&x;</svg>", expectedID: "page-0"))
         XCTAssertThrowsError(try ValidatedSVG(start + "<![CDATA[<script>]]></svg>", expectedID: "page-0"))
         XCTAssertThrowsError(try ValidatedSVG(start + "</svg><script>alert(1)</script>", expectedID: "page-0"))
+        XCTAssertThrowsError(try ValidatedSVG(start + "</svg><script>alert(1)</script>" + start + "</svg>", expectedID: "page-0"))
+        XCTAssertThrowsError(try ValidatedSVG(start + "</svg>trailing text", expectedID: "page-0"))
+        XCTAssertThrowsError(try ValidatedSVG(String(start.dropLast()) + "/><script>alert(1)</script></svg>", expectedID: "page-0"))
         XCTAssertThrowsError(try ValidatedSVG(start + "<path xmlns:xlink=\"http://www.w3.org/1999/xlink\" xlink:href=\"https://evil.test/a\"/></svg>", expectedID: "page-0"))
     }
 }

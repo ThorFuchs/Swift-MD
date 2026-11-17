@@ -18,6 +18,12 @@ are inserted after HTML serialization, so attributes such as `viewBox` retain
 their original spelling. Invalid output produces a diagnostic and preserves
 the escaped original block.
 
+The root's first literal `</svg>` must terminate the entire fragment. This
+additional check is necessary because FoundationXML on the tested Linux build
+accepted a first XML root while ignoring trailing bytes. Nested SVG, comments,
+CDATA and processing instructions are separately rejected. This strict profile
+therefore also rejects trailing whitespace and self-closing SVG roots.
+
 The validator has an intentionally narrow allowlist, not a general SVG
 sanitizer. It permits selected `var(...)` values required by Pele. CSS custom
 properties and classes can depend on **host CSS**, which may alter rendering
