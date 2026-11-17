@@ -17,18 +17,21 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 swift build --package-path "$ROOT/Tools/SwiftMDCLI" -c release -j "${SWIFTMD_JOBS:-2}" -Xswiftc -no-whole-module-optimization --static-swift-stdlib --disable-automatic-resolution
 binpath=$(swift build --package-path "$ROOT/Tools/SwiftMDCLI" -c release --show-bin-path)
-mkdir -p "$tmp/SwiftMD/bin" "$tmp/SwiftMD/licenses" "$tmp/SwiftMD/node-dependencies"
+mkdir -p "$tmp/SwiftMD/bin" "$tmp/SwiftMD/licenses" "$tmp/SwiftMD/node-dependencies" "$tmp/SwiftMD/isolation"
 cp "$binpath/swift-md" "$tmp/SwiftMD/bin/swift-md"
 cp "$ROOT/LICENSE" "$tmp/SwiftMD/licenses/SwiftMD-Apache-2.0.txt"
 cp "$swift_license" "$tmp/SwiftMD/licenses/Swift-runtime-LICENSE.txt"
 cp "$ROOT"/ThirdPartyLicenses/* "$tmp/SwiftMD/licenses/"
 cp "$ROOT/Tools/NodeDependencies/package.json" "$ROOT/Tools/NodeDependencies/package-lock.json" "$tmp/SwiftMD/node-dependencies/"
+cp "$ROOT/Scripts/run-linux-constrained.sh" "$ROOT/Scripts/run-linux-supervised.py" "$ROOT/Scripts/run-linux-systemd.py" "$ROOT/Scripts/systemd-worker-guard.py" "$ROOT/Documentation/PROCESS_ISOLATION.md" "$tmp/SwiftMD/isolation/"
 cat > "$tmp/SwiftMD/README.txt" <<'TEXT'
 LOCAL RELEASE CANDIDATE — NOT A PUBLISHED RELEASE
 The executable is built with --static-swift-stdlib but still needs system
 libraries. Inspect SYSTEM-LIBRARIES.txt on the target. Node and npm packages
 are not bundled. Install the locked packages in node-dependencies with
 `npm ci --ignore-scripts`, and supply trusted absolute executable/module paths.
+Optional Linux worker scripts are under isolation/; the systemd profile requires
+a separately configured root-owned installation and suitable systemd/cgroups.
 Read the retained licenses and notices before distribution. This archive does
 not certify security, GFM conformance, or compatibility with other platforms.
 TEXT

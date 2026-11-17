@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PATHS = ['Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests',
          'Adapters/SwiftMDBlocks/README.md', 'Tools/SwiftMDCLI/Sources',
          'Tools/NodeDependencies/package.json', 'Tools/NodeDependencies/package-lock.json',
+         'Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
+         'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
+         'Documentation/PROCESS_ISOLATION.md',
          'ThirdPartyLicenses', 'LICENSE']
 
 def git(*args):

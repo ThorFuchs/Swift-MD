@@ -68,6 +68,11 @@ def main():
         origin = json.loads((mirror / 'MIRROR-ORIGIN.json').read_text())
         if origin['source_commit'] != source_commit or origin['local_test_only'] is not True:
             raise ValueError('generated mirror provenance or local-test marker mismatch')
+        for relative in ('Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
+                         'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
+                         'Documentation/PROCESS_ISOLATION.md'):
+            if (mirror / relative).read_bytes() != (source / relative).read_bytes():
+                raise ValueError(f'generated mirror omitted or changed isolation file: {relative}')
         call('git', 'init', '--quiet', cwd=mirror)
         call('git', 'add', '.', cwd=mirror)
         call('git', '-c', 'user.name=SwiftMD distribution test', '-c', 'user.email=invalid@example.invalid',
