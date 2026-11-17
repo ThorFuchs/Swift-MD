@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -113,6 +114,75 @@ time.sleep(20)'''
             time.sleep(0.1)
         else:
             self.fail(f'detached child {child} remained alive after the service stopped')
+
+    def test_interrupted_launcher_stops_service_and_detached_child(self):
+        def units():
+            result = subprocess.run(['/usr/bin/systemctl', 'list-units', '--all', '--plain',
+                                     '--no-legend', 'swiftmd-*.service'],
+                                    capture_output=True, text=True, check=True)
+            return set(re.findall(r'swiftmd-[0-9a-f]{32}\.service', result.stdout))
+
+        before = units()
+        code = '''import os,sys,time
+sys.stdin.buffer.read()
+if os.fork()==0:
+ os.setsid();time.sleep(20);os._exit(0)
+time.sleep(20)'''
+        process = subprocess.Popen(command('/usr/bin/python3', '-c', code, seconds=20),
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        unit = None
+        pids = []
+        try:
+            process.stdin.close()
+            for _ in range(160):
+                new = units() - before
+                if len(new) == 1:
+                    unit = new.pop()
+                    group = subprocess.run(['/usr/bin/systemctl', 'show', unit, '--property=ControlGroup', '--value'],
+                                           capture_output=True, text=True, check=True).stdout.strip()
+                    try:
+                        pids = [int(pid) for pid in (Path('/sys/fs/cgroup') / group.lstrip('/') / 'cgroup.procs').read_text().split()]
+                    except FileNotFoundError:
+                        pids = []
+                    if len(pids) >= 2:
+                        break
+                self.assertIsNone(process.poll(), 'launcher exited before starting worker')
+                time.sleep(0.05)
+            self.assertGreaterEqual(len(pids), 2, 'worker and detached child did not start')
+            process.send_signal(signal.SIGTERM)
+            self.assertEqual(process.wait(timeout=12), 128 + signal.SIGTERM)
+            self.assertEqual(process.stdout.read(), b'')
+            for _ in range(80):
+                active = subprocess.run(['/usr/bin/systemctl', 'is-active', '--quiet', unit]).returncode == 0
+                live = []
+                for pid in pids:
+                    try:
+                        status = Path(f'/proc/{pid}/status').read_text()
+                    except FileNotFoundError:
+                        continue
+                    if not any(line.startswith('State:') and 'Z' in line for line in status.splitlines()):
+                        live.append(pid)
+                if not active and not live:
+                    break
+                time.sleep(0.1)
+            else:
+                self.fail(f'interrupted service remained active={active}, live processes={live}')
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=5)
+            if unit:
+                subprocess.run(['/usr/bin/systemctl', 'stop', unit], capture_output=True, timeout=10)
+            process.stdout.close()
+            process.stderr.close()
+
+    def test_inherited_node_options_are_removed(self):
+        env = os.environ.copy()
+        env['NODE_OPTIONS'] = '--require=/nonexistent-swiftmd-module'
+        code = 'process.stdin.resume();process.stdin.on("end",()=>console.log(process.env.NODE_OPTIONS ?? "unset"))'
+        result = subprocess.run(command(NODE, '-e', code), input=b'', capture_output=True, timeout=45, env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b'unset\n')
 
     def test_individual_file_limit(self):
         code = 'import os,sys;sys.stdin.buffer.read();open(os.path.join(os.environ["TMPDIR"],"large"),"wb").write(b"x"*(2*1024*1024))'

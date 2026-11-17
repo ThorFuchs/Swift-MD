@@ -48,6 +48,8 @@ def main():
     require(status['NoNewPrivs'].strip() == '1' and
             all(int(status[name].strip(), 16) == 0 for name in ('CapEff', 'CapPrm', 'CapInh', 'CapAmb')),
             'worker privilege restrictions are not effective')
+    require(not any(name in os.environ for name in ('NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'LD_LIBRARY_PATH')),
+            'unsafe inherited environment override')
     groups = [line[3:] for line in Path('/proc/self/cgroup').read_text().splitlines() if line.startswith('0::')]
     require(len(groups) == 1 and groups[0].endswith('/' + args.unit), 'unexpected cgroup-v2 unit')
     group = Path('/sys/fs/cgroup') / groups[0].lstrip('/')

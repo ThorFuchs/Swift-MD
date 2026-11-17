@@ -107,3 +107,11 @@ validated merely because the code loads there.
 Do not grant untrusted users unrestricted `sudo` access to this launcher: its
 root-owned implementation and permitted worker arguments remain privileged
 configuration even though the worker itself runs unprivileged.
+
+On 2026-11-17, GitHub Actions run `44174154572` tested commit `36b6f6e` on
+an `ubuntu-24.04` x86_64 hosted runner with systemd and cgroup v2. Its worker
+job passed 12 stream-supervisor tests, three systemd isolation probes and eight
+installed-worker tests, including the CLI with real Swift-Highlight, KaTeX and
+Pele. The same run passed the core and Linux integration jobs. This evidence
+applies to that runner and commit; it is not a security audit or evidence for
+other hosts.

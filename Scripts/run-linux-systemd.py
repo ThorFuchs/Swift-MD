@@ -129,15 +129,17 @@ def launch(args, encoded, supervisor, guard, work):
         result = child.wait()
         return result if result >= 0 else 128 - result
     finally:
-        if child is not None and child.poll() is None:
-            child.terminate()
-            try:
-                child.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait(timeout=1)
-        if unit_may_exist:
-            stop_unit(unit)
+        try:
+            if child is not None and child.poll() is None:
+                child.terminate()
+                try:
+                    child.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait(timeout=1)
+        finally:
+            if unit_may_exist:
+                stop_unit(unit)
 
 
 if __name__ == '__main__':
