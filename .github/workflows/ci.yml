@@ -25,6 +25,8 @@ jobs:
             LinuxSupervisor.test_deadline_includes_slow_stdin \
             LinuxSupervisor.test_deadline_includes_stalled_output_delivery \
             LinuxSupervisor.test_sigterm_cleans_up_worker_group
+      - name: Probe systemd cgroup boundaries on the disposable runner
+        run: sudo -n python3 Scripts/test-linux-systemd-probe.py
   core:
     runs-on: ubuntu-latest
     container: swift:6.2.4
