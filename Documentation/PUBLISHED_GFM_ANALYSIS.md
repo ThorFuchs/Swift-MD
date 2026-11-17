@@ -56,6 +56,10 @@ alternative profile would need a precise contract, per-case option policy,
 security review and new tests before adoption. Fixture provenance and release
 licensing remain separate release-review tasks.
 
+The joint parser investigation, proposed opt-in contract and targeted acceptance
+gate are recorded in [GFM029_PROFILE.md](GFM029_PROFILE.md). No selectable
+profile or qualified alternative parser exists yet.
+
 Reproduce from the repository root after building the CLI and a **separate**
 upstream C renderer at the pinned commit:
 
