@@ -133,6 +133,35 @@ fresh local-path Core consumer and a separate generated-mirror consumer passed;
 the latter used clearly marked local synthetic SwiftGFM and SwiftMD version
 tags, not public releases. No mirror was published.
 
+## Stable dependency follow-up (17 November 2026)
+
+SwiftGFM's real annotated `1.0.0` tag object
+`8b0b2ff7b5f589280e12f5fb3a300e1bdd9abaa7` points to
+`d1c262f42daa7a06f4612a94671e10740e26d09a`, the previously tested commit.
+Swift-Highlight's public `1.0.0` tag points to
+`326a0085c05931b868f5bff084d51eca7584aad7`. All three SwiftMD manifests and
+lockfiles use those exact versions. After this change the macOS and Linux
+ARM64 gates each passed 746 fixture expectations, 747 independent C comparisons,
+16 adapter tests and seven CLI tests; Linux also passed four process-limit
+tests. Chromium passed the no-page-JavaScript test, and a real three-renderer
+Linux invocation also passed under the optional worker limits.
+
+A fresh version-based Linux Core consumer resolved the real public SwiftGFM
+1.0.0 tag and ran successfully. A generated local mirror passed 16 adapter tests;
+a separate versioned consumer resolved both actual public 1.0.0 tags and ran
+all three renderers. SwiftMD and mirror version tags in these tests were
+synthetic and existed only in disposable local repositories. No adapter mirror
+or SwiftMD version was published.
+
+The updated local archive
+`.artifacts/SwiftMD-linux-arm64-candidate-4376c35.tar.gz` was built from
+`4376c35da1fa531b2a693628e5395970515d82ef`, SHA-256
+`ede37a5d7c591ae927990c63096384a691726512ef85d4f3efba5da0ca7b293f`.
+A second fresh Ubuntu 24.04 ARM64 chroot without a Swift toolchain verified its
+checksums and passed all seven CLI tests with separately installed Node, npm
+packages and system libraries. It remains an unpublished candidate; the same
+Foundation `mktemp` linker warning and license-review limitations apply.
+
 ## Adapter distribution generator
 
 `Scripts/generate-adapter-mirror.py` exports only committed files from a clean

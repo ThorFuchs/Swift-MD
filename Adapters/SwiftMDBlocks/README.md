@@ -35,7 +35,8 @@ On Linux, `Scripts/run-linux-constrained.sh` is an optional outer worker: GNU
 `timeout` kills the process group at a deadline and `prlimit` applies address-space
 and individual file-size limits to each process. This limits the CLI and its Node
 children, not their aggregate memory, and descendants that leave the process group
-can escape the timeout. It is not a sandbox. V8 reserves virtual address space,
+can escape the timeout. A deadline kills the whole worker, so it cannot return
+block diagnostics and may leave temporary files. It is not a sandbox. V8 reserves virtual address space,
 so too-small address-space limits can prevent Node from starting. Use cgroups and
 an OS sandbox for aggregate memory and stronger isolation.
 The optional package currently resolves Swift-Highlight even for other products;
