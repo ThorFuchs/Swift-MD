@@ -86,6 +86,22 @@ def main():
     print('SwiftMD vs independent C differences:', backend_differences or 'none (677/677 match)')
     if backend_differences:
         return 1
+    # Probe numeric-reference boundaries beyond the one published example.
+    # Values describe the pinned backend, not an assertion of GFM conformance.
+    probes = {
+        '&#12345678;': '<p>�</p>\n',
+        '&#123456789;': '<p>&amp;#123456789;</p>\n',
+        '&#x001F600;': '<p>😀</p>\n',
+        '&#x0001F600;': '<p>😀</p>\n',
+        '&#x00001F600;': '<p>&amp;#x00001F600;</p>\n',
+    }
+    for source, expected_output in probes.items():
+        encoded = (source + '\n').encode('utf-8')
+        expected_bytes = expected_output.encode('utf-8')
+        if swiftmd(encoded) != expected_bytes or cmark(options.reference, encoded, EXTENSIONS) != expected_bytes:
+            print(f'Numeric-reference boundary changed: {source}', file=sys.stderr)
+            return 1
+    print(f'Pinned numeric-reference boundary probes: {len(probes)}/{len(probes)} match SwiftMD and C')
     # Check exact case identities, not just counts; backend changes need review.
     baseline = {140, 141, 142, 145, 147, 279, 280, 324, 398, 426, 434, 435,
                 436, 473, 474, 475, 477, 611, 615, 617, 620, 621, 634, 635, 649, 650}

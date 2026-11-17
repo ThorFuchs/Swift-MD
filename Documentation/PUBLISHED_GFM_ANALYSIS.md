@@ -21,7 +21,7 @@ comparison used the separate cmark-gfm fixture corpus.
 | --- | ---: | --- |
 | 140, 141, 142, 145, 147 | 5 | The globally enabled tagfilter escapes `script`/`style` tags, while these published expectations show raw tags. Disabling tagfilter makes these five byte-identical, but makes case 657 differ. |
 | 279, 280 | 2 | Checkbox attribute order and void-element serialization differ. A Chrome 157 DOM comparison for these two inputs found the same elements, attributes and text. This is limited to those examples, not a general HTML-equivalence guarantee. |
-| 324 | 1 | The published expectation preserves the eight-digit numeric reference as escaped text; the pinned backend emits U+FFFD. This is observable text behavior. |
+| 324 | 1 | The published expectation preserves the eight-digit numeric reference as escaped text; the pinned backend emits U+FFFD. The specification permits 1–7 decimal or 1–6 hexadecimal digits, whereas the pinned C decoder accepts up to eight of either (`src/houdini_html_u.c`, lines 74–79). Additional boundary probes confirm that seven- and eight-digit hexadecimal references can decode where the published specification would leave them literal. This is observable text behavior. |
 | 398, 426, 434, 435, 436, 473, 474, 475, 477 | 9 | The published output has nested `strong` elements; cmark-gfm's HTML renderer deliberately omits a `strong` element directly inside another `strong` (`src/html.c`, lines 366–373). This changes DOM structure and can affect CSS or accessibility; visual or semantic equivalence is not presumed. |
 | 611, 615, 617, 620, 621 | 5 | These examples precede the specification's autolink extension section. The globally enabled extension adds links. Disabling it makes these five byte-identical but causes extension examples 622–633 to differ. |
 | 634, 635 | 2 | XMPP autolink recognition and link boundaries differ even in the extension section. Link targets or which text is linked can change. |
@@ -66,7 +66,8 @@ node Scripts/test-browser.mjs           # Chromium; checks DOM cases and no page
 ```
 
 The analysis script checks the snapshot checksum, all 677 example IDs, the
-exact mismatch identities for all four configurations, and SwiftMD/C parity.
+exact mismatch identities for all four configurations, SwiftMD/C parity, and
+five additional numeric-reference boundary probes.
 It exits nonzero if any of those audited baselines change. It reports known
 byte differences; exit zero does not mean all published examples matched.
 Reference executable provenance must be verified by the caller, not inferred
