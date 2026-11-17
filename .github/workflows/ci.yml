@@ -34,6 +34,12 @@ jobs:
         env:
           SWIFTMD_CMARK_REFERENCE: /tmp/cmark-reference/build/src/cmark-gfm
         run: Scripts/test-all.sh
+      - name: Test isolated version-based distribution consumers
+        run: |
+          SWIFTMD_NODE="$(command -v node)" \
+          SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex" \
+          SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
+          python3 Scripts/test-distribution.py
       - name: Build and test Linux release CLI
         run: |
           swift build --package-path Tools/SwiftMDCLI -c release -j 4 -Xswiftc -no-whole-module-optimization

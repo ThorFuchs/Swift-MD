@@ -1,5 +1,37 @@
 # Status and verification
 
+For current dependencies, the version-based consumer gate, and remaining
+release boundaries see [release preparation](RELEASE_PREPARATION.md). The
+dated sections below describe historical runs and dependencies at those times.
+
+## Swift-Highlight 1.0.1 integration (17 November 2026)
+
+The public annotated `1.0.1` tag resolves to
+`71d23c52a4afe154acdcc3b8aee968f0bf1b8564`. The adapter manifest and both
+adapter/CLI lockfiles select that commit. The upstream Apache license and
+NOTICE were verified byte-for-byte, and the updated third-party notice was
+copied from that tag. Upstream's targeted Linux Thread Sanitizer workflow
+passed for this commit; this does not establish general race freedom or a
+completed legal review of historical fixture material.
+
+On macOS arm64 with Swift 6.4.2 and Node 26.5.0, `Scripts/test-all.sh` passed
+with the separately built pinned C reference: 746 fixture expectations, 747
+independent comparisons, 16 adapter tests and seven CLI tests. The two
+upstream-disabled examples and the `<IGNORE>` expected-output case remain
+separately skipped as described below. The published GFM audit still reports
+651/677 exact; this is not a conformance pass. The targeted profile audit
+found the known 14 mismatches among 46 cases and 46/46 SwiftMD/C parity.
+Chromium with page JavaScript disabled passed the combined GFM, highlighting,
+MathML and SVG checks, including geometry, IDs and accessibility references.
+These are macOS results, not a claim for other hosts or browser engines.
+
+The new distribution gate also passed on macOS arm64 against disposable source
+snapshot `6c047af6f75cfa18cc6f13e8c8e6feb786d15c43`: a Core-only consumer and
+a separate generated-mirror consumer both ran; the latter invoked all three real
+renderers and resolved the public SwiftGFM 1.0.0 and Swift-Highlight 1.0.1 tags.
+SwiftMD and mirror tags were synthetic, local and discarded after the test.
+This snapshot included the gate and dependency changes; it was not a release.
+
 Core passes through SwiftGFM at `d1c262f42daa7a06f4612a94671e10740e26d09a`,
 whose cmark-gfm backend is `0.29.0.gfm.13` at
 `27d942c8b0a62d192f616e5bf3578f4b6a89e180`. SwiftGFM is Swift around C.
@@ -83,7 +115,7 @@ A kill can leave temporary files. The in-process Node adapters still do not
 supply these bounds themselves; stronger isolation requires cgroups and OS
 sandboxing. This helper has not been validated on macOS or Linux x86_64.
 
-Release work remains: independently review the SVG policy and process isolation,
+At the time of this run, release work remained: independently review the SVG policy and process isolation,
 extend adversarial and cross-browser coverage, run other claimed platforms,
 verify the generated adapter distribution mirror with released versions and consumers,
 complete hosted CI for the final commit, and review release packaging. Swift-Highlight
@@ -91,9 +123,9 @@ complete hosted CI for the final commit, and review release packaging. Swift-Hig
 Linux TSan findings remain unclassified and fixture provenance still requires
 review. SwiftGFM 1.0.0 is public, and its annotated tag resolves to the previously
 tested backend-wrapper commit d1c262f42daa7a06f4612a94671e10740e26d09a.
-The manifests now use an exact version requirement. The CI integration job no longer requires a private Swift-Highlight secret; its
-hosted execution for these changes is unverified. No release, tag,
-remote mirror or push is performed by this work.
+The manifests then used an exact version requirement. The CI integration job no
+longer required a private Swift-Highlight secret; hosted execution for those
+particular changes had not yet been verified at the time of this record.
 
 ## Hosted CI evidence
 

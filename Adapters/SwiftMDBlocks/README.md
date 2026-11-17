@@ -11,8 +11,9 @@ errors preserve the original escaped code and return a diagnostic.
 
 `SwiftMDHighlight` reserves `math` and `mermaid`, validates the highlighter's
 UTF-16 token ranges and source identity, and serializes its own calls. Its lock
-does not coordinate independent Swift-Highlight users; upstream concurrency
-warnings remain relevant. Highlighting has no hard execution time limit.
+does not coordinate independent Swift-Highlight users. Version 1.0.1 has
+targeted Linux Thread Sanitizer coverage; that is not proof of blanket race
+freedom. Highlighting has no hard execution time limit.
 
 `SwiftMDKaTeXNode` accepts `math` fences. It uses JSON over stdin, KaTeX's
 MathML-only display mode, `trust: false`, strict errors, `maxExpand: 500` and
@@ -41,5 +42,5 @@ so too-small address-space limits can prevent Node from starting. Use cgroups an
 an OS sandbox for aggregate memory and stronger isolation.
 The optional package currently resolves Swift-Highlight even for other products;
 the root Core package avoids that dependency. Swift-Highlight is pinned to its
-public 1.0.0 tag (commit 326a0085c05931b868f5bff084d51eca7584aad7). SwiftPM remote adapter distribution is not yet
+public 1.0.1 tag (commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564). SwiftPM remote adapter distribution is not yet
 available. No `$$` or inline mathematics is implemented.

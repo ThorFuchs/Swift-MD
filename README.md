@@ -55,3 +55,7 @@ integration gate fails if it or a real renderer is missing. The optional
 page JavaScript disabled. More precise
 coverage, known limitations, dependency provenance and release blockers are in
 [status](Documentation/STATUS.md) and [third-party notices](ThirdPartyLicenses/README.md).
+
+The isolated version-based distribution gate is described in
+[release preparation](Documentation/RELEASE_PREPARATION.md). It creates only
+temporary local test tags and a local test mirror; it publishes nothing.
