@@ -132,6 +132,7 @@ time.sleep(20)'''
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         unit = None
         pids = []
+        detached = None
         try:
             process.stdin.close()
             for _ in range(160):
@@ -144,11 +145,20 @@ time.sleep(20)'''
                         pids = [int(pid) for pid in (Path('/sys/fs/cgroup') / group.lstrip('/') / 'cgroup.procs').read_text().split()]
                     except FileNotFoundError:
                         pids = []
-                    if len(pids) >= 2:
+                    for pid in pids:
+                        try:
+                            parent = int(next(line.split()[1] for line in Path(f'/proc/{pid}/status').read_text().splitlines()
+                                              if line.startswith('PPid:')))
+                            if parent in pids and os.getsid(pid) == pid:
+                                detached = pid
+                                break
+                        except (FileNotFoundError, ProcessLookupError):
+                            continue
+                    if detached is not None:
                         break
                 self.assertIsNone(process.poll(), 'launcher exited before starting worker')
                 time.sleep(0.05)
-            self.assertGreaterEqual(len(pids), 2, 'worker and detached child did not start')
+            self.assertIsNotNone(detached, 'worker and detached child did not start')
             process.send_signal(signal.SIGTERM)
             self.assertEqual(process.wait(timeout=12), 128 + signal.SIGTERM)
             self.assertEqual(process.stdout.read(), b'')
