@@ -36,12 +36,12 @@ jobs:
           swift --version
           swift build --package-path Tools/SwiftMDCLI -c debug -j 4 --static-swift-stdlib
           BIN="$(swift build --package-path Tools/SwiftMDCLI -c debug --show-bin-path)/swift-md"
-          sudo install -d -m 0755 /opt/swiftmd-isolation-test
-          sudo install -m 0644 Scripts/run-linux-systemd.py Scripts/systemd-worker-guard.py Scripts/run-linux-supervised.py /opt/swiftmd-isolation-test/
-          sudo install -m 0755 "$BIN" /opt/swiftmd-isolation-test/swift-md
-          sudo install -m 0755 "$(command -v node)" /opt/swiftmd-isolation-test/node
-          sudo cp -R Tools/NodeDependencies/node_modules /opt/swiftmd-isolation-test/
-          sudo chmod -R a+rX /opt/swiftmd-isolation-test/node_modules
+          sudo install -d -m 0755 /usr/libexec/swiftmd-isolation-test
+          sudo install -m 0644 Scripts/run-linux-systemd.py Scripts/systemd-worker-guard.py Scripts/run-linux-supervised.py /usr/libexec/swiftmd-isolation-test/
+          sudo install -m 0755 "$BIN" /usr/libexec/swiftmd-isolation-test/swift-md
+          sudo install -m 0755 "$(command -v node)" /usr/libexec/swiftmd-isolation-test/node
+          sudo cp -R Tools/NodeDependencies/node_modules /usr/libexec/swiftmd-isolation-test/
+          sudo chmod -R a+rX /usr/libexec/swiftmd-isolation-test/node_modules
       - name: Exercise systemd worker with the real CLI
         run: sudo -n python3 Scripts/test-linux-systemd-worker.py
   core:

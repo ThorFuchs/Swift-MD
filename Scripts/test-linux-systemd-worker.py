@@ -6,13 +6,14 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
 
-INSTALL = Path(os.environ.get('SWIFTMD_SYSTEMD_TEST_ROOT', '/opt/swiftmd-isolation-test'))
+INSTALL = Path(os.environ.get('SWIFTMD_SYSTEMD_TEST_ROOT', '/usr/libexec/swiftmd-isolation-test'))
 LAUNCHER = INSTALL / 'run-linux-systemd.py'
 CLI = INSTALL / 'swift-md'
 NODE = INSTALL / 'node'
@@ -31,6 +32,18 @@ def run(*worker, payload=b'', **options):
 
 
 class SystemdWorker(unittest.TestCase):
+    def test_launcher_rejects_writable_installation_ancestor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp) / 'launcher.py'
+            shutil.copyfile(LAUNCHER, copy)
+            os.chmod(tmp, 0o755)
+            os.chmod(copy, 0o644)
+            result = subprocess.run(['/usr/bin/python3', '-I', str(copy), '--', '/bin/true'],
+                                    input=b'', capture_output=True, timeout=5)
+            self.assertEqual(result.returncode, 125)
+            self.assertIn(b'installation path is not root-controlled', result.stderr)
+            self.assertEqual(result.stdout, b'')
+
     def test_guard_rejects_unisolated_root_before_exec(self):
         with tempfile.TemporaryDirectory() as tmp:
             marker = Path(tmp) / 'executed'

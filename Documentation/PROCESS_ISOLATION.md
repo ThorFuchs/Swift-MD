@@ -63,15 +63,15 @@ system manager and cgroup v2. It requires manager privileges. Install the
 launcher, `run-linux-supervised.py`, and `systemd-worker-guard.py` together in
 a root-owned, non-group/world-writable, world-readable directory outside
 `/home`, `/root`, `/run/user`, and private temporary directories, such as
-`/opt/swiftmd`. The launcher rejects unsafe installation ownership or modes.
+`/usr/libexec/swiftmd`. The launcher rejects unsafe installation ownership or modes.
 Only an administrator should install and invoke these trusted scripts; do not
 run a user-writable copy with `sudo`. The executable, its arguments, Node and
 its modules must also be trusted and readable outside protected home folders.
 
 ```sh
-sudo -n /usr/bin/python3 -I /opt/swiftmd/run-linux-systemd.py \
+sudo -n /usr/bin/python3 -I /usr/libexec/swiftmd/run-linux-systemd.py \
   --seconds 30 --memory-mib 1024 --tasks 128 --file-mib 8 --tmp-mib 32 -- \
-  /opt/swiftmd/swift-md --strict --highlight < input.md > output.html
+  /usr/libexec/swiftmd/swift-md --strict --highlight < input.md > output.html
 ```
 
 The launcher starts a uniquely named transient service as a dynamic unprivileged
