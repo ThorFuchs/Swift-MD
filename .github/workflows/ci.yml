@@ -37,4 +37,4 @@ jobs:
       - name: Build and test Linux release CLI
         run: |
           swift build --package-path Tools/SwiftMDCLI -c release -j 4 -Xswiftc -no-whole-module-optimization
-          SWIFTMD_CLI="$GITHUB_WORKSPACE/Tools/SwiftMDCLI/.build/release/swift-md" python3 Scripts/test-cli.py
+          SWIFTMD_NODE="$(command -v node)" SWIFTMD_CLI="$GITHUB_WORKSPACE/Tools/SwiftMDCLI/.build/release/swift-md" python3 Scripts/test-cli.py
