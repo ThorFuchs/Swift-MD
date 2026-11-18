@@ -30,6 +30,10 @@ print(result.html)
 for diagnostic in result.diagnostics { print(diagnostic.message) }
 ```
 
+The initializer also allows a renderer to be reused on separate pages. Never
+combine multiple outputs from the same fixed prefix on one page; use a distinct
+prefix for each separately rendered fragment.
+
 SwiftPM resolves SwiftGFM, Swift-Highlight and SwiftSoup in the generated
 mirror; KaTeX and Pele are bundled resources, not npm dependencies installed
 by the consumer. Apple platforms use JavaScriptCore and do not need Node or a
@@ -48,6 +52,9 @@ tested with synthetic tags; this does not publish a mirror, tag or release.
 On 18 November 2026, an iOS 27.2 simulator ran a temporary app using the actual
 local `SwiftMDJavaScriptCore` product, Swift-Highlight, KaTeX 0.19.1 and Pele
 1.13.0. A GFM table, highlighted Swift, MathML, SVG and an invalid-math fallback
-passed together. An earlier independent JavaScriptCore probe exercised eight
-Pele diagram types. These are simulator results, not physical-device or
-complete security-qualification claims.
+passed together. A second temporary app imported only the generated
+`SwiftMDBundled` product from source commit `b8a9cd9` and passed the same
+combined scenario with no app-supplied JavaScript files or Node installation.
+An earlier independent JavaScriptCore probe exercised eight Pele diagram types.
+These are simulator results, not physical-device or complete security-qualification
+claims. The new bundled Linux path still requires an actual Linux runtime test.

@@ -54,17 +54,10 @@ def main():
     commit = git('rev-parse', 'HEAD').decode().strip()
     # Archive contains committed files only; no symlinks or traversal are accepted.
     archive = git('archive', '--format=tar', commit, '--', *PATHS)
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        members = tar.getmembers()
-        if any(m.issym() or m.islnk() or m.name.startswith('/') or '..' in Path(m.name).parts for m in members):
-            raise ValueError('unsafe archive member')
-        destination.mkdir(parents=True, exist_ok=False)
-        tar.extractall(destination, members=members)
     renderer_resources = {}
+    loaded_resources = {}
     if args.include_locked_renderers:
         lock = json.loads((ROOT / 'Tools/NodeDependencies/package-lock.json').read_text())
-        resources = destination / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
-        resources.mkdir(parents=True)
         requested = {
             'katex': {'dist/katex.js': 'katex.cjs', 'LICENSE': 'KaTeX-LICENSE.txt'},
             'pele': {'dist/pele.js': 'pele.mjs', 'dist/pele.global.js': 'pele.global.js', 'LICENSE': 'Pele-LICENSE.txt'},
@@ -85,10 +78,21 @@ def main():
                     if len(members) != 1 or not members[0].isfile() or members[0].size > 3_000_000:
                         raise ValueError(f'unsafe or missing archive member: {package}/{source}')
                     data = tar.extractfile(members[0]).read()
-                    (resources / target).write_bytes(data)
+                    loaded_resources[target] = data
                     found[target] = hashlib.sha256(data).hexdigest()
             renderer_resources[package] = {'version': entry['version'], 'source': url,
                                            'archive_integrity': integrity, 'files_sha256': found}
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        members = tar.getmembers()
+        if any(m.issym() or m.islnk() or m.name.startswith('/') or '..' in Path(m.name).parts for m in members):
+            raise ValueError('unsafe archive member')
+        destination.mkdir(parents=True, exist_ok=False)
+        tar.extractall(destination, members=members)
+    if loaded_resources:
+        resources = destination / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
+        resources.mkdir(parents=True)
+        for name, data in loaded_resources.items():
+            (resources / name).write_bytes(data)
     def q(value): return json.dumps(value, ensure_ascii=True)
     manifest = '''// swift-tools-version: 6.1
 // Generated; edit SwiftMD instead. DO NOT EDIT THIS MIRROR.
