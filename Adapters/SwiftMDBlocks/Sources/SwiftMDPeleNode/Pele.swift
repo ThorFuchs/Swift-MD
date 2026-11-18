@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+#if os(macOS) || os(Linux)
 import Foundation
 import SwiftMDBlocks
 import SwiftMDKaTeXNode
@@ -28,3 +29,4 @@ public struct PeleNodeRenderer: BlockRenderer {
         return .validatedSVG(try ValidatedSVG(svg, expectedID: id))
     }
 }
+#endif

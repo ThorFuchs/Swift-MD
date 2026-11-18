@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+#if os(macOS) || os(Linux)
 import Foundation
 import SwiftMDBlocks
 
@@ -68,3 +69,4 @@ public enum NodeProcess {
         return result
     }
 }
+#endif

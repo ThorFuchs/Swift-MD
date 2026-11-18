@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+#if os(macOS) || os(Linux)
 import SwiftGFM
 import SwiftMD
 import SwiftMDBlocks
@@ -59,3 +60,4 @@ public struct SwiftMDRenderer: Sendable {
         try compiler.render(markdown)
     }
 }
+#endif
