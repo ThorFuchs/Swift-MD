@@ -1,0 +1,62 @@
+name: Independent automated security scan
+on:
+  push:
+    branches: [feature/restore-compiler-cli]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: swift
+            runner: macos-15
+            build-mode: manual
+          - language: python
+            runner: ubuntu-24.04
+            build-mode: none
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the scan-result gate
+        run: python3 Scripts/test-codeql-results.py
+      - name: Prepare actual mirror source for Swift analysis
+        if: ${{ matrix.language == 'swift' }}
+        run: |
+          python3 Scripts/generate-adapter-mirror.py "$GITHUB_WORKSPACE/_security_scan_mirror" \
+            --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --verify-public-dependencies --include-locked-renderers
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - name: Build Swift packages for analysis
+        if: ${{ matrix.language == 'swift' }}
+        run: |
+          swift --version
+          swift build --package-path Adapters/SwiftMDBlocks --arch "$(uname -m)" -j 4
+          swift build --package-path _security_scan_mirror --arch "$(uname -m)" -j 4
+      - name: Analyze without publishing repository alerts
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        with:
+          upload: never
+          upload-database: false
+          output: ${{ runner.temp }}/codeql-results
+      - name: Require zero unresolved scan results
+        run: python3 Scripts/check-codeql-results.py "$RUNNER_TEMP/codeql-results"
+      - name: Save SARIF for review
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: codeql-${{ matrix.language }}-${{ github.sha }}
+          path: ${{ runner.temp }}/codeql-results/*.sarif
+          if-no-files-found: warn
+          retention-days: 30
