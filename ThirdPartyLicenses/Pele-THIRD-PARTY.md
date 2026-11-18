@@ -14,6 +14,24 @@ rebuilt byte-for-byte against the SHA-512-verified npm archive:
 | `dist/pele.js` | `37bea5005aa6d2dde929032ced5d2958cf642667cbc1fe675f9dfacf4ba15a51` |
 | `dist/pele.global.js` | `0b0a46c57a5a6971670c09f5ec4066705bd78505f90fd11adf6260325efa0910` |
 
+The macOS ARM64 esbuild binary came from the upstream-locked
+`@esbuild/darwin-arm64@0.28.2` npm archive with integrity
+`sha512-n4KqkOQrraxHJcgjM1RvwbigfQKIKJVpM7xp+KsxiyUSrRdIXnt73VhrPAx0fV44hgfmIVKjxMN9J1t5jySVkw==`.
+From a disposable checkout of the pinned Pele commit, the equivalent commands are:
+
+```sh
+ESBUILD=/absolute/path/to/verified/esbuild
+"$ESBUILD" src/index.ts --bundle --format=esm --target=es2022 --minify \
+  --charset=utf8 --legal-comments=none --metafile=esm-meta.json --outfile=pele.js
+"$ESBUILD" src/index.ts --bundle --format=iife --global-name=pele --target=es2021 \
+  --minify --charset=utf8 --legal-comments=none \
+  '--banner:js=/*! Pele 1.13.0 | MIT License | https://github.com/obsidianmd/pele */' \
+  --metafile=global-meta.json --outfile=pele.global.js
+```
+
+Compare the resulting bytes with the files in the locked Pele npm archive; do
+not overwrite or commit upstream outputs when performing this check.
+
 The esbuild metafiles record 243 inputs each: Pele's `src/` files and its
 `package.json`; no `node_modules` source files were included. The global
 build's metafile also identifies esbuild's synthetic `<runtime>` helpers.
