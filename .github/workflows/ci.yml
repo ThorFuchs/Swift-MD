@@ -6,6 +6,14 @@ on:
 permissions:
   contents: read
 jobs:
+  documentation:
+    runs-on: ubuntu-24.04
+    container:
+      image: swift@sha256:23d9b28ad97fb1cf1999edc3a0cb265ee915ed42299a9344e7173d5a6d2b05f4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build static DocC site
+        run: sh Scripts/build-docc.sh /tmp/swiftmd-docc-build /tmp/swiftmd-docc-site Swift-MD
   supervisor:
     runs-on: ubuntu-24.04
     steps:
@@ -72,6 +80,8 @@ jobs:
         env:
           SWIFTMD_CMARK_REFERENCE: /tmp/cmark-reference/build/src/cmark-gfm
         run: Scripts/test-all.sh
+      - name: Check committed example HTML
+        run: python3 Scripts/render-examples.py --binary Tools/SwiftMDCLI/.build/debug/swift-md --node "$(command -v node)" --check
       - name: Verify pinned notices, fixtures, and npm archives
         run: python3 Scripts/audit-dependencies.py --cmark-source /tmp/cmark-reference --npm-tarballs
       - name: Test isolated version-based distribution consumers

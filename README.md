@@ -11,11 +11,39 @@ configured local Node processes at compile time. The generated MathML and SVG
 are embedded in the HTML; their display does not require client-side JavaScript.
 These adapters and the CLI are experimental, not a security-reviewed release.
 
+## Install the core library
+
+```swift
+.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "0.1.0")
+```
+
+Add `.product(name: "SwiftMD", package: "Swift-MD")` to your target.
+The root package depends only on SwiftGFM; the separate adapter mirror is not
+yet published, so the optional adapters and CLI are built from a local checkout.
+
 ```swift
 import SwiftMD
 let result = try MarkdownCompiler().render("# Hello\n")
 print(result.html)
 ```
+
+## Supported extensions
+
+| Feature | Input | Rendering | Output |
+| --- | --- | --- | --- |
+| GFM | Tables, task lists, autolinks and strikethrough | SwiftGFM / cmark-gfm | HTML |
+| Syntax highlighting | A supported language code fence | Swift-Highlight | HTML with CSS classes |
+| Block mathematics | A `math` code fence | KaTeX on Node | MathML |
+| Diagrams | A `mermaid` code fence | Pele on Node | SVG |
+
+KaTeX and Pele run at compile time; embedded MathML and SVG require no
+client-side JavaScript. Highlighting needs a host stylesheet. See the
+[example gallery](Examples/README.md) for Markdown, actual HTML and screenshots.
+
+![Combined SwiftMD example](Examples/Images/05-combined.png)
+
+[DocC documentation](https://thorfuchs.github.io/Swift-MD/documentation/swiftmd/)
+includes the core API, extension guide and security boundaries.
 
 ## Local CLI
 

@@ -65,6 +65,7 @@ class CLITests(unittest.TestCase):
     def test_version(self):
         result = self.run_cli('--version')
         self.assertEqual(result.returncode, 0)
+        self.assertIn(b'SwiftMD 0.1.0;', result.stdout)
         pins = json.loads((ROOT / 'Tools/SwiftMDCLI/Package.resolved').read_text())['pins']
         gfm, = (pin['state'] for pin in pins if pin['identity'] == 'swift-gfm')
         self.assertIn(f"SwiftGFM {gfm['version']} ({gfm['revision']})".encode(), result.stdout)
