@@ -7,8 +7,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import runpy
 
 CHECK = Path(__file__).with_name('check-codeql-results.py')
+REQUIRED = runpy.run_path(str(CHECK))['REQUIRED']
 
 
 class CodeQLGateTests(unittest.TestCase):
@@ -16,13 +18,21 @@ class CodeQLGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='swiftmd-sarif-gate-') as name:
             root = Path(name)
             def check():
-                return subprocess.run([sys.executable, str(CHECK), str(root)], capture_output=True).returncode
+                return subprocess.run([sys.executable, str(CHECK), str(root), 'python'], capture_output=True).returncode
             self.assertEqual(check(), 2)
             path = root / 'result.sarif'
-            run = {'tool': {'driver': {'name': 'CodeQL'}}, 'results': []}
+            notices = [{'descriptor': {'id': 'py/diagnostics/successfully-extracted-files'},
+                        'locations': [{'physicalLocation': {'artifactLocation': {'uri': path}}}]}
+                       for path in REQUIRED['python']]
+            run = {'tool': {'driver': {'name': 'CodeQL'}}, 'results': [],
+                   'invocations': [{'executionSuccessful': True, 'toolExecutionNotifications': notices}]}
             data = {'version': '2.1.0', 'runs': [run]}
             path.write_text(json.dumps(data))
             self.assertEqual(check(), 0)
+            removed = notices.pop()
+            path.write_text(json.dumps(data))
+            self.assertEqual(check(), 2)
+            notices.append(removed)
             run['results'] = [{'ruleId': 'test/finding', 'locations': []}]
             path.write_text(json.dumps(data))
             self.assertEqual(check(), 1)
