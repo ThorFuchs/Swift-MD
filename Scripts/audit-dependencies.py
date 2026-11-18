@@ -101,6 +101,16 @@ def main():
                     source = tar.extractfile(member)
                     require(source is not None and source.read() == package.joinpath(*path.parts[1:]).read_bytes(), f'installed npm bytes differ: {name}/{path}')
                     installed_files += 1
+    ofl = (NOTICE / 'KaTeX-SIL-OFL-1.1.txt').read_bytes()
+    require(hashlib.sha256(ofl).hexdigest() == '8eea8287e5876b539670cadb82e99f9a7afddec6f6730811be1daf25d2e9bcfd', 'KaTeX OFL license checksum')
+    katex_js = (installed_root / 'katex/dist/katex.js').read_text(encoding='utf-8')
+    require("hyphenate and escape adapted from Facebook's React under Apache 2 license" in katex_js and
+            'Licensed under the SIL Open Font License, Version 1.1.' in katex_js,
+            'KaTeX bundled-code license markers changed; review notices')
+    print('KaTeX embedded-code license markers and retained OFL text: OK')
+    require(hashlib.sha256((NOTICE / 'Pele-esbuild-MIT.txt').read_bytes()).hexdigest() ==
+            'b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681', 'Pele esbuild license checksum')
+    print('Pele esbuild runtime license checksum: OK')
     print(f'npm package identities and licenses: {len(NPM_NOTICES)}/{len(NPM_NOTICES)}; tarball integrity and installed files: {installed_files if args.npm_tarballs else "not checked"}')
     print('Byte and provenance checks do not constitute legal advice or a completed rights review.')
 

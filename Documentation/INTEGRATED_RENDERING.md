@@ -15,6 +15,9 @@ renderer files and their license texts, and records their SHA-256 hashes and
 archive identities in `MIRROR-ORIGIN.json`. No `node_modules` or generated
 renderer files are committed to the source repository. Review the bundled
 artifacts and complete third-party notice obligations before publishing a mirror.
+Generation requires either `--local-test` or `--verify-public-dependencies`.
+The latter checks public tags, revisions and published Core compatibility; it
+does not itself authorize publication or replace legal and security review.
 
 The intended consumer call is:
 
@@ -57,4 +60,8 @@ passed together. A second temporary app imported only the generated
 combined scenario with no app-supplied JavaScript files or Node installation.
 An earlier independent JavaScriptCore probe exercised eight Pele diagram types.
 These are simulator results, not physical-device or complete security-qualification
-claims. The new bundled Linux path still requires an actual Linux runtime test.
+claims. On 18 November 2026, [Linux CI run 44339916549](https://github.com/ThorFuchs/Swift-MD/actions/runs/44339916549)
+passed on source commit `def5d1c`, including the bundled Linux one-call
+consumer with real Node, KaTeX, Pele and Swift-Highlight, the independent C
+reference comparison, and the Linux resource and isolation tests. That run
+does not establish iOS physical-device support or complete security review.

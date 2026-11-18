@@ -121,6 +121,25 @@ transitive source dependencies and history, before any release.
 SwiftGFM 1.0.1 removes both files from its new source snapshot; its 1.0.0 tag
 and prior Git history remain unchanged. This does not resolve their rights.
 
+The bundled KaTeX 0.19.1 `dist/katex.js` contains attribution for utility
+functions adapted from Facebook's React under Apache-2.0 and for SVG data
+adapted from font glyphs under SIL OFL 1.1. The mirror now includes the
+identified copyright notices and license texts alongside the SwiftPM resources;
+see `ThirdPartyLicenses/KaTeX-THIRD-PARTY.md`. The source text and license
+markers are verified, but their inclusion is not a complete legal clearance.
+
+For Pele 1.13.0, the public tag resolves to
+`3a2f075ee0c3d914f0fad3545fc0f193693975ac`. Its npm package declares no runtime
+dependencies, and the pinned source uses relative module imports; the build
+bundles `src/index.ts` and configures esbuild to omit legal comments. Both
+bundled JavaScript files were reproduced byte-for-byte from that commit with
+the lockfile-pinned esbuild 0.28.2. Metafiles report no `node_modules` inputs;
+the IIFE includes esbuild's synthetic runtime helpers. The esbuild MIT license
+and Pele's MIT/ISC license are included beside the bundled files; see
+`ThirdPartyLicenses/Pele-THIRD-PARTY.md`. These observations do not establish
+the origin and licensing of every source fragment. Further third-party review
+remains necessary before publishing the bundled mirror.
+
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
 the archives. On 17 November 2026 it checked 655 installed files; all three

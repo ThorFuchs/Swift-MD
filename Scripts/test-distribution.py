@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Test version-based consumers using disposable, explicitly synthetic tags."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import subprocess
@@ -70,6 +71,22 @@ def main():
             raise ValueError('generated mirror provenance or local-test marker mismatch')
         if set(origin['renderer_resources']) != {'katex', 'pele'}:
             raise ValueError('generated mirror omitted pinned renderer provenance')
+        assets = mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
+        for package in ('katex', 'pele'):
+            for filename, digest in origin['renderer_resources'][package]['files_sha256'].items():
+                if hashlib.sha256((assets / filename).read_bytes()).hexdigest() != digest:
+                    raise ValueError(f'generated renderer resource hash mismatch: {filename}')
+        for resource, original in (
+            ('KaTeX-THIRD-PARTY.md', 'KaTeX-THIRD-PARTY.md'),
+            ('KaTeX-SIL-OFL-1.1.txt', 'KaTeX-SIL-OFL-1.1.txt'),
+            ('Apache-2.0.txt', 'SwiftGFM-Apache-2.0.txt'),
+            ('KaTeX-LICENSE.txt', 'KaTeX-MIT.txt'),
+            ('Pele-LICENSE.txt', 'Pele-MIT.txt'),
+            ('Pele-THIRD-PARTY.md', 'Pele-THIRD-PARTY.md'),
+            ('Pele-esbuild-MIT.txt', 'Pele-esbuild-MIT.txt'),
+        ):
+            if (assets / resource).read_bytes() != (source / 'ThirdPartyLicenses' / original).read_bytes():
+                raise ValueError(f'generated renderer notice mismatch: {resource}')
         for relative in ('Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
                          'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
                          'Documentation/PROCESS_ISOLATION.md'):

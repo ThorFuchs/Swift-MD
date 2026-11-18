@@ -9,11 +9,13 @@ import base64
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 import tarfile
+import tempfile
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +30,67 @@ PATHS = ['Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests',
 def git(*args):
     return subprocess.check_output(['git', '-C', str(ROOT), *args])
 
+def public_refs(url, *patterns):
+    env = os.environ.copy()
+    for key in list(env):
+        if key == 'GIT_CONFIG_COUNT' or key.startswith(('GIT_CONFIG_KEY_', 'GIT_CONFIG_VALUE_')):
+            del env[key]
+    env['GIT_CONFIG_NOSYSTEM'] = '1'
+    env['GIT_CONFIG_GLOBAL'] = os.devnull
+    env['GIT_TERMINAL_PROMPT'] = '0'
+    output = subprocess.check_output(['git', '-c', 'credential.helper=', 'ls-remote', url, *patterns],
+                                     env=env, cwd=tempfile.gettempdir(), timeout=30).decode()
+    return {name: oid for oid, name in (line.split('\t', 1) for line in output.splitlines())}
+
+def public_tag(url, version):
+    name = 'refs/tags/' + version
+    refs = public_refs(url, name, name + '^{}')
+    if name not in refs:
+        raise ValueError(f'public version tag not found: {url} {version}')
+    return refs.get(name + '^{}', refs[name])
+
+def verify_public_dependencies(args, commit):
+    canonical = ('https://github.com/ThorFuchs/Swift-MD.git',
+                 'https://github.com/ThorFuchs/Swift-GFM.git',
+                 'https://github.com/ThorFuchs/Swift-Highlight.git')
+    if (args.core_url, args.gfm_url, args.highlight_url) != canonical:
+        raise ValueError('public verification requires the canonical HTTPS source URLs')
+    pins = {pin['identity']: pin['state'] for pin in json.loads(
+        (ROOT / 'Adapters/SwiftMDBlocks/Package.resolved').read_text())['pins']}
+    core_pins = {pin['identity']: pin['state'] for pin in json.loads((ROOT / 'Package.resolved').read_text())['pins']}
+    if core_pins.get('swift-gfm') != pins.get('swift-gfm'):
+        raise ValueError('Core and adapter SwiftGFM lockfile pins disagree')
+    checks = (
+        ('swift-gfm', args.gfm_url, args.gfm_version),
+        ('swift-highlight', args.highlight_url, args.highlight_version),
+        ('swiftsoup', 'https://github.com/scinfu/SwiftSoup.git', '2.11.3'),
+        ('lrucache', 'https://github.com/nicklockwood/LRUCache.git', '1.3.0'),
+        ('swift-atomics', 'https://github.com/apple/swift-atomics.git', '1.3.1'),
+    )
+    verified = {}
+    for identity, url, version in checks:
+        pin = pins[identity]
+        if 'version' in pin and pin['version'] != version:
+            raise ValueError(f'{identity}: requested version differs from lockfile')
+        revision = public_tag(url, version)
+        if revision != pin['revision']:
+            raise ValueError(f'{identity}: public tag differs from tested lockfile commit')
+        verified[identity] = {'url': url, 'version': version, 'revision': revision}
+    core = public_tag(args.core_url, args.core_version)
+    refs = public_refs(args.core_url, 'refs/heads/*', 'refs/tags/*')
+    if commit not in refs.values():
+        raise ValueError('source commit is not an advertised public branch or tag')
+    try:
+        git('cat-file', '-e', core + '^{commit}')
+        git('merge-base', '--is-ancestor', core, commit)
+        for path in ('Package.swift', 'Sources/SwiftMD'):
+            if git('rev-parse', core + ':' + path) != git('rev-parse', commit + ':' + path):
+                raise ValueError(f'published Core differs from mirror source: {path}')
+    except subprocess.CalledProcessError as error:
+        raise ValueError('public Core tag commit must be available locally and be an ancestor of source') from error
+    verified['swift-md'] = {'url': args.core_url, 'version': args.core_version, 'revision': core}
+    return verified
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('destination', type=Path)
@@ -38,9 +101,13 @@ def main():
     parser.add_argument('--gfm-url', default='https://github.com/ThorFuchs/Swift-GFM.git')
     parser.add_argument('--highlight-url', default='https://github.com/ThorFuchs/Swift-Highlight.git')
     parser.add_argument('--local-test', action='store_true')
+    parser.add_argument('--verify-public-dependencies', action='store_true',
+                        help='check public tags, lockfile commits and published Core compatibility')
     parser.add_argument('--include-locked-renderers', action='store_true',
                         help='fetch and verify pinned npm tarballs and bundle their renderer files')
     args = parser.parse_args()
+    if args.local_test == args.verify_public_dependencies:
+        parser.error('choose exactly one of --local-test and --verify-public-dependencies')
     for version in (args.core_version, args.gfm_version, args.highlight_version):
         if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version):
             parser.error('versions must be stable numeric major.minor.patch versions')
@@ -52,6 +119,7 @@ def main():
     if git('status', '--porcelain', '--untracked-files=all').strip():
         parser.error('source checkout must be clean, including untracked files')
     commit = git('rev-parse', 'HEAD').decode().strip()
+    verified = verify_public_dependencies(args, commit) if args.verify_public_dependencies else {}
     # Archive contains committed files only; no symlinks or traversal are accepted.
     archive = git('archive', '--format=tar', commit, '--', *PATHS)
     renderer_resources = {}
@@ -82,6 +150,20 @@ def main():
                     found[target] = hashlib.sha256(data).hexdigest()
             renderer_resources[package] = {'version': entry['version'], 'source': url,
                                            'archive_integrity': integrity, 'files_sha256': found}
+        # SwiftPM applications may distribute resources without the source
+        # checkout's top-level notices. Include identified notices with them.
+        for source, target in (
+            ('ThirdPartyLicenses/KaTeX-THIRD-PARTY.md', 'KaTeX-THIRD-PARTY.md'),
+            ('ThirdPartyLicenses/KaTeX-SIL-OFL-1.1.txt', 'KaTeX-SIL-OFL-1.1.txt'),
+            ('ThirdPartyLicenses/SwiftGFM-Apache-2.0.txt', 'Apache-2.0.txt'),
+        ):
+            data = (ROOT / source).read_bytes()
+            loaded_resources[target] = data
+            renderer_resources['katex']['files_sha256'][target] = hashlib.sha256(data).hexdigest()
+        for name in ('Pele-THIRD-PARTY.md', 'Pele-esbuild-MIT.txt'):
+            data = (ROOT / 'ThirdPartyLicenses' / name).read_bytes()
+            loaded_resources[name] = data
+            renderer_resources['pele']['files_sha256'][name] = hashlib.sha256(data).hexdigest()
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         members = tar.getmembers()
         if any(m.issym() or m.islnk() or m.name.startswith('/') or '..' in Path(m.name).parts for m in members):
@@ -139,10 +221,10 @@ let package = Package(
     if args.local_test: manifest = manifest.replace('\n', '\n// LOCAL TEST ONLY — NEVER PUBLISH\n', 1)
     (destination / 'Package.swift').write_text(manifest)
     (destination / 'README.md').write_bytes((destination / 'Adapters/SwiftMDBlocks/MIRROR_README.md').read_bytes())
-    (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources}, indent=2) + '\n')
+    (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources, 'verified_public_tags':verified, 'release_review_required':True}, indent=2) + '\n')
     print(f'Generated {destination} from {commit}; local test only: {args.local_test}')
 
 if __name__ == '__main__':
     try: main()
-    except (OSError, subprocess.CalledProcessError, ValueError) as error:
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError) as error:
         print(f'error: {error}', file=sys.stderr); sys.exit(1)

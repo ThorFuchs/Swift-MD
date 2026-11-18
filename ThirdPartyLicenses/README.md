@@ -20,8 +20,8 @@ and any fixture licensing whenever the distributed file set changes.
 | SwiftSoup | d86f244ed497d48012782e2f59c985a55e77b3f5 (2.11.3) | MIT |
 | LRUCache | 1.3.0 | MIT |
 | swift-atomics | 1.3.1 | Apache-2.0 |
-| KaTeX | npm 0.19.1 | MIT |
-| Pele | npm 1.13.0 | MIT |
+| KaTeX | npm 0.19.1 | MIT; the renderer also identifies React adaptations under Apache-2.0 and glyph-derived SVG material under SIL OFL 1.1; see KaTeX-THIRD-PARTY.md |
+| Pele | npm 1.13.0 | MIT, with Lucide ISC notice and esbuild MIT runtime helpers; see Pele-THIRD-PARTY.md |
 | commander | npm 15.1.0 | MIT |
 
 Swift-Highlight 1.0.1 replaces identified fixture quotations and a named

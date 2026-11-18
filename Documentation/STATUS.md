@@ -217,7 +217,7 @@ checksums and passed all seven CLI tests with separately installed Node, npm
 packages and system libraries. It remains an unpublished candidate; the same
 Foundation `mktemp` linker warning and license-review limitations apply.
 
-## Adapter distribution generator
+## Adapter distribution generator (historical test)
 
 `Scripts/generate-adapter-mirror.py` exports only committed files from a clean
 checkout into a new directory and records the source commit and dependency
@@ -229,3 +229,9 @@ committed test snapshot passed 12 adapter tests against artificial local tags;
 a separate version-based consumer built and executed all three renderers against
 those artificial tags. This is not a released mirror or a verification of real
 public versions.
+
+For the subsequent bundled-renderer prototype and its current validation see
+[integrated rendering](INTEGRATED_RENDERING.md) and
+[release preparation](RELEASE_PREPARATION.md). Unlike the earlier local-only
+test above, the newer generator can include checked, lockfile-pinned npm archive
+contents as resources; it records their source and hashes.

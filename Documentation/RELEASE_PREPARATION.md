@@ -13,8 +13,9 @@ feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 
 ## Distribution consumer gate
 
-`Scripts/test-distribution.py` requires a clean committed checkout and trusted
-absolute paths to Node, the installed KaTeX package and Pele module. It creates
+`Scripts/test-distribution.py` requires a clean committed checkout and a trusted
+absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
+and verifies their SHA-512 integrity while generating the test mirror. It creates
 disposable local Git repositories, synthetic `0.0.0` tags for SwiftMD and its
 generated mirror, and **two fresh version-based consumers**. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
@@ -28,10 +29,7 @@ different UID, Git is told to trust only the selected source checkout and its
 configuration is changed.
 
 ```sh
-(cd Tools/NodeDependencies && npm ci --ignore-scripts)
 SWIFTMD_NODE="$(command -v node)" \
-SWIFTMD_KATEX="$(pwd)/Tools/NodeDependencies/node_modules/katex" \
-SWIFTMD_PELE="$(pwd)/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
 python3 Scripts/test-distribution.py
 ```
 
@@ -40,6 +38,16 @@ in `Scripts/test-all.sh`. Synthetic local tags do not demonstrate that SwiftMD
 or its adapter mirror is publicly available. Before publication, verify each
 public tag, its commit, dependency accessibility, mirror provenance and the
 distribution's licenses again, then test against the actual release identities.
+
+The generator requires exactly one mode: `--local-test` explicitly marks its
+output unpublishable and permits `file://` URLs; `--verify-public-dependencies`
+requires canonical public HTTPS URLs and checks each SwiftPM tag against its
+lockfile revision without configured Git credentials. It checks that the
+source commit is advertised by the public SwiftMD repository and that the
+released Core tag is an ancestor with identical Core source and manifest. These
+checks do not establish legal clearance, security qualification or permission
+to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
+`release_review_required: true`.
 
 ## Dependencies and current boundaries
 
