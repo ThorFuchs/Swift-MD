@@ -45,7 +45,7 @@ def main():
                 raise ValueError(f'candidate renderer resource hash mismatch: {name}')
     with tempfile.TemporaryDirectory(prefix='swiftmd-public-candidate-') as name:
         temp = Path(name)
-        mirror = temp / 'SwiftMDAdapters'
+        mirror = temp / 'Swift-MD-Adapters'
         shutil.copytree(candidate, mirror, symlinks=False)
         run('git', 'init', '--quiet', cwd=mirror)
         run('git', 'add', '.', cwd=mirror)
@@ -59,7 +59,7 @@ import PackageDescription
 let package = Package(name: "Consumer", platforms: [.macOS(.v15)], dependencies: [
     .package(url: {json.dumps(mirror.as_uri())}, exact: "0.0.0")
 ], targets: [.executableTarget(name: "Consumer", dependencies: [
-    .product(name: "SwiftMDBundled", package: "SwiftMDAdapters")])])
+    .product(name: "SwiftMDBundled", package: "Swift-MD-Adapters")])])
 ''')
         (consumer / 'Sources/Consumer/main.swift').write_text('''import Foundation
 import SwiftMDBundled

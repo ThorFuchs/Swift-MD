@@ -140,6 +140,13 @@ and Pele's MIT/ISC license are included beside the bundled files; see
 the origin and licensing of every source fragment. Further third-party review
 remains necessary before publishing the bundled mirror.
 
+On 18 November, a search of Pele's pinned `src/` found that its common journey
+and timeline lexer explicitly describes rules ported from Mermaid. The exact
+Mermaid source revision is unspecified. As a precaution the mirror generator
+now includes Mermaid's MIT license and copyright notice with the renderer
+resources; its source and checksum are recorded in the Pele notice. The
+additional attribution does not establish the complete provenance of the port.
+
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
 the archives. On 17 November 2026 it checked 655 installed files; all three

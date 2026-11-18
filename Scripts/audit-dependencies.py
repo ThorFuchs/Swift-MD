@@ -111,6 +111,9 @@ def main():
     require(hashlib.sha256((NOTICE / 'Pele-esbuild-MIT.txt').read_bytes()).hexdigest() ==
             'b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681', 'Pele esbuild license checksum')
     print('Pele esbuild runtime license checksum: OK')
+    require(hashlib.sha256((NOTICE / 'Pele-Mermaid-MIT.txt').read_bytes()).hexdigest() ==
+            'ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80', 'Pele Mermaid license checksum')
+    print('Pele Mermaid license checksum: OK')
     print(f'npm package identities and licenses: {len(NPM_NOTICES)}/{len(NPM_NOTICES)}; tarball integrity and installed files: {installed_files if args.npm_tarballs else "not checked"}')
     print('Byte and provenance checks do not constitute legal advice or a completed rights review.')
 

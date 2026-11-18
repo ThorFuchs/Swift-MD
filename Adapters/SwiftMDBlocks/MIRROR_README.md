@@ -5,6 +5,16 @@ the mirror directly; develop and report issues in the SwiftMD source repository.
 `MIRROR-ORIGIN.json` records the revision, dependency versions and, when
 bundled, renderer-archive integrity and file hashes.
 
+After the mirror is published, add it to a Swift package with:
+
+```swift
+.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "0.1.0")
+```
+
+Add `.product(name: "SwiftMDBundled", package: "Swift-MD-Adapters")` to the
+target's dependencies. The source repository remains SwiftMD; mirror releases
+are generated from its reviewed commits.
+
 When generated with `--include-locked-renderers`, the `SwiftMDBundled` product
 provides a single entry point:
 

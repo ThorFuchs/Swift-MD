@@ -84,6 +84,7 @@ def main():
             ('Pele-LICENSE.txt', 'Pele-MIT.txt'),
             ('Pele-THIRD-PARTY.md', 'Pele-THIRD-PARTY.md'),
             ('Pele-esbuild-MIT.txt', 'Pele-esbuild-MIT.txt'),
+            ('Pele-Mermaid-MIT.txt', 'Pele-Mermaid-MIT.txt'),
         ):
             if (assets / resource).read_bytes() != (source / 'ThirdPartyLicenses' / original).read_bytes():
                 raise ValueError(f'generated renderer notice mismatch: {resource}')

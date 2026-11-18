@@ -40,6 +40,16 @@ included with the resources. It was copied from the npm archive whose SHA-512
 integrity is specified in Pele's pinned `package-lock.json`; its SHA-256 is
 `b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681`.
 
+Pele's `src/diagrams/common/scan.ts` describes shared lexer rules as ported
+from Mermaid's compiled Jison journey and timeline rules. The file is imported
+by both diagram lexers. As a precaution, `Pele-Mermaid-MIT.txt` retains
+Mermaid's MIT license and copyright notice with the bundled resources. It is
+the unmodified `LICENSE` from Mermaid commit
+`1fb7869866dd619168d840291c9c54b4f129758b` (tag `mermaid@12.2.0`), SHA-256
+`ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80`.
+The Pele comment does not identify a Mermaid revision, so this is a documented
+license reference, not a claim that 12.2.0 was the source of the port.
+
 The build settings omit legal comments. This inventory and reproducibility
 evidence do not establish the origin or licensing of every upstream source
 fragment and are not a legal clearance to publish the mirror.
