@@ -120,6 +120,10 @@ let result = try SwiftMDIntegrated.render(input, svgPrefix: "consumer", nodeExec
 precondition(result.diagnostics.isEmpty && result.html.contains("hljs-keyword") &&
              result.html.contains("<math") && result.html.contains("<svg"))
 precondition(!result.html.contains("<script"))
+let reusable = try SwiftMDIntegrated(svgPrefix: "consumer-reuse", nodeExecutable: env["SWIFTMD_NODE"]!)
+let first = try reusable.render(input)
+let second = try reusable.render(input)
+precondition(first.diagnostics.isEmpty && first.html == second.html && first.html.contains("consumer-reuse-2"))
 let failed = try SwiftMDIntegrated.render("```math\\n\\\\badcommand{<script>}\\n```\\n", svgPrefix: "consumer-bad", nodeExecutable: env["SWIFTMD_NODE"]!)
 precondition(failed.diagnostics.count == 1 && failed.html.contains("&lt;script&gt;") && !failed.html.contains("<script>"))
 print("Adapter versioned consumer: all three real renderers OK")

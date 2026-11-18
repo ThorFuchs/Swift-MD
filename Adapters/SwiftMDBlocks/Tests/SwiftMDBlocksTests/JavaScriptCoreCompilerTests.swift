@@ -72,5 +72,19 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
         XCTAssertTrue(apple.diagnostics.isEmpty && nodeResult.diagnostics.isEmpty)
         XCTAssertEqual(apple.html, nodeResult.html)
     }
+
+    func testConcurrentUseOfOneJavaScriptCoreRenderer() async throws {
+        let (katex, pele) = try scripts()
+        let renderer = try SwiftMDAppleRenderer(katexScript: katex, peleScript: pele, svgPrefix: "concurrent")
+        try await withThrowingTaskGroup(of: Bool.self) { group in
+            for number in 0..<12 {
+                group.addTask {
+                    let result = try renderer.render("```math\nx_\(number)^2\n```\n\n```mermaid\nflowchart LR\nA-->B\n```\n")
+                    return result.diagnostics.isEmpty && result.html.contains("<math") && result.html.contains("id=\"concurrent-1\"")
+                }
+            }
+            for try await passed in group { XCTAssertTrue(passed) }
+        }
+    }
 }
 #endif

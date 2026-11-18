@@ -18,7 +18,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 PATHS = ['Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests',
-         'Adapters/SwiftMDBlocks/README.md', 'Tools/SwiftMDCLI/Sources',
+         'Adapters/SwiftMDBlocks/README.md', 'Adapters/SwiftMDBlocks/MIRROR_README.md', 'Tools/SwiftMDCLI/Sources',
          'Tools/NodeDependencies/package.json', 'Tools/NodeDependencies/package-lock.json',
          'Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
          'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
@@ -138,6 +138,7 @@ let package = Package(
     manifest = manifest.replace('BUNDLED_TARGET', '''.target(name: "SwiftMDBundled", dependencies: ["SwiftMDBlocks", .target(name: "SwiftMDJavaScriptCore", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])), .target(name: "SwiftMDCompiler", condition: .when(platforms: [.linux]))], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBundled", resources: [.copy("RendererAssets")]),''' if args.include_locked_renderers else '')
     if args.local_test: manifest = manifest.replace('\n', '\n// LOCAL TEST ONLY — NEVER PUBLISH\n', 1)
     (destination / 'Package.swift').write_text(manifest)
+    (destination / 'README.md').write_bytes((destination / 'Adapters/SwiftMDBlocks/MIRROR_README.md').read_bytes())
     (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources}, indent=2) + '\n')
     print(f'Generated {destination} from {commit}; local test only: {args.local_test}')
 
