@@ -5,6 +5,8 @@ This creates no git repository, tag or remote. Local file dependencies are
 permitted only for explicitly marked disposable tests; never publish those.
 """
 import argparse
+import base64
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -12,6 +14,7 @@ import re
 import subprocess
 import sys
 import tarfile
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 PATHS = ['Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests',
@@ -35,6 +38,8 @@ def main():
     parser.add_argument('--gfm-url', default='https://github.com/ThorFuchs/Swift-GFM.git')
     parser.add_argument('--highlight-url', default='https://github.com/ThorFuchs/Swift-Highlight.git')
     parser.add_argument('--local-test', action='store_true')
+    parser.add_argument('--include-locked-renderers', action='store_true',
+                        help='fetch and verify pinned npm tarballs and bundle their renderer files')
     args = parser.parse_args()
     for version in (args.core_version, args.gfm_version, args.highlight_version):
         if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version):
@@ -55,6 +60,35 @@ def main():
             raise ValueError('unsafe archive member')
         destination.mkdir(parents=True, exist_ok=False)
         tar.extractall(destination, members=members)
+    renderer_resources = {}
+    if args.include_locked_renderers:
+        lock = json.loads((ROOT / 'Tools/NodeDependencies/package-lock.json').read_text())
+        resources = destination / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/Resources'
+        resources.mkdir(parents=True)
+        requested = {
+            'katex': {'dist/katex.js': 'katex.cjs', 'LICENSE': 'KaTeX-LICENSE.txt'},
+            'pele': {'dist/pele.js': 'pele.mjs', 'dist/pele.global.js': 'pele.global.js', 'LICENSE': 'Pele-LICENSE.txt'},
+        }
+        for package, files in requested.items():
+            entry = lock['packages']['node_modules/' + package]
+            url, integrity = entry['resolved'], entry['integrity']
+            if not url.startswith('https://') or not integrity.startswith('sha512-'):
+                raise ValueError(f'untrusted archive metadata for {package}')
+            with urllib.request.urlopen(url, timeout=30) as response:
+                content = response.read(10_000_001)
+            if len(content) > 10_000_000 or hashlib.sha512(content).digest() != base64.b64decode(integrity[7:], validate=True):
+                raise ValueError(f'archive integrity or size mismatch for {package}')
+            found = {}
+            with tarfile.open(fileobj=io.BytesIO(content), mode='r:gz') as tar:
+                for source, target in files.items():
+                    members = [m for m in tar.getmembers() if m.name == 'package/' + source]
+                    if len(members) != 1 or not members[0].isfile() or members[0].size > 3_000_000:
+                        raise ValueError(f'unsafe or missing archive member: {package}/{source}')
+                    data = tar.extractfile(members[0]).read()
+                    (resources / target).write_bytes(data)
+                    found[target] = hashlib.sha256(data).hexdigest()
+            renderer_resources[package] = {'version': entry['version'], 'source': url,
+                                           'archive_integrity': integrity, 'files_sha256': found}
     def q(value): return json.dumps(value, ensure_ascii=True)
     manifest = '''// swift-tools-version: 6.1
 // Generated; edit SwiftMD instead. DO NOT EDIT THIS MIRROR.
@@ -67,6 +101,9 @@ let package = Package(
         .library(name: "SwiftMDHighlight", targets: ["SwiftMDHighlight"]),
         .library(name: "SwiftMDKaTeXNode", targets: ["SwiftMDKaTeXNode"]),
         .library(name: "SwiftMDPeleNode", targets: ["SwiftMDPeleNode"]),
+        .library(name: "SwiftMDCompiler", targets: ["SwiftMDCompiler"]),
+        .library(name: "SwiftMDJavaScriptCore", targets: ["SwiftMDJavaScriptCore"]),
+        BUNDLED_PRODUCT
         .executable(name: "swift-md", targets: ["SwiftMDCLI"]),
     ],
     dependencies: [
@@ -82,17 +119,22 @@ let package = Package(
         .target(name: "SwiftMDHighlight", dependencies: ["SwiftMDBlocks", .product(name: "SwiftHighlight", package: "Swift-Highlight"), .product(name: "SwiftHighlightHTML", package: "Swift-Highlight")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDHighlight"),
         .target(name: "SwiftMDKaTeXNode", dependencies: ["SwiftMDBlocks"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDKaTeXNode"),
         .target(name: "SwiftMDPeleNode", dependencies: ["SwiftMDBlocks", "SwiftMDKaTeXNode"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDPeleNode"),
+        .target(name: "SwiftMDCompiler", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", .product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftGFM", package: "Swift-GFM")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDCompiler"),
+        .target(name: "SwiftMDJavaScriptCore", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", .product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftGFM", package: "Swift-GFM")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDJavaScriptCore"),
+        BUNDLED_TARGET
         .executableTarget(name: "SwiftMDCLI", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", .product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftGFM", package: "Swift-GFM")], path: "Tools/SwiftMDCLI/Sources/SwiftMDCLI"),
-        .testTarget(name: "SwiftMDBlocksTests", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", .product(name: "SwiftSoup", package: "SwiftSoup"), .product(name: "SwiftGFM", package: "Swift-GFM"), .product(name: "SwiftMD", package: "Swift-MD")], path: "Adapters/SwiftMDBlocks/Tests/SwiftMDBlocksTests"),
+        .testTarget(name: "SwiftMDBlocksTests", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", "SwiftMDCompiler", "SwiftMDJavaScriptCore", .product(name: "SwiftSoup", package: "SwiftSoup"), .product(name: "SwiftGFM", package: "Swift-GFM"), .product(name: "SwiftMD", package: "Swift-MD")], path: "Adapters/SwiftMDBlocks/Tests/SwiftMDBlocksTests"),
     ], swiftLanguageModes: [.v6]
 )
 '''
     values = {'CORE_URL':args.core_url, 'CORE_VERSION':args.core_version, 'GFM_URL':args.gfm_url,
               'GFM_VERSION':args.gfm_version, 'HIGHLIGHT_URL':args.highlight_url, 'HIGHLIGHT_VERSION':args.highlight_version}
     for key, value in values.items(): manifest = manifest.replace(key, q(value))
+    manifest = manifest.replace('BUNDLED_PRODUCT', '.library(name: "SwiftMDBundled", targets: ["SwiftMDBundled"]),' if args.include_locked_renderers else '')
+    manifest = manifest.replace('BUNDLED_TARGET', '''.target(name: "SwiftMDBundled", dependencies: ["SwiftMDBlocks", .target(name: "SwiftMDJavaScriptCore", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])), .target(name: "SwiftMDCompiler", condition: .when(platforms: [.linux]))], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBundled", resources: [.copy("Resources")]),''' if args.include_locked_renderers else '')
     if args.local_test: manifest = manifest.replace('\n', '\n// LOCAL TEST ONLY — NEVER PUBLISH\n', 1)
     (destination / 'Package.swift').write_text(manifest)
-    (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values}, indent=2) + '\n')
+    (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources}, indent=2) + '\n')
     print(f'Generated {destination} from {commit}; local test only: {args.local_test}')
 
 if __name__ == '__main__':

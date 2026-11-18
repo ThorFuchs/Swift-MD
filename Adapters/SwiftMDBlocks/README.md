@@ -1,5 +1,48 @@
 # Experimental block adapters
 
+The local `SwiftMDCompiler` product provides a unified API over the existing
+renderers. Node and module paths must be explicitly supplied as trusted
+absolute paths; install the pinned modules with `npm ci --ignore-scripts` in
+`Tools/NodeDependencies`. No adapter mirror has been published yet.
+
+```swift
+import SwiftMDCompiler
+
+let renderer = try SwiftMDRenderer(
+    math: NodeModule(node: "/trusted/path/to/node", module: "/trusted/path/to/katex"),
+    mermaid: MermaidOptions(
+        runtime: NodeModule(node: "/trusted/path/to/node", module: "/trusted/path/to/pele/dist/pele.js"),
+        svgPrefix: "unique-page-id"
+    )
+)
+let result = try renderer.render(markdown)
+print(result.html)
+for diagnostic in result.diagnostics { print(diagnostic.message) }
+```
+
+Highlighting is enabled by default; pass `highlight: false` to turn it off.
+Math and Mermaid are enabled independently by supplying their configuration.
+With all three disabled, output is byte-identical to the core. Renderer errors
+produce diagnostics and preserve escaped source; check diagnostics rather than
+assuming every requested block rendered successfully. Prefixes must be unique
+across all fragments placed on the same HTML page.
+
+The separate `SwiftMDJavaScriptCore` product is an experimental Apple backend.
+It runs trusted KaTeX and Pele scripts in JavaScriptCore without Node or a
+WebView and uses the same SVG validator and fallback policy. Supply the KaTeX
+UMD build and Pele global build explicitly. In-process JavaScript has no hard
+deadline or memory cap; cancellation does not stop a synchronous JavaScript
+call. The backend and the caller must not be treated as a sandbox.
+
+The mirror generator's `--include-locked-renderers` option prepares an
+experimental `SwiftMDBundled` product: it downloads the npm archives pinned in
+the source lockfile, verifies their integrity, embeds the selected unchanged
+renderer files and licenses as SwiftPM resources, and records their hashes and
+provenance. This does not check generated dependencies into the source repo.
+It is not yet a published package. Apple hosts use JavaScriptCore; Linux still
+requires a trusted absolute Node executable. The embedded artifact and its
+complete third-party notices must be reviewed before any distribution release.
+
 `SwiftMDBlocks` is an opt-in HTML profile: it parses and reserializes the
 SwiftGFM HTML with SwiftSoup and processes matching `pre > code` elements.
 With no renderers it bypasses parsing and returns the exact core bytes. Source

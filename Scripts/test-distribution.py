@@ -45,7 +45,7 @@ def write(path, content):
 def main():
     if call('git', 'status', '--porcelain', '--untracked-files=all', cwd=ROOT, capture=True).strip():
         raise ValueError('source checkout must be clean, including untracked files')
-    for key in ('SWIFTMD_NODE', 'SWIFTMD_KATEX', 'SWIFTMD_PELE'):
+    for key in ('SWIFTMD_NODE',):
         value = os.environ.get(key, '')
         if not value or not Path(value).is_absolute() or not Path(value).exists():
             raise ValueError(f'{key} must name an existing absolute path')
@@ -64,10 +64,12 @@ def main():
         call(sys.executable, str(source / 'Scripts/generate-adapter-mirror.py'), str(mirror),
              '--core-version', TEST_VERSION, '--gfm-version', pin('swift-gfm')['version'],
              '--highlight-version', pin('swift-highlight')['version'], '--core-url', core_url,
-             '--local-test')
+             '--local-test', '--include-locked-renderers')
         origin = json.loads((mirror / 'MIRROR-ORIGIN.json').read_text())
         if origin['source_commit'] != source_commit or origin['local_test_only'] is not True:
             raise ValueError('generated mirror provenance or local-test marker mismatch')
+        if set(origin['renderer_resources']) != {'katex', 'pele'}:
+            raise ValueError('generated mirror omitted pinned renderer provenance')
         for relative in ('Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
                          'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
                          'Documentation/PROCESS_ISOLATION.md'):
@@ -108,25 +110,18 @@ let package = Package(name: "AdapterConsumer", platforms: [.macOS(.v15)], depend
     .package(url: {json.dumps(mirror.as_uri())}, exact: "{TEST_VERSION}")
 ], targets: [.executableTarget(name: "AdapterConsumer", dependencies: [
     .product(name: "SwiftMD", package: "Swift-MD"),
-    .product(name: "SwiftMDBlocks", package: "SwiftMDAdapters"),
-    .product(name: "SwiftMDHighlight", package: "SwiftMDAdapters"),
-    .product(name: "SwiftMDKaTeXNode", package: "SwiftMDAdapters"),
-    .product(name: "SwiftMDPeleNode", package: "SwiftMDAdapters")])])
+    .product(name: "SwiftMDBundled", package: "SwiftMDAdapters")])])
 ''')
         write(consumer / 'Sources/AdapterConsumer/main.swift', '''import Foundation
-import SwiftMDBlocks
-import SwiftMDHighlight
-import SwiftMDKaTeXNode
-import SwiftMDPeleNode
+import SwiftMDBundled
 let env = ProcessInfo.processInfo.environment
-let compiler = BlockCompiler(renderers: [
-    try KaTeXNodeRenderer(node: env["SWIFTMD_NODE"]!, module: env["SWIFTMD_KATEX"]!),
-    try PeleNodeRenderer(node: env["SWIFTMD_NODE"]!, module: env["SWIFTMD_PELE"]!, prefix: "consumer"),
-    HighlightRenderer()])
 let input = "```swift\\nlet x = 1\\n```\\n\\n```math\\nx^2\\n```\\n\\n```mermaid\\nflowchart LR\\nA-->B\\n```\\n"
-let result = try compiler.render(input)
+let result = try SwiftMDIntegrated.render(input, svgPrefix: "consumer", nodeExecutable: env["SWIFTMD_NODE"]!)
 precondition(result.diagnostics.isEmpty && result.html.contains("hljs-keyword") &&
              result.html.contains("<math") && result.html.contains("<svg"))
+precondition(!result.html.contains("<script"))
+let failed = try SwiftMDIntegrated.render("```math\\n\\\\badcommand{<script>}\\n```\\n", svgPrefix: "consumer-bad", nodeExecutable: env["SWIFTMD_NODE"]!)
+precondition(failed.diagnostics.count == 1 && failed.html.contains("&lt;script&gt;") && !failed.html.contains("<script>"))
 print("Adapter versioned consumer: all three real renderers OK")
 ''')
         call('swift', 'run', '--package-path', str(consumer), '-j', '4', 'AdapterConsumer')

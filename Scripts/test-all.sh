@@ -8,7 +8,10 @@ test -x "$NODE" || { echo 'Node is not executable' >&2; exit 1; }
 export SWIFTMD_NODE="$NODE"
 export SWIFTMD_KATEX="$ROOT/Tools/NodeDependencies/node_modules/katex"
 export SWIFTMD_PELE="$ROOT/Tools/NodeDependencies/node_modules/pele/dist/pele.js"
+export SWIFTMD_KATEX_JS="$ROOT/Tools/NodeDependencies/node_modules/katex/dist/katex.js"
+export SWIFTMD_PELE_GLOBAL_JS="$ROOT/Tools/NodeDependencies/node_modules/pele/dist/pele.global.js"
 test -f "$SWIFTMD_KATEX/package.json" && test -f "$SWIFTMD_PELE" || { echo 'Run npm ci --ignore-scripts in Tools/NodeDependencies first' >&2; exit 1; }
+test -f "$SWIFTMD_KATEX_JS" && test -f "$SWIFTMD_PELE_GLOBAL_JS" || { echo 'Missing JavaScriptCore renderer sources' >&2; exit 1; }
 (cd "$ROOT" && swift test -j 4)
 (cd "$ROOT/Adapters/SwiftMDBlocks" && swift test -j 4)
 (cd "$ROOT/Tools/SwiftMDCLI" && swift build -j 4)
