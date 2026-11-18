@@ -118,6 +118,9 @@ source tag. Fetching fixtures separately changes distribution, not the rights
 question for the fetch and use. Review the full distribution, including
 transitive source dependencies and history, before any release.
 
+SwiftGFM 1.0.1 removes both files from its new source snapshot; its 1.0.0 tag
+and prior Git history remain unchanged. This does not resolve their rights.
+
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
 the archives. On 17 November 2026 it checked 655 installed files; all three

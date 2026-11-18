@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """End-to-end tests against a built swift-md and real installed Node modules."""
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -64,6 +65,9 @@ class CLITests(unittest.TestCase):
     def test_version(self):
         result = self.run_cli('--version')
         self.assertEqual(result.returncode, 0)
+        pins = json.loads((ROOT / 'Tools/SwiftMDCLI/Package.resolved').read_text())['pins']
+        gfm, = (pin['state'] for pin in pins if pin['identity'] == 'swift-gfm')
+        self.assertIn(f"SwiftGFM {gfm['version']} ({gfm['revision']})".encode(), result.stdout)
         self.assertIn(b'27d942c8b0a62d192f616e5bf3578f4b6a89e180', result.stdout)
 
 if __name__ == '__main__': unittest.main()

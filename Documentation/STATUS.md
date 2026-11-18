@@ -4,6 +4,24 @@ For current dependencies, the version-based consumer gate, and remaining
 release boundaries see [release preparation](RELEASE_PREPARATION.md). The
 dated sections below describe historical runs and dependencies at those times.
 
+## SwiftGFM 1.0.1 integration (18 November 2026)
+
+The public annotated `1.0.1` tag resolves to
+`2cb9450cf755858d338525fe64081b5f04864a2d`; all three manifests and
+lockfiles select it. Compared with `1.0.0`, the executable wrapper and
+vendored parser are unchanged. The new source snapshot omits the two fixtures
+whose individual rights remain unresolved; the old tag and Git history remain.
+
+On macOS arm64 with Swift 6.4.2, `Scripts/test-all.sh` passed with the
+independently built pinned C executable: 704 fixture expectations, 705 C
+comparisons, 13 neutral expectations and 13 independent neutral comparisons,
+16 adapter tests and seven CLI tests. Two upstream-disabled cases and one
+`<IGNORE>` expected-output assertion were skipped. The separate published
+GFM audit found 651/677 exact and the experimental profile 32/46 exact;
+neither is a conformance pass. The pinned notice, fixture and npm integrity
+audit also passed. Linux and distribution results must be tied to their own
+tested commits and hosts.
+
 ## Swift-Highlight 1.0.1 integration (17 November 2026)
 
 The public annotated `1.0.1` tag resolves to
@@ -32,7 +50,7 @@ renderers and resolved the public SwiftGFM 1.0.0 and Swift-Highlight 1.0.1 tags.
 SwiftMD and mirror tags were synthetic, local and discarded after the test.
 This snapshot included the gate and dependency changes; it was not a release.
 
-Core passes through SwiftGFM at `d1c262f42daa7a06f4612a94671e10740e26d09a`,
+Core now selects SwiftGFM 1.0.1 at `2cb9450cf755858d338525fe64081b5f04864a2d`,
 whose cmark-gfm backend is `0.29.0.gfm.13` at
 `27d942c8b0a62d192f616e5bf3578f4b6a89e180`. SwiftGFM is Swift around C.
 The independently published GFM specification examples have also been compared

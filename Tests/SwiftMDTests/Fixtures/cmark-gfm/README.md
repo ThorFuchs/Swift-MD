@@ -24,7 +24,8 @@ https://creativecommons.org/licenses/by-sa/4.0/.
 The two previously bundled files `regression.txt` and `smart_punct.txt` were
 removed from this source snapshot because their individual license provenance
 remains unresolved. They remain in earlier SwiftMD history and in the published
-SwiftGFM 1.0.0 source package. Thirteen separately authored neutral behavior cases
+SwiftGFM 1.0.0 source package; SwiftGFM 1.0.1 removes them from its source snapshot.
+Thirteen separately authored neutral behavior cases
 are maintained in `Tests/SwiftMDTests/NeutralRegressionTests.swift`; they do not
 claim to replace all 42 removed upstream cases. Upstream's full source license
 notices are copied to `ThirdPartyLicenses/cmark-gfm-COPYING.txt` at the SwiftMD

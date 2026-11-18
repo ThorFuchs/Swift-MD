@@ -43,8 +43,8 @@ distribution's licenses again, then test against the actual release identities.
 
 ## Dependencies and current boundaries
 
-* SwiftGFM 1.0.0 is public and resolves to commit
-  `d1c262f42daa7a06f4612a94671e10740e26d09a`. Its annotated tag is unsigned;
+* SwiftGFM 1.0.1 is public and resolves to commit
+  `2cb9450cf755858d338525fe64081b5f04864a2d`. Its annotated tag is unsigned;
   the tag and commit must be checked again before a real release. It is a
   Swift wrapper around C, and its parser output is not a sanitizer or a claim
   of full GFM conformance.
