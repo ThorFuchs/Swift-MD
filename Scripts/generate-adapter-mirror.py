@@ -28,7 +28,12 @@ PATHS = ['Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests',
          'ThirdPartyLicenses', 'LICENSE']
 
 def git(*args):
-    return subprocess.check_output(['git', '-C', str(ROOT), *args])
+    # CI containers may run under a different UID than actions/checkout. Trust
+    # only the explicitly selected source checkout for this invocation; do not
+    # change global Git configuration or relax the check for unrelated paths.
+    return subprocess.check_output(['git', '-c', f'safe.directory={ROOT}',
+                                    '-c', f'safe.directory={ROOT / ".git"}',
+                                    '-C', str(ROOT), *args])
 
 def public_refs(url, *patterns):
     env = os.environ.copy()

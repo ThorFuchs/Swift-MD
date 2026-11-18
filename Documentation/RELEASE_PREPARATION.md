@@ -47,7 +47,8 @@ source commit is advertised by the public SwiftMD repository and that the
 released Core tag is an ancestor with identical Core source and manifest. These
 checks do not establish legal clearance, security qualification or permission
 to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
-`release_review_required: true`.
+`release_review_required: true`. Containerized Git operations trust only the
+explicit source checkout for each invocation and do not modify global config.
 
 For a reviewed, publicly advertised source commit, generate a local candidate
 and test it against the real public SwiftPM versions:
