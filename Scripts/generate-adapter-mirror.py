@@ -63,7 +63,7 @@ def main():
     renderer_resources = {}
     if args.include_locked_renderers:
         lock = json.loads((ROOT / 'Tools/NodeDependencies/package-lock.json').read_text())
-        resources = destination / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/Resources'
+        resources = destination / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
         resources.mkdir(parents=True)
         requested = {
             'katex': {'dist/katex.js': 'katex.cjs', 'LICENSE': 'KaTeX-LICENSE.txt'},
@@ -131,7 +131,7 @@ let package = Package(
               'GFM_VERSION':args.gfm_version, 'HIGHLIGHT_URL':args.highlight_url, 'HIGHLIGHT_VERSION':args.highlight_version}
     for key, value in values.items(): manifest = manifest.replace(key, q(value))
     manifest = manifest.replace('BUNDLED_PRODUCT', '.library(name: "SwiftMDBundled", targets: ["SwiftMDBundled"]),' if args.include_locked_renderers else '')
-    manifest = manifest.replace('BUNDLED_TARGET', '''.target(name: "SwiftMDBundled", dependencies: ["SwiftMDBlocks", .target(name: "SwiftMDJavaScriptCore", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])), .target(name: "SwiftMDCompiler", condition: .when(platforms: [.linux]))], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBundled", resources: [.copy("Resources")]),''' if args.include_locked_renderers else '')
+    manifest = manifest.replace('BUNDLED_TARGET', '''.target(name: "SwiftMDBundled", dependencies: ["SwiftMDBlocks", .target(name: "SwiftMDJavaScriptCore", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])), .target(name: "SwiftMDCompiler", condition: .when(platforms: [.linux]))], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBundled", resources: [.copy("RendererAssets")]),''' if args.include_locked_renderers else '')
     if args.local_test: manifest = manifest.replace('\n', '\n// LOCAL TEST ONLY — NEVER PUBLISH\n', 1)
     (destination / 'Package.swift').write_text(manifest)
     (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources}, indent=2) + '\n')
