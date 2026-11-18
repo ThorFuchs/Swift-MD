@@ -63,6 +63,8 @@ jobs:
     container: swift:6.2.4
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -92,6 +94,16 @@ jobs:
           SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex" \
           SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
           python3 Scripts/test-distribution.py
+      # Only an advertised branch commit can be checked against public refs;
+      # the synthetic local mirror gate above still runs on pull requests.
+      - name: Test mirror with verified public dependencies
+        if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && !github.event.repository.private }}
+        run: |
+          CANDIDATE="$(mktemp -d)/mirror"
+          python3 Scripts/generate-adapter-mirror.py "$CANDIDATE" \
+            --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --verify-public-dependencies --include-locked-renderers
+          python3 Scripts/test-public-candidate.py "$CANDIDATE" --node "$(command -v node)"
       - name: Build and test Linux release CLI
         run: |
           swift build --package-path Tools/SwiftMDCLI -c release -j 4 -Xswiftc -no-whole-module-optimization

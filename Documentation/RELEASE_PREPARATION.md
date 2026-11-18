@@ -49,6 +49,23 @@ checks do not establish legal clearance, security qualification or permission
 to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
 `release_review_required: true`.
 
+For a reviewed, publicly advertised source commit, generate a local candidate
+and test it against the real public SwiftPM versions:
+
+```sh
+python3 Scripts/generate-adapter-mirror.py /tmp/swiftmd-candidate \
+  --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+  --verify-public-dependencies --include-locked-renderers
+python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(command -v node)"
+```
+
+The latter creates a disposable synthetic tag for the mirror only. Core and
+all five Swift upstreams resolve from their real public tags and are checked
+against the verified revisions. On a public branch push, the Linux integration
+job runs this additional check; pull requests explicitly skip it because their
+merge commits need not be advertised branches or tags. The separate synthetic
+local mirror test remains mandatory for both pushes and pull requests.
+
 ## Dependencies and current boundaries
 
 * SwiftGFM 1.0.1 is public and resolves to commit
