@@ -65,3 +65,16 @@ passed on source commit `def5d1c`, including the bundled Linux one-call
 consumer with real Node, KaTeX, Pele and Swift-Highlight, the independent C
 reference comparison, and the Linux resource and isolation tests. That run
 does not establish iOS physical-device support or complete security review.
+
+The simulator consumer is now reproducible from a clean committed source
+checkout on macOS with Xcode, `xcodegen`, network access and one already booted
+iOS simulator:
+
+```sh
+python3 Scripts/test-ios-consumer.py --simulator SIMULATOR-UDID
+```
+
+The script generates an explicitly local-only mirror, creates a disposable app
+that imports only `SwiftMDBundled`, and checks real combined rendering and a
+failure fallback inside the simulator. It uninstalls only its own uniquely
+named test app. It does not create a remote mirror or publish a release.
