@@ -1,5 +1,27 @@
 # Public release preparation
 
+## Optional Markdown mathematics candidate
+
+The local `SWIFTMD_EXPERIMENTAL_GFM_MATH` build uses the unreleased
+math-aware SwiftGFM API. Before publishing it, verify the actual public
+SwiftGFM release tag and commit, update all SwiftPM version requirements and
+lockfiles, and enable the integration in the normal build. Re-run the full
+Core/reference suite, real Node and JavaScriptCore adapters, strict CLI and
+browser tests, Linux runtime tests, and fresh public versioned consumers for
+the final SwiftMD and generated-mirror commits. Re-run the automated security
+scan with coverage of the new SwiftGFM C bridge and SwiftMD integration; the
+local Clang analysis and ASan checks do not replace that gate.
+
+The prototype recognizes inline and display math outside code, image
+descriptions and GFM table cells. Unsafe raw HTML cannot be combined with the
+math-aware parser: document-level parser errors produce escaped source and a
+diagnostic, and strict CLI mode emits no output. Its delimiter/currency rules
+are intentionally limited and do not claim universal Markdown-math parity.
+An additive public math API generally calls for a SwiftMD minor release; choose
+the final version after the compatibility review. The implementation, tested
+commits and platform boundaries are documented in
+[integrated rendering](INTEGRATED_RENDERING.md).
+
 The 1.0 API, deployment and platform boundaries are recorded in the
 [release contract](V1_RELEASE_CONTRACT.md) and
 [security contract](SECURITY_CONTRACT.md).
