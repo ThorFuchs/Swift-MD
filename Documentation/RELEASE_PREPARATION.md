@@ -11,6 +11,12 @@ browser tests, Linux runtime tests, and fresh public versioned consumers for
 the final SwiftMD and generated-mirror commits. Re-run the automated security
 scan with coverage of the new SwiftGFM C bridge and SwiftMD integration; the
 local Clang analysis and ASan checks do not replace that gate.
+The SwiftMD security workflow prepares a marked local-only mirror with a
+disposable Core tag for pre-release analysis, so scanning the candidate does
+not require a release tag to exist first. It separately builds an archived
+copy of the exact resolved SwiftHTML sources and requires key parser files in
+the CodeQL extraction report. This scan mirror is never a release artifact;
+the public-dependency and provenance gates still apply before publication.
 
 The prototype recognizes inline and display math outside code, image
 descriptions and GFM table cells. Unsafe raw HTML cannot be combined with the

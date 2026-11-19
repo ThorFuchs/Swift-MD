@@ -1,7 +1,8 @@
 name: Independent automated security scan
 on:
   push:
-    branches: [feature/restore-compiler-cli, codex/prepare-swiftmd-1.0, main]
+    branches: [feature/restore-compiler-cli, codex/prepare-swiftmd-1.0, codex/integrate-swifthtml, main]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,18 +29,30 @@ jobs:
           persist-credentials: false
       - name: Verify the scan-result gate
         run: python3 Scripts/test-codeql-results.py
-      - name: Prepare actual mirror source for Swift analysis
+      - name: Prepare local candidate mirror source for Swift analysis
         if: ${{ matrix.language == 'swift' }}
         run: |
           swift package --package-path Adapters/SwiftMDBlocks resolve
           python3 Scripts/check-swifthtml-checkout.py
           SWIFTHTML_URL="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_repository"] or "")')"
           SWIFTHTML_VERSION="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_version"] or "")')"
+          GFM_VERSION="$(python3 -c 'import json; print(next(p["state"]["version"] for p in json.load(open("Adapters/SwiftMDBlocks/Package.resolved"))["pins"] if p["identity"] == "swift-gfm"))')"
+          HIGHLIGHT_VERSION="$(python3 -c 'import json; print(next(p["state"]["version"] for p in json.load(open("Adapters/SwiftMDBlocks/Package.resolved"))["pins"] if p["identity"] == "swift-highlight"))')"
           test -n "$SWIFTHTML_URL" && test -n "$SWIFTHTML_VERSION" || { echo 'Public SwiftHTML version is not configured; security mirror gate blocked' >&2; exit 1; }
+          # Scan the exact candidate before it is tagged. The temporary core
+          # tag and local-test mirror are not publishable release artifacts.
+          git clone --quiet --bare --no-hardlinks "$GITHUB_WORKSPACE" "$RUNNER_TEMP/Swift-MD.git"
+          git -C "$RUNNER_TEMP/Swift-MD.git" update-ref -d refs/tags/0.0.0
+          git -C "$RUNNER_TEMP/Swift-MD.git" tag 0.0.0 "$GITHUB_SHA"
           python3 Scripts/generate-adapter-mirror.py "$GITHUB_WORKSPACE/_security_scan_mirror" \
-            --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --core-version 0.0.0 --gfm-version "$GFM_VERSION" --highlight-version "$HIGHLIGHT_VERSION" \
+            --core-url "file://$RUNNER_TEMP/Swift-MD.git" \
             --swifthtml-url "$SWIFTHTML_URL" --swifthtml-version "$SWIFTHTML_VERSION" \
-            --verify-public-dependencies --include-locked-renderers
+            --local-test --include-locked-renderers
+          # Analyze the exact resolved SwiftHTML sources as first-party scan
+          # inputs; an extractor may otherwise exclude SwiftPM checkouts.
+          mkdir "$GITHUB_WORKSPACE/_security_scan_swifthtml"
+          git -C Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML archive HEAD | tar -x -C "$GITHUB_WORKSPACE/_security_scan_swifthtml"
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: ${{ matrix.language }}
@@ -50,6 +63,7 @@ jobs:
           swift --version
           swift build --package-path Adapters/SwiftMDBlocks --arch "$(uname -m)" -j 4
           swift build --package-path _security_scan_mirror --arch "$(uname -m)" -j 4
+          swift build --package-path _security_scan_swifthtml --arch "$(uname -m)" -j 4
       - name: Analyze without publishing repository alerts
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
