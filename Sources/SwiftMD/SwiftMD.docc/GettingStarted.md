@@ -3,7 +3,7 @@
 Add the core product with Swift Package Manager:
 
 ```swift
-.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "0.1.0")
+.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "1.0.0")
 ```
 
 Add `.product(name: "SwiftMD", package: "Swift-MD")` to a target, then:

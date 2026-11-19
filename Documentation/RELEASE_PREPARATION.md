@@ -49,7 +49,8 @@ output unpublishable and permits `file://` URLs; `--verify-public-dependencies`
 requires canonical public HTTPS URLs and checks each SwiftPM tag against its
 lockfile revision without configured Git credentials. It checks that the
 source commit is advertised by the public SwiftMD repository and that the
-released Core tag is an ancestor with identical Core source and manifest. These
+released Core tag is an ancestor with an identical Core manifest and runtime
+source; changes confined to `Sources/SwiftMD/SwiftMD.docc/` are allowed. These
 checks do not establish legal clearance, security qualification or permission
 to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
 `release_review_required: true`. Containerized Git operations trust only the

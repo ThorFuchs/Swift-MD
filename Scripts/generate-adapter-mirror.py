@@ -54,6 +54,15 @@ def public_tag(url, version):
         raise ValueError(f'public version tag not found: {url} {version}')
     return refs.get(name + '^{}', refs[name])
 
+
+def core_matches_published_runtime(core, commit):
+    """Allow DocC-only edits; the manifest and all other Core files must match."""
+    if git('rev-parse', core + ':Package.swift') != git('rev-parse', commit + ':Package.swift'):
+        return False
+    changes = git('diff', '--no-renames', '--name-only', '-z', core, commit, '--', 'Sources/SwiftMD')
+    return all(path.startswith(b'Sources/SwiftMD/SwiftMD.docc/')
+               for path in changes.split(b'\0') if path)
+
 def verify_public_dependencies(args, commit):
     canonical = ('https://github.com/ThorFuchs/Swift-MD.git',
                  'https://github.com/ThorFuchs/Swift-GFM.git',
@@ -88,9 +97,8 @@ def verify_public_dependencies(args, commit):
     try:
         git('cat-file', '-e', core + '^{commit}')
         git('merge-base', '--is-ancestor', core, commit)
-        for path in ('Package.swift', 'Sources/SwiftMD'):
-            if git('rev-parse', core + ':' + path) != git('rev-parse', commit + ':' + path):
-                raise ValueError(f'published Core differs from mirror source: {path}')
+        if not core_matches_published_runtime(core, commit):
+            raise ValueError('published Core runtime or manifest differs from mirror source')
     except subprocess.CalledProcessError as error:
         raise ValueError('public Core tag commit must be available locally and be an ancestor of source') from error
     verified['swift-md'] = {'url': args.core_url, 'version': args.core_version, 'revision': core}

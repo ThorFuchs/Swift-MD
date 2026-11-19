@@ -5,21 +5,26 @@ pinned cmark-gfm C parser. The root SwiftPM product has no JavaScript runtime,
 browser UI, Apple framework, or optional renderer dependency. With no block
 renderers it returns the exact bytes produced by SwiftGFM for the configuration.
 
-The opt-in `Adapters/SwiftMDBlocks` package adds structured HTML block processing,
-Swift-Highlight, KaTeX-to-MathML and Pele-to-SVG. The last two use explicitly
-configured local Node processes at compile time. The generated MathML and SVG
-are embedded in the HTML; their display does not require client-side JavaScript.
-These adapters and the CLI are experimental, not a security-reviewed release.
+The opt-in adapter package adds structured HTML block processing,
+Swift-Highlight, KaTeX-to-MathML and Pele-to-SVG. The bundled integration uses
+JavaScriptCore on Apple platforms and an explicitly configured local Node
+process on Linux. The generated MathML and SVG are embedded in the HTML; their
+display does not require client-side JavaScript. See the security contract
+before using the adapters with untrusted input.
+
+This branch prepares version 1.0.0. Its 1.0 installation examples require the
+corresponding Core and adapter tags to be published; the currently published
+release can be checked on the [releases page](https://github.com/ThorFuchs/Swift-MD/releases).
 
 ## Install the core library
 
 ```swift
-.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "0.1.0")
+.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "1.0.0")
 ```
 
 Add `.product(name: "SwiftMD", package: "Swift-MD")` to your target.
-The root package depends only on SwiftGFM; the separate adapter mirror is not
-yet published, so the optional adapters and CLI are built from a local checkout.
+The root package depends only on SwiftGFM. The optional adapter mirror is a
+separate generated distribution from this source repository.
 
 ```swift
 import SwiftMD
@@ -27,14 +32,42 @@ let result = try MarkdownCompiler().render("# Hello\n")
 print(result.html)
 ```
 
+## Compile with all bundled renderers
+
+After the adapter mirror is published, add it to the package dependencies:
+
+```swift
+.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "1.0.0")
+```
+
+Add `.product(name: "SwiftMDBundled", package: "Swift-MD-Adapters")` to the
+target dependencies. Then render Markdown containing Swift, `math` and
+`mermaid` fences in one call:
+
+```swift
+import SwiftMDBundled
+
+let result = try SwiftMDIntegrated.render(
+    markdown,
+    svgPrefix: "unique-page-id",
+    nodeExecutable: "/trusted/absolute/path/to/node" // Linux; omit on Apple
+)
+print(result.html)
+for diagnostic in result.diagnostics { print(diagnostic.message) }
+```
+
+The prefix must be distinct for each separately compiled fragment displayed on
+the same page. The API returns diagnostics on block failures. The bundled
+scripts and their notices are SwiftPM resources; Linux still requires Node.
+
 ## Supported extensions
 
 | Feature | Input | Rendering | Output |
 | --- | --- | --- | --- |
 | GFM | Tables, task lists, autolinks and strikethrough | SwiftGFM / cmark-gfm | HTML |
 | Syntax highlighting | A supported language code fence | Swift-Highlight | HTML with CSS classes |
-| Block mathematics | A `math` code fence | KaTeX on Node | MathML |
-| Diagrams | A `mermaid` code fence | Pele on Node | SVG |
+| Block mathematics | A `math` code fence | KaTeX on JavaScriptCore or Node | MathML |
+| Diagrams | A `mermaid` code fence | Pele on JavaScriptCore or Node | SVG |
 
 KaTeX and Pele run at compile time; embedded MathML and SVG require no
 client-side JavaScript. Highlighting needs a host stylesheet. See the

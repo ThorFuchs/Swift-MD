@@ -105,6 +105,17 @@ class MirrorPolicyTests(unittest.TestCase):
                 generator.main()
         self.assertFalse(dest.exists())
 
+    def test_core_preflight_allows_only_docc_changes(self):
+        manifest = b'manifest-object\n'
+        with patch.object(generator, 'git', side_effect=[manifest, manifest,
+                b'Sources/SwiftMD/SwiftMD.docc/GettingStarted.md\0']):
+            self.assertTrue(generator.core_matches_published_runtime('core', 'candidate'))
+        with patch.object(generator, 'git', side_effect=[manifest, manifest,
+                b'Sources/SwiftMD/MarkdownCompiler.swift\0']):
+            self.assertFalse(generator.core_matches_published_runtime('core', 'candidate'))
+        with patch.object(generator, 'git', side_effect=[manifest, b'changed-manifest\n']):
+            self.assertFalse(generator.core_matches_published_runtime('core', 'candidate'))
+
 
 if __name__ == '__main__':
     unittest.main()
