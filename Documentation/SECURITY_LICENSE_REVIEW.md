@@ -159,6 +159,8 @@ evidence of infringement; it does mean SwiftSoup's root MIT license alone is
 not a complete inventory of the fetched source snapshot. Review this corpus
 or select and verify an alternative distribution before treating the source
 dependency review as complete.
+The [external review packet](EXTERNAL_RIGHTS_REVIEW.md) lists the intended
+distribution paths, exact evidence and questions for a qualified reviewer.
 
 The bundled KaTeX 0.19.1 `dist/katex.js` contains attribution for utility
 functions adapted from Facebook's React under Apache-2.0 and for SVG data
