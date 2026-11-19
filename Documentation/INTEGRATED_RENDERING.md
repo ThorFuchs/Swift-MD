@@ -97,6 +97,9 @@ The same day `Scripts/test-all.sh` passed again on macOS against SwiftHTML
 candidate `9ccb0f058c12c4a00d9b78585de2d06c01e0f672`, including the
 independent cmark comparison and real renderer tests. Its known published-GFM
 baseline deviations remain. SwiftHTML's public version is not yet available.
+The subsequent candidate `d669913150990db1b7637659f71bea5ac9a10876` changes
+only SwiftHTML validation documentation; the 30 adapter tests and the license
+and provenance checks passed again against that exact local commit on macOS.
 From SwiftMD commit `7949e36fda16e8b61766298e8aa577b2cdb6d439`, all eight
 mirror-policy tests and the fresh versioned Core, integrated adapter and
 SwiftSoup-coexistence consumers passed with explicitly synthetic local tags.
