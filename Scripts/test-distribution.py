@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_VERSION = '0.0.0'  # Only in disposable local repositories; never publish.
+TEST_VERSION = '1.0.0'  # Synthetic; only in disposable local repositories, never publish.
 
 
 def call(*args, cwd=None, capture=False):
@@ -90,7 +90,7 @@ def main():
                 raise ValueError(f'generated renderer notice mismatch: {resource}')
         for relative in ('Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
                          'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
-                         'Documentation/PROCESS_ISOLATION.md'):
+                         'Documentation/PROCESS_ISOLATION.md', 'Documentation/SECURITY_CONTRACT.md'):
             if (mirror / relative).read_bytes() != (source / relative).read_bytes():
                 raise ValueError(f'generated mirror omitted or changed isolation file: {relative}')
         call('git', 'init', '--quiet', cwd=mirror)

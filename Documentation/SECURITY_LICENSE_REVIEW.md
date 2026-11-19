@@ -121,6 +121,33 @@ transitive source dependencies and history, before any release.
 SwiftGFM 1.0.1 removes both files from its new source snapshot; its 1.0.0 tag
 and prior Git history remain unchanged. This does not resolve their rights.
 
+On 19 November 2026, an additional independent blob comparison checked the
+17 Swift-Highlight 1.0.1 inputs previously described as similar or extended
+relative to the pinned highlight.js revision. All 17 match their corresponding
+HighlightKit `524c185b0553756498c1b6a1765e8d119c4623a6` files byte for byte,
+and those files also match the HighlightKit initial import.
+Fifteen also match highlight.js files at other identified commits byte for
+byte. The two XML inputs match the pinned highlight.js files after removal of
+their UTF-8 byte order marks, with no other byte difference. The script below
+records each exact source commit and verifies that their commit timestamps
+precede HighlightKit's initial import; timestamps do not prove a transfer path.
+HighlightKit's MIT license and the same highlight.js BSD-3-Clause license at all
+12 referenced highlight.js revisions match the retained notice bytes. This
+narrowly resolves the prior unexplained byte differences; it is not proof of
+ownership of every contribution or a legal opinion on any distribution.
+
+```sh
+python3 Scripts/audit-highlight-fixtures.py \
+  --highlightkit-source /absolute/path/to/HighlightKit \
+  --highlightjs-source /absolute/path/to/highlight.js
+```
+
+The public Swift-Highlight repository's fixture inventory describes the
+earlier comparison against one pinned highlight.js commit. SwiftMD's new
+comparison is recorded here; it does not modify the sister repository or its
+history. SwiftPM independently fetches Swift-Highlight's source, while the
+generated SwiftMD adapter mirror does not copy those fixtures into itself.
+
 The bundled KaTeX 0.19.1 `dist/katex.js` contains attribution for utility
 functions adapted from Facebook's React under Apache-2.0 and for SVG data
 adapted from font glyphs under SIL OFL 1.1. The mirror now includes the
@@ -146,6 +173,10 @@ Mermaid source revision is unspecified. As a precaution the mirror generator
 now includes Mermaid's MIT license and copyright notice with the renderer
 resources; its source and checksum are recorded in the Pele notice. The
 additional attribution does not establish the complete provenance of the port.
+At the separately identified Mermaid reference commit, the journey and timeline
+grammar headers also declare MIT and name Knut Sveidqvist with copyright years
+2015 and 2023. Those file-level notices are now included alongside the bundled
+resources; the Pele source does not identify an exact Mermaid revision.
 
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with

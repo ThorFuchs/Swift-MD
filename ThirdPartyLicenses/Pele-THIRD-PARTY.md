@@ -50,6 +50,21 @@ the unmodified `LICENSE` from Mermaid commit
 The Pele comment does not identify a Mermaid revision, so this is a documented
 license reference, not a claim that 12.2.0 was the source of the port.
 
+At that Mermaid reference commit, the individual grammar headers identify the
+following additional notices:
+
+* `packages/mermaid/src/diagrams/user-journey/parser/journey.jison`:
+  Copyright (c) 2015 Knut Sveidqvist, MIT license.
+* `packages/mermaid/src/diagrams/timeline/parser/timeline.jison`:
+  Copyright (c) 2023 Knut Sveidqvist, MIT license.
+
+The grammar files are evidence of the upstream rules and their notices, not
+proof that this specific Mermaid commit was used for Pele's port. These notices
+are included with the renderer resources along with `Pele-Mermaid-MIT.txt`.
+Their SHA-256 digests at that commit are respectively
+`2230b9f958f7c2f2381149b0e484cd203ff919cf43abd065beba7ab6b5a660a5` and
+`65a1aaa24f2a9f5416b89b9774847e832cc2e810bb4233d77ad756c94f8baf8f`.
+
 The build settings omit legal comments. This inventory and reproducibility
 evidence do not establish the origin or licensing of every upstream source
 fragment and are not a legal clearance to publish the mirror.

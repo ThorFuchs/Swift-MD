@@ -53,7 +53,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cmark-source', type=Path, help='independent upstream cmark-gfm Git checkout')
     parser.add_argument('--npm-tarballs', action='store_true', help='download and verify locked npm tarballs and installed bytes')
+    parser.add_argument('--mermaid-journey', type=Path, help='journey grammar from the documented Mermaid reference commit')
+    parser.add_argument('--mermaid-timeline', type=Path, help='timeline grammar from the documented Mermaid reference commit')
     args = parser.parse_args()
+    require(bool(args.mermaid_journey) == bool(args.mermaid_timeline), 'provide both Mermaid grammar files or neither')
     pins = {p['identity']: p['state']['revision'] for p in json.loads(
         (ROOT / 'Adapters/SwiftMDBlocks/Package.resolved').read_text())['pins']}
     for checkout, identity, source, target in NOTICES:
@@ -114,6 +117,20 @@ def main():
     require(hashlib.sha256((NOTICE / 'Pele-Mermaid-MIT.txt').read_bytes()).hexdigest() ==
             'ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80', 'Pele Mermaid license checksum')
     print('Pele Mermaid license checksum: OK')
+    pele_notices = (NOTICE / 'Pele-THIRD-PARTY.md').read_text(encoding='utf-8')
+    for marker in ('Copyright (c) 2015 Knut Sveidqvist', 'Copyright (c) 2023 Knut Sveidqvist'):
+        require(marker in pele_notices, f'Pele Mermaid grammar notice missing: {marker}')
+    if args.mermaid_journey:
+        for path, digest, marker in (
+            (args.mermaid_journey, '2230b9f958f7c2f2381149b0e484cd203ff919cf43abd065beba7ab6b5a660a5', b'(c) 2015 Knut Sveidqvist'),
+            (args.mermaid_timeline, '65a1aaa24f2a9f5416b89b9774847e832cc2e810bb4233d77ad756c94f8baf8f', b'(c) 2023 Knut Sveidqvist'),
+        ):
+            grammar = path.read_bytes()
+            require(hashlib.sha256(grammar).hexdigest() == digest and marker in grammar and b'MIT license.' in grammar,
+                    f'Mermaid reference grammar mismatch: {path.name}')
+        print('Mermaid reference grammar bytes and license headers: 2/2 match')
+    else:
+        print('Mermaid reference grammar bytes: not checked (no grammar files supplied)')
     print(f'npm package identities and licenses: {len(NPM_NOTICES)}/{len(NPM_NOTICES)}; tarball integrity and installed files: {installed_files if args.npm_tarballs else "not checked"}')
     print('Byte and provenance checks do not constitute legal advice or a completed rights review.')
 

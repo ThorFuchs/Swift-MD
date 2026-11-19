@@ -1,5 +1,10 @@
 # Public release preparation
 
+The proposed 1.0 API, deployment and platform boundaries are recorded in the
+[release contract](V1_RELEASE_CONTRACT.md) and
+[security contract](SECURITY_CONTRACT.md). They describe a candidate, not a
+published 1.0 release.
+
 This document records the release boundary and the checks needed to prepare a
 candidate. It does not authorize a visibility change, tag, mirror publication,
 GitHub release, or distribution of an archive.
@@ -16,7 +21,7 @@ feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 `Scripts/test-distribution.py` requires a clean committed checkout and a trusted
 absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
 and verifies their SHA-512 integrity while generating the test mirror. It creates
-disposable local Git repositories, synthetic `0.0.0` tags for SwiftMD and its
+disposable local Git repositories, synthetic `1.0.0` tags for SwiftMD and its
 generated mirror, and **two fresh version-based consumers**. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
 with `--local-test` and is marked unpublishable. The gate resolves the actual

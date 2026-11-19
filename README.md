@@ -93,3 +93,5 @@ The isolated version-based distribution gate is described in
 temporary local test tags and a local test mirror; it publishes nothing.
 See the [SVG, process and license review](Documentation/SECURITY_LICENSE_REVIEW.md)
 for the current evidence and remaining release boundaries.
+The proposed [security and resource contract](Documentation/SECURITY_CONTRACT.md)
+defines the deployment responsibilities for the 1.0 release candidate.

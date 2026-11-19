@@ -73,7 +73,7 @@ jobs:
       - name: Build independent cmark-gfm reference
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake build-essential python3 util-linux
+          apt-get install -y --no-install-recommends cmake build-essential curl python3 util-linux
           git clone --no-checkout https://github.com/github/cmark-gfm.git /tmp/cmark-reference
           git -C /tmp/cmark-reference checkout --detach 27d942c8b0a62d192f616e5bf3578f4b6a89e180
           cmake -S /tmp/cmark-reference -B /tmp/cmark-reference/build -DCMARK_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
@@ -85,7 +85,21 @@ jobs:
       - name: Check committed example HTML
         run: python3 Scripts/render-examples.py --binary Tools/SwiftMDCLI/.build/debug/swift-md --node "$(command -v node)" --check
       - name: Verify pinned notices, fixtures, and npm archives
-        run: python3 Scripts/audit-dependencies.py --cmark-source /tmp/cmark-reference --npm-tarballs
+        run: |
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/mermaid-js/mermaid/1fb7869866dd619168d840291c9c54b4f129758b/packages/mermaid/src/diagrams/user-journey/parser/journey.jison \
+            --output /tmp/mermaid-journey.jison
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/mermaid-js/mermaid/1fb7869866dd619168d840291c9c54b4f129758b/packages/mermaid/src/diagrams/timeline/parser/timeline.jison \
+            --output /tmp/mermaid-timeline.jison
+          python3 Scripts/audit-dependencies.py --cmark-source /tmp/cmark-reference --npm-tarballs \
+            --mermaid-journey /tmp/mermaid-journey.jison --mermaid-timeline /tmp/mermaid-timeline.jison
+      - name: Compare HighlightKit fixtures with independent upstream history
+        run: |
+          git clone --no-checkout https://github.com/PhraseHQ/HighlightKit.git /tmp/highlightkit-reference
+          git clone --no-checkout https://github.com/highlightjs/highlight.js.git /tmp/highlightjs-reference
+          python3 Scripts/audit-highlight-fixtures.py --highlightkit-source /tmp/highlightkit-reference \
+            --highlightjs-source /tmp/highlightjs-reference
       - name: Check mirror generator publication boundaries
         run: python3 Scripts/test-mirror-policy.py
       - name: Test isolated version-based distribution consumers

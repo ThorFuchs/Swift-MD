@@ -42,6 +42,8 @@ prefix. Check diagnostics; failed blocks retain escaped source. Raw HTML and
 third-party renderer output are trust boundaries, and SVG validation is not a
 general sanitizer. Neither backend enforces a hard deadline or aggregate memory
 cap. See `Documentation/PROCESS_ISOLATION.md` in the source repository.
+The [security and resource contract](Documentation/SECURITY_CONTRACT.md)
+describes the required trust and deployment boundaries.
 
 The source, bundled scripts and third-party licenses require review before
 publishing a mirror. A mirror marked `local_test_only` is never publishable.

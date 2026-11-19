@@ -24,7 +24,7 @@ PATHS = ['Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests',
          'Tools/NodeDependencies/package.json', 'Tools/NodeDependencies/package-lock.json',
          'Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
          'Scripts/run-linux-systemd.py', 'Scripts/systemd-worker-guard.py',
-         'Documentation/PROCESS_ISOLATION.md',
+         'Documentation/PROCESS_ISOLATION.md', 'Documentation/SECURITY_CONTRACT.md',
          'ThirdPartyLicenses', 'LICENSE']
 
 def git(*args):
