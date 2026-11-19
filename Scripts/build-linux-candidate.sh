@@ -10,7 +10,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=all)" ] || { echo 'Source checkout must be clean' >&2; exit 1; }
 case "$1" in /*) output=$1;; *) output=$(pwd)/$1;; esac
 commit=$(git -C "$ROOT" rev-parse HEAD)
-swift_path=$(command -v swift)
+swift_path=$(readlink -f "$(command -v swift)")
 swift_license=$(CDPATH= cd -- "$(dirname -- "$swift_path")/../share/swift" && pwd)/LICENSE.txt
 [ -f "$swift_license" ] || { echo 'Swift runtime license not found' >&2; exit 1; }
 tmp=$(mktemp -d)
