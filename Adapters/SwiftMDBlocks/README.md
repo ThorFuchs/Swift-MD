@@ -3,7 +3,9 @@
 The local `SwiftMDCompiler` product provides a unified API over the existing
 renderers. Node and module paths must be explicitly supplied as trusted
 absolute paths; install the pinned modules with `npm ci --ignore-scripts` in
-`Tools/NodeDependencies`. No adapter mirror has been published yet.
+`Tools/NodeDependencies`. This development branch also needs the sibling
+`Swift-HTML` checkout at the revision in `SwiftHTML-PROVENANCE.json`. The
+published 1.0.0 mirror predates this integration and remains unchanged.
 
 ```swift
 import SwiftMDCompiler
@@ -39,12 +41,12 @@ experimental `SwiftMDBundled` product: it downloads the npm archives pinned in
 the source lockfile, verifies their integrity, embeds the selected unchanged
 renderer files and licenses as SwiftPM resources, and records their hashes and
 provenance. This does not check generated dependencies into the source repo.
-It is not yet a published package. Apple hosts use JavaScriptCore; Linux still
+The SwiftHTML-based version is not yet published. Apple hosts use JavaScriptCore; Linux still
 requires a trusted absolute Node executable. The embedded artifact and its
 complete third-party notices must be reviewed before any distribution release.
 
 `SwiftMDBlocks` is an opt-in HTML profile: it parses and reserializes the
-SwiftGFM HTML with SwiftSoup and processes matching `pre > code` elements.
+SwiftGFM HTML with SwiftHTML and processes matching `pre > code` elements.
 With no renderers it bypasses parsing and returns the exact core bytes. Source
 provenance cannot be established from HTML, so author-written matching raw HTML
 is processed too. Nested non-text code content is retained with a diagnostic.
@@ -88,5 +90,6 @@ so too-small address-space limits can prevent Node from starting. Use cgroups an
 an OS sandbox for aggregate memory and stronger isolation.
 The optional package currently resolves Swift-Highlight even for other products;
 the root Core package avoids that dependency. Swift-Highlight is pinned to its
-public 1.0.1 tag (commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564). SwiftPM remote adapter distribution is not yet
-available. No `$$` or inline mathematics is implemented.
+public 1.0.1 tag (commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564). A public
+SwiftHTML-based adapter distribution requires a verified stable SwiftHTML
+release. No `$$` or inline mathematics is implemented.

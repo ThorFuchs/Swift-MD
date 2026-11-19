@@ -21,7 +21,9 @@ feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
 and verifies their SHA-512 integrity while generating the test mirror. It creates
 disposable local Git repositories, synthetic `1.0.0` tags for SwiftMD and its
-generated mirror, and fresh version-based consumers. It never creates
+generated mirror, a synthetic `0.0.1` SwiftHTML tag, and fresh version-based
+consumers. The sibling SwiftHTML checkout must be at the tested revision in
+`Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
 with `--local-test` and is marked unpublishable. The gate resolves the actual
 public SwiftGFM and Swift-Highlight versions from the committed lockfile, checks
@@ -37,11 +39,12 @@ SWIFTMD_NODE="$(command -v node)" \
 python3 Scripts/test-distribution.py
 ```
 
-The integration CI job runs this gate; it is distinct from the full test suite
-in `Scripts/test-all.sh`. Synthetic local tags do not demonstrate that SwiftMD
-or its adapter mirror is publicly available. Before publication, verify each
-public tag, its commit, dependency accessibility, mirror provenance and the
-distribution's licenses again, then test against the actual release identities.
+This gate is distinct from `Scripts/test-all.sh`. Synthetic local tags do not
+demonstrate a public SwiftHTML release. The existing 1.0.0 mirror is published
+with the prior backend; this integration is local only. Public CI and a new
+mirror release need an accessible, stable SwiftHTML tag and a reviewed license
+for its own code. Before publication, verify each public tag, its commit,
+dependency accessibility, mirror provenance and distribution licenses again.
 
 The generator requires exactly one mode: `--local-test` explicitly marks its
 output unpublishable and permits `file://` URLs; `--verify-public-dependencies`
@@ -55,22 +58,26 @@ to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
 `release_review_required: true`. Containerized Git operations trust only the
 explicit source checkout for each invocation and do not modify global config.
 
-For a reviewed, publicly advertised source commit, generate a local candidate
-and test it against the real public SwiftPM versions:
+For a disposable local test, `Scripts/test-distribution.py` creates and checks
+the synthetic SwiftHTML tag automatically. Public candidate generation requires
+explicit `--swifthtml-url` and `--swifthtml-version` values and is fail-closed
+while `public_repository` or `public_version` is unset in the provenance file.
+Once an actual SwiftHTML release is reviewed and configured, a public-dependency
+candidate can be generated with:
 
 ```sh
 python3 Scripts/generate-adapter-mirror.py /tmp/swiftmd-candidate \
   --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+  --swifthtml-url "$VERIFIED_SWIFTHTML_URL" --swifthtml-version "$VERIFIED_SWIFTHTML_VERSION" \
   --verify-public-dependencies --include-locked-renderers
 python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(command -v node)"
 ```
 
-The latter creates a disposable synthetic tag for the mirror only. Core and
-all four Swift upstream dependencies resolve from their real public tags and are checked
-against the verified revisions. On a public branch push, the Linux integration
-job runs this additional check; pull requests explicitly skip it because their
-merge commits need not be advertised branches or tags. The separate synthetic
-local mirror test remains mandatory for both pushes and pull requests.
+The latter creates a disposable synthetic tag for the mirror only. Core,
+SwiftGFM, Swift-Highlight and SwiftHTML must resolve from verified public tags.
+The existing hosted jobs need a way to obtain the tested SwiftHTML sibling;
+until that is arranged and its stable tag exists, they are not release evidence
+for this branch. The separate synthetic local mirror test remains mandatory.
 
 ## Dependencies and current boundaries
 

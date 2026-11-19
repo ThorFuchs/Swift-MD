@@ -43,10 +43,19 @@ def main():
     with tempfile.TemporaryDirectory(prefix='swiftmd-ios-consumer-') as name:
         temp = Path(name)
         mirror = temp / 'SwiftMDAdapters'
+        html_source = (ROOT / 'Adapters/SwiftMDBlocks/../../../Swift-HTML').resolve()
+        html_revision = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())['tested_revision']
+        if call('git', '-C', str(html_source), 'rev-parse', 'HEAD', capture=True).strip() != html_revision:
+            raise ValueError('SwiftHTML checkout differs from the tested revision')
+        html = temp / 'Swift-HTML.git'
         try:
+            call('git', 'clone', '--quiet', '--bare', '--no-hardlinks', str(html_source), str(html))
+            call('git', '-C', str(html), 'update-ref', '-d', 'refs/tags/0.0.1')
+            call('git', '-C', str(html), 'tag', '0.0.1', html_revision)
             call(sys.executable, str(ROOT / 'Scripts/generate-adapter-mirror.py'), str(mirror),
                  '--core-version', args.core_version, '--gfm-version', pins['swift-gfm']['version'],
                  '--highlight-version', pins['swift-highlight']['version'], '--local-test',
+                 '--swifthtml-url', html.as_uri(), '--swifthtml-version', '0.0.1',
                  '--include-locked-renderers')
             project = temp / 'project.yml'
             project.write_text(f'''name: SwiftMDIntegratedProbe

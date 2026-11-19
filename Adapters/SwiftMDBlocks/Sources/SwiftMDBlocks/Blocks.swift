@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 import SwiftMD
-import SwiftMDSoup
+import SwiftHTML
 
 /// Trusted HTML returned by a block renderer. The caller is responsible for its safety.
 public enum BlockReplacement: Sendable {
@@ -36,7 +36,7 @@ public struct BlockResult: Sendable {
 }
 
 /// Explicit opt-in HTML profile. It processes *all* matching pre/code elements,
-/// including author-provided raw HTML. Returned HTML is reserialized by SwiftSoup.
+/// including author-provided raw HTML. Returned HTML is reserialized by SwiftHTML.
 public struct BlockCompiler: Sendable {
     public let compiler: MarkdownCompiler
     public let renderers: [any BlockRenderer]
@@ -49,20 +49,19 @@ public struct BlockCompiler: Sendable {
     public func render(_ source: String) throws -> BlockResult {
         let original = try compiler.render(source).html
         if renderers.isEmpty { return BlockResult(html: original, diagnostics: []) }
-        let doc = try SwiftMDSoup.parseBodyFragment(original)
-        doc.outputSettings().prettyPrint(pretty: false)
-        guard let body = doc.body() else { throw BlockProcessingError.missingBody }
+        let doc = try HTMLDocument.parseFragment(original)
+        guard let body = doc.body else { throw BlockProcessingError.missingBody }
         var diagnostics: [BlockDiagnostic] = []
         var fragments: [(String, String)] = []
-        for (index, code) in try body.select("pre > code").array().enumerated() {
-            guard let pre = code.parent() else { continue }
-            let classes = try code.attr("class").split(whereSeparator: { $0.isWhitespace })
-            let preLanguage = try pre.attr("lang").split(whereSeparator: { $0.isWhitespace }).first.map(String.init)
+        for (index, code) in try body.select("pre > code").enumerated() {
+            guard let pre = code.parent else { continue }
+            let classes = try (code.attribute("class") ?? "").split(whereSeparator: { $0.isWhitespace })
+            let preLanguage = try (pre.attribute("lang") ?? "").split(whereSeparator: { $0.isWhitespace }).first.map(String.init)
             let label = classes.first(where: { $0.hasPrefix("language-") }).map { String($0.dropFirst(9)) }
                 ?? preLanguage ?? ""
             let language = label.lowercased()
             guard !language.isEmpty else { continue }
-            guard code.getChildNodes().allSatisfy({ $0 is TextNode }) else {
+            guard let literal = code.directText() else {
                 diagnostics.append(.init(kind: .unsupportedContent, blockIndex: index, language: language, message: "Code element contains non-text nodes"))
                 continue
             }
@@ -70,22 +69,21 @@ public struct BlockCompiler: Sendable {
                 diagnostics.append(.init(kind: .unsupportedLanguage, blockIndex: index, language: language, message: "No renderer accepts this language"))
                 continue
             }
-            let literal = code.textNodes().map { $0.getWholeText() }.joined()
             do {
                 switch try renderer.render(literal: literal, language: language, index: index) {
-                case .codeHTML(let html): _ = try code.html(html)
-                case .blockHTML(let html): _ = try pre.before(html); try pre.remove()
+                case .codeHTML(let html): try code.setInnerHTML(html)
+                case .blockHTML(let html): try pre.insertHTMLBefore(html); try pre.remove()
                 case .validatedSVG(let svg):
                     var marker: String
                     repeat { marker = "SWIFTMD" + UUID().uuidString.replacingOccurrences(of: "-", with: "") } while original.contains(marker)
-                    _ = try pre.before(marker); try pre.remove()
+                    try pre.insertTextBefore(marker); try pre.remove()
                     fragments.append((marker, svg.html))
                 }
             } catch {
                 diagnostics.append(.init(kind: .renderFailed, blockIndex: index, language: language, message: String(describing: error)))
             }
         }
-        var html = try body.html()
+        var html = try body.innerHTML()
         for (marker, fragment) in fragments {
             guard let range = html.range(of: marker), html.range(of: marker, range: range.upperBound..<html.endIndex) == nil else { throw BlockProcessingError.missingBody }
             html.replaceSubrange(range, with: fragment)

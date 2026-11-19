@@ -5,7 +5,8 @@ package now contains two experimental renderers over the same block processing
 and SVG validation: `SwiftMDCompiler` uses Node on macOS/Linux, and
 `SwiftMDJavaScriptCore` uses JavaScriptCore on Apple platforms. Both accept
 trusted renderer code/configuration and return HTML plus block diagnostics.
-These are not yet distributed as a remote SwiftPM package.
+The released 1.0.0 mirror uses the prior backend; this SwiftHTML integration is
+currently a local development candidate.
 
 `Scripts/generate-adapter-mirror.py --include-locked-renderers` additionally
 prepares an experimental `SwiftMDBundled` product in the generated mirror. It
@@ -37,10 +38,11 @@ The initializer also allows a renderer to be reused on separate pages. Never
 combine multiple outputs from the same fixed prefix on one page; use a distinct
 prefix for each separately rendered fragment.
 
-SwiftPM resolves SwiftGFM, Swift-Highlight, LRUCache and swift-atomics in the
-generated mirror. The fixture-free SwiftSoup library source is vendored as the
-separate `SwiftMDSoup` module with its notices; the external SwiftSoup package
-is not a dependency. KaTeX and Pele are bundled resources, not npm dependencies
+The local adapter uses a sibling SwiftHTML checkout, which contains the
+fixture-free SwiftSoup 2.14.4 backend. A generated test mirror resolves that
+checkout through a synthetic, local-only tag. Public mirror generation is
+blocked until the tested SwiftHTML commit has an approved public stable tag.
+KaTeX and Pele are bundled resources, not npm dependencies
 installed by the consumer. Apple platforms use JavaScriptCore and do not need Node or a
 WebView. Linux requires the explicitly supplied trusted Node executable. The
 generated MathML and SVG need no client-side JavaScript. Both backends have

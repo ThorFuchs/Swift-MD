@@ -5,6 +5,10 @@ the mirror directly; develop and report issues in the SwiftMD source repository.
 `MIRROR-ORIGIN.json` records the revision, dependency versions and, when
 bundled, renderer-archive integrity and file hashes.
 
+This README describes the SwiftHTML-based development candidate. The published
+1.0.0 mirror uses the older SwiftMDSoup backend; no SwiftHTML-based mirror has
+been released.
+
 Add the mirror to a Swift package with:
 
 ```swift
@@ -33,9 +37,10 @@ for diagnostic in result.diagnostics { print(diagnostic.message) }
 SwiftPM resolves the Swift dependencies and supplies the pinned KaTeX and Pele
 scripts as package resources. Apple platforms run those scripts in
 JavaScriptCore; Linux needs a separately installed trusted Node executable.
-SwiftSoup library sources are included as the internal `SwiftMDSoup` module,
-without the upstream test fixtures; the accompanying MIT and jsoup license
-notices are included with the package.
+The SwiftHTML dependency supplies the fixture-free SwiftSoup 2.14.4 backend.
+SwiftSoup/jsoup and LRUCache notices are included as adapter resources and in
+the license inventory. A locally generated test mirror uses a synthetic
+SwiftHTML tag and must not be published.
 MathML and SVG are precomputed and need no client-side JavaScript to display.
 Highlighting supplies classes; the host supplies CSS.
 

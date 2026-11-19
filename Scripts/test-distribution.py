@@ -11,6 +11,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_VERSION = '1.0.0'  # Synthetic; only in disposable local repositories, never publish.
+HTML_TEST_VERSION = '0.0.1'  # Also synthetic; never publish.
+HTML_SOURCE = (ROOT / 'Adapters/SwiftMDBlocks/../../../Swift-HTML').resolve()
 
 
 def call(*args, cwd=None, capture=False):
@@ -51,37 +53,56 @@ def main():
         if not value or not Path(value).is_absolute() or not Path(value).exists():
             raise ValueError(f'{key} must name an existing absolute path')
     source_commit = call('git', 'rev-parse', 'HEAD', cwd=ROOT, capture=True).strip()
+    html_revision = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())['tested_revision']
+    if call('git', 'rev-parse', 'HEAD', cwd=HTML_SOURCE, capture=True).strip() != html_revision:
+        raise ValueError('SwiftHTML local checkout does not match the tested revision')
+    if call('git', 'status', '--porcelain', '--untracked-files=all', '--', 'Package.swift', 'Sources',
+            'Vendor/SwiftSoup', 'Scripts/verify-upstream.py', cwd=HTML_SOURCE, capture=True).strip():
+        raise ValueError('SwiftHTML package source has uncommitted changes')
     with tempfile.TemporaryDirectory(prefix='swiftmd-distribution-') as name:
         temp = Path(name)
         core = temp / 'Swift-MD.git'
         source = temp / 'source'
         mirror = temp / 'SwiftMDAdapters'
+        html = temp / 'Swift-HTML.git'
         call('git', 'clone', '--quiet', '--bare', '--no-hardlinks', str(ROOT), str(core))
         # The source can already have a real release tag of this name. Remove
         # only the copied ref in this disposable bare clone before creating our
         # explicitly synthetic test tag at the commit under test.
         call('git', 'update-ref', '-d', f'refs/tags/{TEST_VERSION}', cwd=core)
         call('git', 'tag', TEST_VERSION, source_commit, cwd=core)
+        call('git', 'clone', '--quiet', '--bare', '--no-hardlinks', str(HTML_SOURCE), str(html))
+        call('git', 'update-ref', '-d', f'refs/tags/{HTML_TEST_VERSION}', cwd=html)
+        call('git', 'tag', HTML_TEST_VERSION, html_revision, cwd=html)
         call('git', 'clone', '--quiet', '--no-hardlinks', str(ROOT), str(source))
         call('git', 'checkout', '--quiet', '--detach', source_commit, cwd=source)
         core_url = core.as_uri()
-        # Use the actual released dependencies; only SwiftMD and mirror tags are synthetic.
+        # SwiftMD, SwiftHTML and mirror tags are explicitly synthetic and local.
         call(sys.executable, str(source / 'Scripts/generate-adapter-mirror.py'), str(mirror),
              '--core-version', TEST_VERSION, '--gfm-version', pin('swift-gfm')['version'],
              '--highlight-version', pin('swift-highlight')['version'], '--core-url', core_url,
+             '--swifthtml-url', html.as_uri(), '--swifthtml-version', HTML_TEST_VERSION,
              '--local-test', '--include-locked-renderers')
         origin = json.loads((mirror / 'MIRROR-ORIGIN.json').read_text())
         if origin['source_commit'] != source_commit or origin['local_test_only'] is not True:
             raise ValueError('generated mirror provenance or local-test marker mismatch')
         if set(origin['renderer_resources']) != {'katex', 'pele'}:
             raise ValueError('generated mirror omitted pinned renderer provenance')
-        original_vendor = source / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup'
-        mirrored_vendor = mirror / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup'
-        original_files = {p.relative_to(original_vendor) for p in original_vendor.rglob('*') if p.is_file()}
-        mirrored_files = {p.relative_to(mirrored_vendor) for p in mirrored_vendor.rglob('*') if p.is_file()}
-        if original_files != mirrored_files or any((original_vendor / p).read_bytes() !=
-                                                   (mirrored_vendor / p).read_bytes() for p in original_files):
-            raise ValueError('mirror vendor snapshot differs from the committed source')
+        if origin.get('swifthtml_tested_revision') != html_revision:
+            raise ValueError('generated mirror omitted the tested SwiftHTML revision')
+        if (mirror / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup').exists():
+            raise ValueError('generated mirror must not include the old SwiftMDSoup backend')
+        license_name = 'SwiftSoup-2.14.4-LICENSE.txt'
+        license_path = 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources/' + license_name
+        html_license = call('git', 'show', html_revision + ':Vendor/SwiftSoup/LICENSE', cwd=html, capture=True)
+        if (mirror / license_path).read_text() != html_license:
+            raise ValueError('generated mirror SwiftSoup notice differs from tested SwiftHTML')
+        lru_source = call('git', 'show', html_revision + ':Vendor/SwiftSoup/Sources/LRUCache.swift', cwd=html, capture=True)
+        if 'Copyright © 2021 Nick Lockwood' not in lru_source or 'Permission is hereby granted, free of charge' not in lru_source:
+            raise ValueError('SwiftHTML LRUCache copyright or license marker changed')
+        lru_notice = (source / 'ThirdPartyLicenses/LRUCache-MIT.txt').read_bytes()
+        if (mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources/LRUCache-MIT.txt').read_bytes() != lru_notice:
+            raise ValueError('generated mirror LRUCache notice differs from retained notice')
         assets = mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
         for package in ('katex', 'pele'):
             for filename, digest in origin['renderer_resources'][package]['files_sha256'].items():
@@ -167,15 +188,17 @@ print("Adapter versioned consumer: all three real renderers OK")
                 raise ValueError(f'{identity} consumer tag or commit changed')
         if pins['swift-md']['revision'] != source_commit:
             raise ValueError('Adapter consumer resolved a different SwiftMD source commit')
+        if pins['swift-html']['revision'] != html_revision or pins['swift-html'].get('version') != HTML_TEST_VERSION:
+            raise ValueError('Adapter consumer resolved a different SwiftHTML revision')
         if 'swiftsoup' in pins or any(p.name.lower() == 'swiftsoup' for p in (consumer / '.build/checkouts').iterdir()):
             raise ValueError('adapter consumer unexpectedly fetched the external SwiftSoup package')
-        for name in ('LICENSE', 'JSOUP-LICENSE.txt'):
+        for name, content in ((license_name, html_license.encode()), ('LRUCache-MIT.txt', lru_notice)):
             resources = [p for p in (consumer / '.build').rglob(name)
                          if 'checkouts' not in p.parts and ('resources' in str(p).lower() or '.bundle' in str(p))]
-            if not any(p.read_bytes() == (original_vendor / name).read_bytes() for p in resources):
-                raise ValueError(f'vendored SwiftSoup notice missing from built package resources: {name}')
+            if not any(p.read_bytes() == content for p in resources):
+                raise ValueError(f'SwiftHTML backend notice missing from built package resources: {name}')
         # An application may deliberately depend on the original SwiftSoup as
-        # well. Its module must coexist with the vendored SwiftMDSoup module.
+        # well. Its module must coexist with SwiftHTML's vendored backend.
         coexist = temp / 'CoexistConsumer'
         write(coexist / 'Package.swift', f'''// swift-tools-version: 6.1
 import PackageDescription
@@ -197,7 +220,7 @@ precondition(result.diagnostics.isEmpty && result.html.contains("<math"))
 print("Vendored and external SwiftSoup modules coexist")
 ''')
         call('swift', 'run', '--package-path', str(coexist), '-j', '4', 'CoexistConsumer')
-        print(f'Consumer gate passed for commit {source_commit}; SwiftMD/mirror tags are synthetic and local only.')
+        print(f'Consumer gate passed for commit {source_commit}; SwiftMD, SwiftHTML and mirror tags are synthetic and local only.')
 
 
 if __name__ == '__main__':

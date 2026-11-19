@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Require the tested SwiftHTML sibling checkout
+        run: python3 Scripts/check-swifthtml-checkout.py
       - name: Exercise Linux supervisor process boundaries
         run: |
           python3 Scripts/test-linux-supervisor.py \
@@ -64,6 +66,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Require the tested SwiftHTML sibling checkout
+        run: python3 Scripts/check-swifthtml-checkout.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -100,6 +104,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Require the tested SwiftHTML sibling checkout
+        run: python3 Scripts/check-swifthtml-checkout.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -119,14 +125,13 @@ jobs:
         run: Scripts/test-all.sh
       - name: Check committed example HTML
         run: python3 Scripts/render-examples.py --binary Tools/SwiftMDCLI/.build/debug/swift-md --node "$(command -v node)" --check
-      - name: Verify vendored SwiftSoup against upstream source only
+      - name: Verify SwiftHTML's vendored source against upstream source only
         run: |
-          git clone --filter=blob:none --no-checkout --depth 1 --branch 2.11.3 https://github.com/scinfu/SwiftSoup.git /tmp/swiftsoup-reference
+          git clone --filter=blob:none --no-checkout --depth 1 --branch 2.14.4 https://github.com/scinfu/SwiftSoup.git /tmp/swiftsoup-reference
           git -C /tmp/swiftsoup-reference sparse-checkout set --cone Sources
-          git -C /tmp/swiftsoup-reference checkout --detach d86f244ed497d48012782e2f59c985a55e77b3f5
+          git -C /tmp/swiftsoup-reference checkout --detach 8397a860c6955924b584c50c5265c6aac0970015
           test ! -e /tmp/swiftsoup-reference/Tests-macOS/corpus
-          python3 Scripts/audit-vendored-swiftsoup.py --upstream-source /tmp/swiftsoup-reference
-          python3 Scripts/test-vendored-swiftsoup.py
+          python3 ../Swift-HTML/Scripts/verify-upstream.py --reference /tmp/swiftsoup-reference
       - name: Verify pinned notices, fixtures, and npm archives
         run: |
           curl --fail --silent --show-error --location \
@@ -156,9 +161,13 @@ jobs:
       - name: Test mirror with verified public dependencies
         if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && !github.event.repository.private }}
         run: |
+          SWIFTHTML_URL="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_repository"] or "")')"
+          SWIFTHTML_VERSION="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_version"] or "")')"
+          test -n "$SWIFTHTML_URL" && test -n "$SWIFTHTML_VERSION" || { echo 'Public SwiftHTML version is not configured; publication gate blocked' >&2; exit 1; }
           CANDIDATE="$(mktemp -d)/mirror"
           python3 Scripts/generate-adapter-mirror.py "$CANDIDATE" \
             --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --swifthtml-url "$SWIFTHTML_URL" --swifthtml-version "$SWIFTHTML_VERSION" \
             --verify-public-dependencies --include-locked-renderers
           python3 Scripts/test-public-candidate.py "$CANDIDATE" --node "$(command -v node)"
       - name: Build and test Linux release CLI

@@ -31,8 +31,13 @@ jobs:
       - name: Prepare actual mirror source for Swift analysis
         if: ${{ matrix.language == 'swift' }}
         run: |
+          python3 Scripts/check-swifthtml-checkout.py
+          SWIFTHTML_URL="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_repository"] or "")')"
+          SWIFTHTML_VERSION="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_version"] or "")')"
+          test -n "$SWIFTHTML_URL" && test -n "$SWIFTHTML_VERSION" || { echo 'Public SwiftHTML version is not configured; security mirror gate blocked' >&2; exit 1; }
           python3 Scripts/generate-adapter-mirror.py "$GITHUB_WORKSPACE/_security_scan_mirror" \
             --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --swifthtml-url "$SWIFTHTML_URL" --swifthtml-version "$SWIFTHTML_VERSION" \
             --verify-public-dependencies --include-locked-renderers
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:

@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+python3 "$ROOT/Scripts/check-swifthtml-checkout.py"
 NODE=${SWIFTMD_NODE:-$(command -v node)}
 : "${SWIFTMD_CMARK_REFERENCE:?Set SWIFTMD_CMARK_REFERENCE to the independently built pinned cmark-gfm executable}"
 test -x "$SWIFTMD_CMARK_REFERENCE" || { echo 'Reference renderer is not executable' >&2; exit 1; }

@@ -1,0 +1,7 @@
+{
+  "tested_revision": "8bc39e2bd950c89f79fcb006ec552edee0926a2e",
+  "local_sibling": "../../../Swift-HTML",
+  "public_repository": null,
+  "public_version": null,
+  "note": "Local integration candidate; a verified stable SwiftHTML release is required for public adapter distribution."
+}
