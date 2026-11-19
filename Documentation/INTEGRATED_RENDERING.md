@@ -98,6 +98,37 @@ Chromium with page scripts disabled displayed inline math, display math,
 fenced math and SVG with correct namespaces and measurable geometry; adjacent
 combining Unicode was retained. The local SwiftGFM commit is unreleased and
 does not constitute a public SwiftPM dependency or hosted CI evidence.
+An additional macOS consumer test of SwiftMD commit
+`37a3a594631290274889619c9a33d53d0f9eaca8` used the generated `SwiftMDBundled`
+product, public SwiftHTML 0.1.0 and a local synthetic tag at SwiftGFM commit
+`46b5abebbca6baec4b955a18e3f1cdc6241d28f3`. With the experimental build flag,
+one call produced inline, display and fenced MathML, highlighting and SVG;
+invalid TeX returned escaped source and a diagnostic. SwiftMD, SwiftGFM and
+mirror test tags were disposable and local; this is not a public release.
+
+An independent run in a native Linux ARM64 Ubuntu 24.04.5 container used
+SwiftMD `3fa0b1dbd844fe857bc89770ed64e2a1f80a2551`, local SwiftGFM
+`46b5abebbca6baec4b955a18e3f1cdc6241d28f3`, SwiftHTML 0.1.0, Swift 6.2.4
+and Node 24.22.1. With the experimental flag, all 29 Linux adapter tests and
+all six experimental CLI tests passed using the real Node renderers. The
+ordinary CLI also passed its seven tests, and SwiftGFM's test run against a
+separately built cmark reference passed with three documented upstream skips.
+JavaScriptCore and browser execution were not part of this Linux run.
+In the same Linux environment, an isolated consumer of SwiftMD commit
+`37a3a594631290274889619c9a33d53d0f9eaca8` passed
+`Scripts/test-experimental-math-distribution.py`: the generated mirror used
+public SwiftHTML 0.1.0 and disposable local SwiftMD, SwiftGFM and mirror tags,
+and the one-call API rendered inline/display/fenced math, highlighting and SVG
+with an escaped error fallback.
+
+The SwiftGFM session also ran Apple Clang Static Analyzer 21.0.0 against its
+own `SwiftGFMMath.c` and `SwiftGFMBridge.c` at `46b5abebbca6baec4b955a18e3f1cdc6241d28f3`,
+using its actual macOS ARM64 debug build flags. Standard and additional
+core/unix/security/taint checker runs reported no warnings. This scan did not
+cover the Swift caller or fully model callbacks and allocations across cmark
+translation units; it is not a Linux scan, CodeQL result or independent audit.
+Math ASan tests were run separately with leak detection disabled. Fuzzing and
+the release-specific security review remain open.
 
 For a browser check of the direct Node backend's two MathML modes (not of
 Markdown delimiter parsing), set trusted absolute Node and KaTeX paths and run:
