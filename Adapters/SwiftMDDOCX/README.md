@@ -23,8 +23,12 @@ The adapter depends on SwiftGFM 1.0.1 and preserves its default GFM parsing.
 Supported: paragraphs, soft and hard breaks (both become Word line breaks),
 headings 1–6, bold, italic, strikethrough, inline and block code, blockquotes,
 ordered/bullet/task lists, simple GFM tables, thematic breaks, A4/Letter, a
-small style set, spacing and margins. Lists have independent numbering and
-restart at the specified GFM start. Paragraphs and text remain editable.
+small style set, spacing and margins. `paragraphSpacingTwips`,
+`listSpacingTwips`, and `tableCellPaddingTwips` configure paragraph spacing,
+tight-list spacing, and table cell padding; loose lists use paragraph spacing.
+Headings have a small fixed before/after spacing. Lists have independent
+numbering and restart at the specified GFM start. Paragraphs and text remain
+editable.
 
 Links are rendered as editable visible text followed by their destination and,
 when present, title; they are not active hyperlinks. A `math` or `mermaid`

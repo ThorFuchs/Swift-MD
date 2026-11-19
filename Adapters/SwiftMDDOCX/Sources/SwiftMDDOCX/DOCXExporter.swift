@@ -31,14 +31,18 @@ public struct DOCXStyle: Sendable {
     public var headingFont: String
     public var marginTwips: Int
     public var paragraphSpacingTwips: Int
+    public var listSpacingTwips: Int
+    public var tableCellPaddingTwips: Int
     public var headingPageBreak: Bool
 
     public init(paper: DOCXPaper = .a4, bodyFont: String = "Calibri", bodyFontSize: Int = 11,
                 headingFont: String = "Calibri", marginTwips: Int = 1440,
-                paragraphSpacingTwips: Int = 120, headingPageBreak: Bool = false) {
+                paragraphSpacingTwips: Int = 120, headingPageBreak: Bool = false,
+                listSpacingTwips: Int = 40, tableCellPaddingTwips: Int = 100) {
         self.paper = paper; self.bodyFont = bodyFont; self.bodyFontSize = bodyFontSize
         self.headingFont = headingFont; self.marginTwips = marginTwips
         self.paragraphSpacingTwips = paragraphSpacingTwips; self.headingPageBreak = headingPageBreak
+        self.listSpacingTwips = listSpacingTwips; self.tableCellPaddingTwips = tableCellPaddingTwips
     }
     public static let `default` = DOCXStyle()
 }
@@ -48,7 +52,8 @@ public struct DOCXExporter: Sendable {
     public init() {}
     public func render(_ markdown: String, style: DOCXStyle = .default) throws -> Data {
         guard (6...72).contains(style.bodyFontSize), (0...4000).contains(style.marginTwips),
-              (0...2000).contains(style.paragraphSpacingTwips),
+              (0...2000).contains(style.paragraphSpacingTwips), (0...2000).contains(style.listSpacingTwips),
+              (0...2000).contains(style.tableCellPaddingTwips),
               !style.bodyFont.isEmpty, !style.headingFont.isEmpty else {
             throw DOCXError.invalidStyle("font size, margins, spacing or font name out of range")
         }
@@ -99,7 +104,7 @@ private func styles(_ style: DOCXStyle) throws -> String {
     var result = xmlHeader + "<w:styles xmlns:w=\"\(wordNS)\">"
     result += "<w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\"><w:name w:val=\"Normal\"/><w:pPr><w:spacing w:after=\"\(style.paragraphSpacingTwips)\"/></w:pPr><w:rPr><w:rFonts w:ascii=\"\(body)\" w:hAnsi=\"\(body)\"/><w:sz w:val=\"\(style.bodyFontSize * 2)\"/></w:rPr></w:style>"
     for level in 1...6 {
-        result += "<w:style w:type=\"paragraph\" w:styleId=\"Heading\(level)\"><w:name w:val=\"heading \(level)\"/><w:basedOn w:val=\"Normal\"/><w:next w:val=\"Normal\"/><w:pPr><w:keepNext/>\(style.headingPageBreak ? "<w:pageBreakBefore/>" : "")<w:outlineLvl w:val=\"\(level - 1)\"/></w:pPr><w:rPr><w:rFonts w:ascii=\"\(heading)\" w:hAnsi=\"\(heading)\"/><w:b/><w:sz w:val=\"\(sizes[level-1])\"/></w:rPr></w:style>"
+        result += "<w:style w:type=\"paragraph\" w:styleId=\"Heading\(level)\"><w:name w:val=\"heading \(level)\"/><w:basedOn w:val=\"Normal\"/><w:next w:val=\"Normal\"/><w:pPr><w:keepNext/>\(style.headingPageBreak ? "<w:pageBreakBefore/>" : "")<w:spacing w:before=\"240\" w:after=\"80\"/><w:outlineLvl w:val=\"\(level - 1)\"/></w:pPr><w:rPr><w:rFonts w:ascii=\"\(heading)\" w:hAnsi=\"\(heading)\"/><w:b/><w:sz w:val=\"\(sizes[level-1])\"/></w:rPr></w:style>"
     }
     result += "<w:style w:type=\"paragraph\" w:styleId=\"Code\"><w:name w:val=\"Code\"/><w:basedOn w:val=\"Normal\"/><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/></w:rPr></w:style>"
     return result + "</w:styles>"
@@ -134,7 +139,7 @@ private struct Projection {
                 let language = info.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? ""
                 let label = ["math", "mermaid"].contains(language.lowercased()) ? "[\(language) source]\n" : ""
                 result += try "<w:p><w:pPr><w:pStyle w:val=\"Code\"/></w:pPr>\(run(label + literal, properties: RunStyle()))</w:p>"
-            case .list(let listStyle, _):
+            case .list(let listStyle, let tight):
                 lists.append((listStyle, depth))
                 let listID = lists.count
                 for item in node.children {
@@ -144,7 +149,8 @@ private struct Projection {
                     case .taskListItem(_, let checked): marker = checked ? "☒ " : "☐ "
                     default: throw DOCXError.unsupported("list child")
                     }
-                    let properties = "<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"\(listID)\"/></w:numPr>"
+                    let spacing = tight ? style.listSpacingTwips : style.paragraphSpacingTwips
+                    let properties = "<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"\(listID)\"/></w:numPr><w:spacing w:after=\"\(spacing)\"/>"
                     var first = true
                     for child in item.children {
                         if first, case .paragraph = child.kind {
@@ -218,7 +224,7 @@ private struct Projection {
     }
 
     func table(_ node: MarkdownNode, alignments: [MarkdownTableAlignment]) throws -> String {
-        var result = "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/><w:tblBorders><w:top w:val=\"single\" w:sz=\"4\"/><w:left w:val=\"single\" w:sz=\"4\"/><w:bottom w:val=\"single\" w:sz=\"4\"/><w:right w:val=\"single\" w:sz=\"4\"/><w:insideH w:val=\"single\" w:sz=\"4\"/><w:insideV w:val=\"single\" w:sz=\"4\"/></w:tblBorders></w:tblPr>"
+        var result = "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/><w:tblBorders><w:top w:val=\"single\" w:sz=\"4\"/><w:left w:val=\"single\" w:sz=\"4\"/><w:bottom w:val=\"single\" w:sz=\"4\"/><w:right w:val=\"single\" w:sz=\"4\"/><w:insideH w:val=\"single\" w:sz=\"4\"/><w:insideV w:val=\"single\" w:sz=\"4\"/></w:tblBorders><w:tblCellMar><w:top w:w=\"\(style.tableCellPaddingTwips)\" w:type=\"dxa\"/><w:left w:w=\"\(style.tableCellPaddingTwips)\" w:type=\"dxa\"/><w:bottom w:w=\"\(style.tableCellPaddingTwips)\" w:type=\"dxa\"/><w:right w:w=\"\(style.tableCellPaddingTwips)\" w:type=\"dxa\"/></w:tblCellMar></w:tblPr>"
         result += "<w:tblGrid>" + alignments.map { _ in "<w:gridCol w:w=\"2400\"/>" }.joined() + "</w:tblGrid>"
         for row in node.children {
             guard case .tableRow(let header) = row.kind else { throw DOCXError.unsupported("table row") }
@@ -228,7 +234,8 @@ private struct Projection {
                 let alignment = index < alignments.count ? alignments[index] : .none
                 let value: String
                 switch alignment { case .none: value = ""; case .left: value = "left"; case .center: value = "center"; case .right: value = "right" }
-                result += try "<w:tc><w:tcPr><w:tcW w:w=\"0\" w:type=\"auto\"/></w:tcPr>\(paragraph(cell.children, properties: value.isEmpty ? "" : "<w:jc w:val=\"\(value)\"/>"))</w:tc>"
+                let properties = "<w:spacing w:after=\"0\"/>" + (value.isEmpty ? "" : "<w:jc w:val=\"\(value)\"/>")
+                result += try "<w:tc><w:tcPr><w:tcW w:w=\"0\" w:type=\"auto\"/></w:tcPr>\(paragraph(cell.children, properties: properties))</w:tc>"
             }
             result += "</w:tr>"
         }

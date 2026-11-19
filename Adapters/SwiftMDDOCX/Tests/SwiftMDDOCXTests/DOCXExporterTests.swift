@@ -71,6 +71,26 @@ final class DOCXExporterTests: XCTestCase {
         XCTAssertThrowsError(try DOCXExporter().render("text", style: style)) { XCTAssertEqual($0 as? DOCXError, .invalidXMLCharacter) }
     }
 
+    func testParagraphListAndTableSpacing() throws {
+        let style = DOCXStyle(paragraphSpacingTwips: 160, listSpacingTwips: 35, tableCellPaddingTwips: 90)
+        let tight = try parts(DOCXExporter().render("# Heading\n\n- One\n- Two\n\n| A | B |\n| :--- | ---: |\n| 1 | 2 |", style: style))
+        let doc = String(decoding: try XCTUnwrap(tight["word/document.xml"]), as: UTF8.self)
+        let styles = String(decoding: try XCTUnwrap(tight["word/styles.xml"]), as: UTF8.self)
+        XCTAssertTrue(styles.contains("<w:spacing w:after=\"160\"/>"))
+        XCTAssertTrue(styles.contains("<w:spacing w:before=\"240\" w:after=\"80\"/>"))
+        XCTAssertEqual(doc.components(separatedBy: "<w:spacing w:after=\"35\"/>").count - 1, 2)
+        XCTAssertTrue(doc.contains("<w:tblCellMar><w:top w:w=\"90\" w:type=\"dxa\"/>"))
+        XCTAssertTrue(doc.contains("<w:spacing w:after=\"0\"/><w:jc"))
+        let loose = try parts(DOCXExporter().render("- One\n\n- Two", style: style))
+        let looseDoc = String(decoding: try XCTUnwrap(loose["word/document.xml"]), as: UTF8.self)
+        XCTAssertEqual(looseDoc.components(separatedBy: "<w:spacing w:after=\"160\"/>").count - 1, 2)
+        var invalid = style
+        invalid.tableCellPaddingTwips = -1
+        XCTAssertThrowsError(try DOCXExporter().render("text", style: invalid))
+        invalid = style; invalid.listSpacingTwips = 2001
+        XCTAssertThrowsError(try DOCXExporter().render("text", style: invalid))
+    }
+
     func testUnsupportedContentFailsExplicitly() throws {
         for source in ["![alt](image.png)", "Text <span>raw</span>", "<div>raw</div>"] {
             XCTAssertThrowsError(try DOCXExporter().render(source), source) { XCTAssertNotNil($0 as? DOCXError) }
