@@ -94,6 +94,25 @@ class MathCLI(unittest.TestCase):
         self.assertNotEqual(strict.returncode, 0)
         self.assertEqual(strict.stdout, b'')
 
+    def test_single_line_display_and_nested_quote(self):
+        source = '$$x^2$$\n\n> Inline $y^2$\n>\n> $$\n> z^2\n> $$\n'
+        result = self.run_cli(*OPTIONS, text=source)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        html = result.stdout.decode()
+        self.assertEqual(html.count('<math '), 3)
+        self.assertEqual(html.count('display="block"'), 2)
+        self.assertIn('<blockquote>', html)
+        self.assertEqual(result.stderr, b'')
+
+    def test_table_cells_are_not_recognized_as_math(self):
+        source = '| Expression |\n| --- |\n| $x^2$ |\n\nOutside $y^2$.\n'
+        result = self.run_cli(*OPTIONS, text=source)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        html = result.stdout.decode()
+        self.assertIn('<table>', html)
+        self.assertIn('$x^2$', html)
+        self.assertEqual(html.count('<math '), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

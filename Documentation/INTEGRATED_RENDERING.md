@@ -92,7 +92,7 @@ Markdown as escaped code plus a diagnostic; strict CLI mode emits no HTML.
 
 On 19 November 2026, an isolated macOS ARM64 SwiftPM-edit build using local
 SwiftGFM commit `67e12f43b859ec5e9801d7d32e46851c04e59836` passed 38 adapter
-tests and six experimental CLI tests with real renderers. Node and
+tests and eight experimental CLI tests with real renderers. Node and
 JavaScriptCore matched for the combined math/highlight/Mermaid document.
 Chromium with page scripts disabled displayed inline math, display math,
 fenced math and SVG with correct namespaces and measurable geometry; adjacent
