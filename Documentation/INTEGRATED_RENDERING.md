@@ -103,6 +103,15 @@ SwiftSoup-coexistence consumers passed with explicitly synthetic local tags.
 The consumer check also verified the SwiftHTML Apache, SwiftSoup MIT and
 vendored LRUCache MIT license resources in the built package.
 
+On the same date, SwiftMD commit `0833067ad5a22c96aef3652c38f68b86f07fe964`
+with SwiftHTML `9ccb0f058c12c4a00d9b78585de2d06c01e0f672` ran on native
+Linux ARM64 with Swift 6.2.4 and Node 24.22.1. All 23 adapter tests passed,
+including the real KaTeX inline/display mode test. The CLI debug build and
+all seven CLI tests passed, as did the isolated synthetic mirror and consumer
+test, including SwiftSoup coexistence. JavaScriptCore, browser and systemd
+isolation were not part of this Linux run. This tests direct TeX rendering,
+not `$` or `$$` Markdown recognition.
+
 On 18 November 2026, an iOS 27.2 simulator ran a temporary app using the actual
 local `SwiftMDJavaScriptCore` product, Swift-Highlight, KaTeX 0.19.1 and Pele
 1.13.0. A GFM table, highlighted Swift, MathML, SVG and an invalid-math fallback
