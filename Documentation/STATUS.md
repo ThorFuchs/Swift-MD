@@ -17,6 +17,11 @@ tests including JavaScriptCore/Node parity; Linux passed 29 adapter tests,
 five resource-limit tests and 14 supervisor tests. The Linux release CLI also
 passed all nine math CLI tests. A local Chromium test with page scripts
 disabled verified the opt-in inline, display and fenced math output.
+On Linux, the clean versioned distribution consumer at commit `482a39d`
+also passed with public SwiftGFM 1.1.0 and SwiftHTML 0.1.0: it checked both
+default and opted-in math, the three real renderers and SwiftSoup coexistence.
+The SwiftMD and mirror tags were temporary and local. Later changes to this
+candidate only adjust the release-gate configuration and documentation.
 These checks do not establish complete GFM conformance, physical-device
 support, hosted CI success or completion of the separate release gates.
 

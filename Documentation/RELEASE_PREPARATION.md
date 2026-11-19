@@ -93,7 +93,7 @@ A public-dependency candidate can be generated with:
 
 ```sh
 python3 Scripts/generate-adapter-mirror.py /tmp/swiftmd-candidate \
-  --core-version 0.1.0 --gfm-version 1.1.0 --highlight-version 1.0.1 \
+  --core-version "$VERIFIED_SWIFTMD_CORE_VERSION" --gfm-version 1.1.0 --highlight-version 1.0.1 \
   --swifthtml-url "$VERIFIED_SWIFTHTML_URL" --swifthtml-version "$VERIFIED_SWIFTHTML_VERSION" \
   --verify-public-dependencies --include-locked-renderers
 python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(command -v node)"
@@ -101,6 +101,8 @@ python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(comman
 
 The latter creates a disposable synthetic tag for the mirror only. Core,
 SwiftGFM, Swift-Highlight and SwiftHTML must resolve from verified public tags.
+Set `SWIFTMD_PUBLIC_CORE_VERSION` in the repository only when a compatible
+public Core tag is available; the public-dependency CI gate uses that value.
 Hosted jobs resolve the pinned public SwiftHTML release; they are not release
 evidence for this branch until they run for its actual commit. The separate
 synthetic local mirror test remains mandatory.
