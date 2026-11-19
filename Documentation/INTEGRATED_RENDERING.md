@@ -50,101 +50,42 @@ limit; JavaScriptCore executes in-process, so task cancellation does not stop
 running JavaScript. The SVG allowlist is not a general sanitizer or security
 audit. IDs require a prefix unique across the entire composed page.
 
-Use `math` and `mermaid` code fences. Inline math and `$$` delimiters remain
-unimplemented. Backend failures preserve an escaped source block and provide a
-diagnostic rather than silently succeeding. A local mirror can be generated and
-tested with synthetic tags; this does not publish a mirror, tag or release.
+Use `math` and `mermaid` code fences as before. In this unreleased candidate,
+`recognizeMath: true` additionally recognizes supported `$...$` and `$$...$$`
+Markdown mathematics. It is false by default even when KaTeX is configured.
+For example:
 
-The local KaTeX backends also implement `MathMLRenderer.renderMath(literal:
-displayMode:)` for callers that already have a TeX literal. Both Node and
-JavaScriptCore pass that literal as data to KaTeX, use the same trust and
-expansion settings as the fence adapter, and produce MathML in inline or
-display mode. This low-level API does **not** recognize math in Markdown and
-does not change the behavior of `SwiftMDIntegrated.render`.
-
-An optional math-aware Markdown parser is needed before `$…$` and `$$…$$`
-can be supported correctly. SwiftGFM's read-only AST and rendered HTML cannot
-reconstruct original TeX after Markdown has consumed escapes, entities or
-emphasis, and its source positions are not a lossless token mapping. Math
-recognition must also define code and HTML exclusions, nested block containers,
-link text and targets, and table-pipe precedence. A global regex or a search
-through rendered text is not a reliable substitute. The unchanged Core path
-must continue to return SwiftGFM's exact bytes.
-
-As a bridge for a future trusted math-aware parser, `BlockCompiler` accepts an
-ordered HTML/math document stream. It renders each TeX literal outside the
-parser, processes other blocks, then inserts MathML without passing it through
-HTML reserialization. Failed or empty math output retains the escaped original
-delimited source and emits a diagnostic. The caller must supply trusted HTML
-segments and only place math at HTML text or block positions, not in attributes
-or comments. This bridge is not itself a Markdown parser or a sanitizer.
-
-A local-only build flag, `SWIFTMD_EXPERIMENTAL_GFM_MATH`, connects this bridge
-to an unreleased math-aware SwiftGFM prototype and to the one-call compiler and
-CLI. This requires a separately edited local SwiftGFM checkout; the published
-SwiftGFM dependency does not expose that API. Do not enable or distribute this
-flagged build as a released package. The prototype rejects `allowUnsafeHTML`,
-NUL input and unclosed display fences, and does not recognize mathematics in
-table cells or image descriptions. Its syntax and parser edge cases remain
-under test. In the ordinary build only the existing `math` fence is recognized.
-For these math-parser document errors, SwiftMD emits the entire original
-Markdown as escaped code plus a diagnostic; strict CLI mode emits no HTML.
-
-On 19 November 2026, an isolated macOS ARM64 SwiftPM-edit build using local
-SwiftGFM commit `67e12f43b859ec5e9801d7d32e46851c04e59836` passed 38 adapter
-tests and eight experimental CLI tests with real renderers. Node and
-JavaScriptCore matched for the combined math/highlight/Mermaid document.
-Chromium with page scripts disabled displayed inline math, display math,
-fenced math and SVG with correct namespaces and measurable geometry; adjacent
-combining Unicode was retained. The local SwiftGFM commit is unreleased and
-does not constitute a public SwiftPM dependency or hosted CI evidence.
-The documentation-only SwiftGFM 1.1.0 candidate
-`ccfb8d401c500d1c14567eecf39dd9a2d887f464` was subsequently checked with the
-two focused cross-backend integration tests and all eight experimental CLI
-tests; those also passed locally on macOS ARM64.
-An additional macOS consumer test of SwiftMD commit
-`37a3a594631290274889619c9a33d53d0f9eaca8` used the generated `SwiftMDBundled`
-product, public SwiftHTML 0.1.0 and a local synthetic tag at SwiftGFM commit
-`46b5abebbca6baec4b955a18e3f1cdc6241d28f3`. With the experimental build flag,
-one call produced inline, display and fenced MathML, highlighting and SVG;
-invalid TeX returned escaped source and a diagnostic. SwiftMD, SwiftGFM and
-mirror test tags were disposable and local; this is not a public release.
-
-To repeat that local-only distribution check from clean committed checkouts:
-
-```sh
-SWIFTMD_NODE="$(command -v node)" \
-SWIFTMD_EXPERIMENTAL_GFM_SOURCE=/absolute/path/to/tested/Swift-GFM \
-python3 Scripts/test-experimental-math-distribution.py
+```swift
+let renderer = try SwiftMDIntegrated(svgPrefix: "unique-page-id", recognizeMath: true)
+let result = try renderer.render("Inline $x^2$ and display math:\n\n$$\ny^2\n$$")
 ```
 
-The script creates disposable Git repositories and tags, configures a SwiftPM
-mirror only inside its temporary consumer, and removes them afterward. It does
-not change tags or Git configuration in either source repository.
+On Linux also supply the trusted `nodeExecutable`. The Node and JavaScriptCore
+renderers expose the same option and require KaTeX when it is true. The CLI
+uses `--markdown-math` with `--katex-node` and `--katex-module`. Existing code
+fences still work without that option. SwiftMD Core remains byte-identical to
+SwiftGFM for the same configuration and does not enable this profile.
 
-An independent run in a native Linux ARM64 Ubuntu 24.04.5 container used
-SwiftMD `3fa0b1dbd844fe857bc89770ed64e2a1f80a2551`, local SwiftGFM
-`46b5abebbca6baec4b955a18e3f1cdc6241d28f3`, SwiftHTML 0.1.0, Swift 6.2.4
-and Node 24.22.1. With the experimental flag, all 29 Linux adapter tests and
-all six experimental CLI tests passed using the real Node renderers. The
-ordinary CLI also passed its seven tests, and SwiftGFM's test run against a
-separately built cmark reference passed with three documented upstream skips.
-JavaScriptCore and browser execution were not part of this Linux run.
-In the same Linux environment, an isolated consumer of SwiftMD commit
-`37a3a594631290274889619c9a33d53d0f9eaca8` passed
-`Scripts/test-experimental-math-distribution.py`: the generated mirror used
-public SwiftHTML 0.1.0 and disposable local SwiftMD, SwiftGFM and mirror tags,
-and the one-call API rendered inline/display/fenced math, highlighting and SVG
-with an escaped error fallback.
+SwiftGFM 1.1.0 defines the math syntax: formulas are not recognized inside
+code, table cells or image descriptions. Dollar and currency ambiguities are
+subject to its delimiter rules. The math profile rejects unsafe raw HTML, NUL,
+and unclosed display blocks; on those document errors SwiftMD returns the
+whole source as escaped code with a diagnostic. Invalid TeX similarly retains
+escaped source and emits a diagnostic; CLI `--strict` produces no output on a
+diagnostic. Neither profile is a general HTML sanitizer. Consult the
+[upstream math specification](https://github.com/ThorFuchs/Swift-GFM/blob/1.1.0/Documentation/MATHEMATICS.md)
+for details and edge cases.
 
-The SwiftGFM session also ran Apple Clang Static Analyzer 21.0.0 against its
-own `SwiftGFMMath.c` and `SwiftGFMBridge.c` at `46b5abebbca6baec4b955a18e3f1cdc6241d28f3`,
-using its actual macOS ARM64 debug build flags. Standard and additional
-core/unix/security/taint checker runs reported no warnings. This scan did not
-cover the Swift caller or fully model callbacks and allocations across cmark
-translation units; it is not a Linux scan, CodeQL result or independent audit.
-Math ASan tests were run separately with leak detection disabled. Fuzzing and
-the release-specific security review remain open.
+The low-level `MathMLRenderer.renderMath` accepts an already extracted TeX
+literal. `BlockCompiler` also accepts ordered trusted HTML/math segments and
+exposes `renderRecognizingMath` for explicit parsing. These APIs do not sanitize
+caller-supplied HTML. Local distribution checks use `Scripts/test-distribution.py`
+with synthetic SwiftMD and mirror tags and the public SwiftGFM release.
+
+Earlier experiments used a local SwiftGFM checkout and a compiler flag; those
+results do not establish validation of this normal-build candidate. The checks
+and outstanding release gates below are historical unless they identify the
+final commit under test.
 
 For a browser check of the direct Node backend's two MathML modes (not of
 Markdown delimiter parsing), set trusted absolute Node and KaTeX paths and run:

@@ -4,6 +4,22 @@ For current dependencies, the version-based consumer gate, and remaining
 release boundaries see [release preparation](RELEASE_PREPARATION.md). The
 dated sections below describe historical runs and dependencies at those times.
 
+## SwiftGFM 1.1.0 math integration candidate (19 November 2026)
+
+The normal build resolves the public 1.1.0 tag at
+`9a4176be3bda0953f4ddb91ec63de77d1ad230fa`. Math recognition is an explicit
+opt-in and requires KaTeX; existing fence behavior remains the default. Before
+the final local commit, `Scripts/test-all.sh` passed on macOS ARM64 with Swift
+6.4.2 and on native Linux ARM64 with Swift 6.2.4 and Node 24.22.1. These runs
+included 704 fixture expectations, 705 independent cmark comparisons, real
+renderers and nine Markdown math CLI tests. The macOS run passed 38 adapter
+tests including JavaScriptCore/Node parity; Linux passed 29 adapter tests,
+five resource-limit tests and 14 supervisor tests. The Linux release CLI also
+passed all nine math CLI tests. A local Chromium test with page scripts
+disabled verified the opt-in inline, display and fenced math output.
+These checks do not establish complete GFM conformance, physical-device
+support, hosted CI success or completion of the separate release gates.
+
 ## SwiftGFM 1.0.1 integration (18 November 2026)
 
 The public annotated `1.0.1` tag resolves to

@@ -20,6 +20,7 @@ test -f "$SWIFTMD_KATEX_JS" && test -f "$SWIFTMD_PELE_GLOBAL_JS" || { echo 'Miss
 python3 "$ROOT/Scripts/analyze-published-gfm.py" --reference "$SWIFTMD_CMARK_REFERENCE"
 python3 "$ROOT/Scripts/test-gfm029-profile.py" --candidate "$ROOT/Tools/SwiftMDCLI/.build/debug/swift-md" --reference "$SWIFTMD_CMARK_REFERENCE" --expect-baseline
 python3 "$ROOT/Scripts/test-cli.py"
+SWIFTMD_CLI="$ROOT/Tools/SwiftMDCLI/.build/debug/swift-md" python3 "$ROOT/Scripts/test-markdown-math-cli.py"
 if [ "$(uname -s)" = Linux ]; then
   python3 "$ROOT/Scripts/test-linux-limits.py"
   python3 "$ROOT/Scripts/test-linux-supervisor.py"

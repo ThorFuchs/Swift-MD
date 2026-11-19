@@ -181,6 +181,11 @@ let result = try SwiftMDIntegrated.render(input, svgPrefix: "consumer", nodeExec
 precondition(result.diagnostics.isEmpty && result.html.contains("hljs-keyword") &&
              result.html.contains("<math") && result.html.contains("<svg"))
 precondition(!result.html.contains("<script"))
+let dollar = "Inline $x^2$."
+let ordinary = try SwiftMDIntegrated.render(dollar, svgPrefix: "consumer-default", nodeExecutable: env["SWIFTMD_NODE"]!)
+precondition(ordinary.diagnostics.isEmpty && ordinary.html.contains("$x^2$") && !ordinary.html.contains("<math"))
+let enabled = try SwiftMDIntegrated.render(dollar + "\\n\\n$$\\ny^2\\n$$\\n", svgPrefix: "consumer-math", nodeExecutable: env["SWIFTMD_NODE"]!, recognizeMath: true)
+precondition(enabled.diagnostics.isEmpty && enabled.html.components(separatedBy: "<math ").count - 1 == 2 && enabled.html.contains("display=\\"block\\""))
 let reusable = try SwiftMDIntegrated(svgPrefix: "consumer-reuse", nodeExecutable: env["SWIFTMD_NODE"]!)
 let first = try reusable.render(input)
 let second = try reusable.render(input)

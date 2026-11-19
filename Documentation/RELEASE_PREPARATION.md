@@ -2,10 +2,8 @@
 
 ## Optional Markdown mathematics candidate
 
-The local `SWIFTMD_EXPERIMENTAL_GFM_MATH` build uses the unreleased
-math-aware SwiftGFM API. Before publishing it, verify the actual public
-SwiftGFM release tag and commit, update all SwiftPM version requirements and
-lockfiles, and enable the integration in the normal build. Re-run the full
+The normal build resolves the public SwiftGFM 1.1.0 release and exposes its
+math-aware API through an explicit opt-in. Before publishing, re-run the full
 Core/reference suite, real Node and JavaScriptCore adapters, strict CLI and
 browser tests, Linux runtime tests, and fresh public versioned consumers for
 the final SwiftMD and generated-mirror commits. Re-run the automated security
@@ -18,7 +16,7 @@ copy of the exact resolved SwiftHTML sources and requires key parser files in
 the CodeQL extraction report. This scan mirror is never a release artifact;
 the public-dependency and provenance gates still apply before publication.
 
-The prototype recognizes inline and display math outside code, image
+The math profile recognizes inline and display math outside code, image
 descriptions and GFM table cells. Unsafe raw HTML cannot be combined with the
 math-aware parser: document-level parser errors produce escaped source and a
 diagnostic, and strict CLI mode emits no output. Its delimiter/currency rules
@@ -95,7 +93,7 @@ A public-dependency candidate can be generated with:
 
 ```sh
 python3 Scripts/generate-adapter-mirror.py /tmp/swiftmd-candidate \
-  --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+  --core-version 0.1.0 --gfm-version 1.1.0 --highlight-version 1.0.1 \
   --swifthtml-url "$VERIFIED_SWIFTHTML_URL" --swifthtml-version "$VERIFIED_SWIFTHTML_VERSION" \
   --verify-public-dependencies --include-locked-renderers
 python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(command -v node)"
@@ -109,9 +107,9 @@ synthetic local mirror test remains mandatory.
 
 ## Dependencies and current boundaries
 
-* SwiftGFM 1.0.1 is public and resolves to commit
-  `2cb9450cf755858d338525fe64081b5f04864a2d`. Its annotated tag is unsigned;
-  the tag and commit must be checked again before a real release. It is a
+* SwiftGFM 1.1.0 is public and resolves to commit
+  `9a4176be3bda0953f4ddb91ec63de77d1ad230fa`. The tag and commit must be
+  checked again before a real release. It is a
   Swift wrapper around C, and its parser output is not a sanitizer or a claim
   of full GFM conformance.
 * Swift-Highlight 1.0.1 is public and resolves to commit

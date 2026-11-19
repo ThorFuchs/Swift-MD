@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Exercise a locally built, explicitly experimental math-aware CLI."""
+"""Exercise a locally built, explicitly opted-in math-aware CLI."""
 import os
 from pathlib import Path
 import subprocess
@@ -12,7 +12,7 @@ CLI = Path(os.environ['SWIFTMD_CLI'])
 NODE = os.environ['SWIFTMD_NODE']
 KATEX = os.environ['SWIFTMD_KATEX']
 PELE = os.environ['SWIFTMD_PELE']
-OPTIONS = ['--highlight', '--katex-node', NODE, '--katex-module', KATEX,
+OPTIONS = ['--markdown-math', '--highlight', '--katex-node', NODE, '--katex-module', KATEX,
            '--pele-node', NODE, '--pele-module', PELE, '--svg-prefix', 'math-cli']
 
 
@@ -67,10 +67,18 @@ class MathCLI(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b'')
 
-    def test_explicit_experimental_version(self):
-        result = self.run_cli('--version')
-        self.assertEqual(result.returncode, 0)
-        self.assertIn(b'experimental math parser (unreleased)', result.stdout)
+    def test_math_option_requires_katex(self):
+        result = self.run_cli('--markdown-math', text='Inline $x$.')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b'')
+        self.assertIn(b'--markdown-math requires', result.stderr)
+
+    def test_configured_katex_does_not_implicitly_enable_markdown_math(self):
+        source = 'Inline $x^2$.\n\n```math\ny^2\n```\n'
+        result = self.run_cli('--katex-node', NODE, '--katex-module', KATEX, text=source)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b'$x^2$', result.stdout)
+        self.assertEqual(result.stdout.count(b'<math '), 1)
 
     def test_unicode_currency_and_escapes(self):
         source = 'a $x$\u0301, \u2764\ufe0f$y$; Preis $5 und $10; \\$z\\$; `$q$`.'

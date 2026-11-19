@@ -28,9 +28,10 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
     func testCombinedAndFallbackWithRealScripts() throws {
         let (katex, pele) = try scripts()
         let renderer = try SwiftMDAppleRenderer(katexScript: katex, peleScript: pele, svgPrefix: "apple-page")
-        let source = "| A | B |\n| - | - |\n| x | y |\n\n```swift\nlet x = 1\n```\n\n```math\nx^2\n```\n\n```mermaid\nflowchart LR\nA-->B\n```\n"
+        let source = "Inline $x^2$ stays literal.\n\n| A | B |\n| - | - |\n| x | y |\n\n```swift\nlet x = 1\n```\n\n```math\nx^2\n```\n\n```mermaid\nflowchart LR\nA-->B\n```\n"
         let result = try renderer.render(source)
         XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
+        XCTAssertTrue(result.html.contains("Inline $x^2$ stays literal."))
         for marker in ["<table>", "hljs-keyword", "<math", "<svg", "viewBox=", "id=\"apple-page-2\""] {
             XCTAssertTrue(result.html.contains(marker), marker)
         }
@@ -42,6 +43,9 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
 
     func testInvalidScriptAndPrefixRejected() throws {
         let (_, pele) = try scripts()
+        XCTAssertThrowsError(try SwiftMDAppleRenderer(recognizeMath: true)) { error in
+            XCTAssertEqual(error as? MarkdownMathConfigurationError, .rendererRequired)
+        }
         XCTAssertThrowsError(try SwiftMDAppleRenderer(katexScript: ")"))
         XCTAssertThrowsError(try SwiftMDAppleRenderer(peleScript: pele, svgPrefix: "bad prefix"))
     }
@@ -129,8 +133,7 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
         XCTAssertTrue(apple.html.contains("hljs-keyword"))
     }
 
-    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
-    func testExperimentalMarkdownMathMatchesNode() throws {
+    func testOptInMarkdownMathMatchesNode() throws {
         let (katex, pele) = try scripts()
         let env = ProcessInfo.processInfo.environment
         guard let node = env["SWIFTMD_NODE"], let module = env["SWIFTMD_KATEX"], let peleModule = env["SWIFTMD_PELE"] else {
@@ -152,9 +155,9 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
         A-->B
         ```
         """#
-        let apple = try SwiftMDAppleRenderer(katexScript: katex, peleScript: pele, svgPrefix: "math-compare").render(source)
+        let apple = try SwiftMDAppleRenderer(katexScript: katex, peleScript: pele, svgPrefix: "math-compare", recognizeMath: true).render(source)
         let nodeResult = try SwiftMDRenderer(math: NodeModule(node: node, module: module),
-            mermaid: MermaidOptions(runtime: NodeModule(node: node, module: peleModule), svgPrefix: "math-compare")).render(source)
+            mermaid: MermaidOptions(runtime: NodeModule(node: node, module: peleModule), svgPrefix: "math-compare"), recognizeMath: true).render(source)
         XCTAssertEqual(apple.html, nodeResult.html)
         XCTAssertEqual(apple.diagnostics.count, 1)
         XCTAssertEqual(nodeResult.diagnostics.count, 1)
@@ -163,7 +166,6 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
         XCTAssertTrue(apple.html.contains("<svg"))
         XCTAssertTrue(apple.html.contains("hljs-keyword"))
     }
-    #endif
 
     func testConcurrentUseOfOneJavaScriptCoreRenderer() async throws {
         let (katex, pele) = try scripts()

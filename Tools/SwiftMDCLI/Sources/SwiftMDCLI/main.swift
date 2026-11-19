@@ -20,18 +20,14 @@ func writeError(_ text: String) { FileHandle.standardError.write(Data((text + "\
 func run() throws {
     var args = Array(CommandLine.arguments.dropFirst()), input: String?, output: String?
     var nodeK: String?, moduleK: String?, nodeP: String?, moduleP: String?, prefix: String?
-    var highlight = false, document = false, strict = false, unsafe = false
+    var highlight = false, document = false, strict = false, unsafe = false, recognizeMath = false
     while !args.isEmpty {
         let arg = args.removeFirst()
         func value() throws -> String { guard !args.isEmpty else { throw CLIError.message("Missing value for \(arg)") }; return args.removeFirst() }
         switch arg {
-        case "--help", "-h": print("Usage: swift-md [--highlight] [--katex-node PATH --katex-module PATH] [--pele-node PATH --pele-module PATH --svg-prefix ID] [--document] [--unsafe-html] [--strict] [--output PATH] [INPUT]"); return
+        case "--help", "-h": print("Usage: swift-md [--highlight] [--markdown-math] [--katex-node PATH --katex-module PATH] [--pele-node PATH --pele-module PATH --svg-prefix ID] [--document] [--unsafe-html] [--strict] [--output PATH] [INPUT]"); return
         case "--version":
-            #if SWIFTMD_EXPERIMENTAL_GFM_MATH
-            print("SwiftMD experimental; SwiftGFM experimental math parser (unreleased); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)")
-            #else
-            print("SwiftMD 1.0.0; SwiftGFM 1.0.1 (2cb9450cf755858d338525fe64081b5f04864a2d); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)")
-            #endif
+            print("SwiftMD development; SwiftGFM 1.1.0 (9a4176be3bda0953f4ddb91ec63de77d1ad230fa); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)")
             return
         case "--output", "-o": output = try value()
         case "--katex-node": nodeK = try value()
@@ -40,6 +36,7 @@ func run() throws {
         case "--pele-module": moduleP = try value()
         case "--svg-prefix": prefix = try value()
         case "--highlight": highlight = true
+        case "--markdown-math": recognizeMath = true
         case "--document": document = true
         case "--strict": strict = true
         case "--unsafe-html": unsafe = true
@@ -48,6 +45,7 @@ func run() throws {
         }
     }
     guard (nodeK == nil) == (moduleK == nil) else { throw CLIError.message("KaTeX requires --katex-node and --katex-module") }
+    guard !recognizeMath || nodeK != nil else { throw CLIError.message("--markdown-math requires --katex-node and --katex-module") }
     guard (nodeP == nil && moduleP == nil && prefix == nil) || (nodeP != nil && moduleP != nil && prefix != nil) else { throw CLIError.message("Pele requires --pele-node, --pele-module and --svg-prefix") }
     let bytes = try input.map { try Data(contentsOf: URL(fileURLWithPath: $0)) } ?? FileHandle.standardInput.readToEnd() ?? Data()
     guard let source = String(data: bytes, encoding: .utf8) else { throw CLIError.message("Input must be valid UTF-8") }
@@ -58,15 +56,11 @@ func run() throws {
     let config = MarkdownConfiguration(options: unsafe ? [.allowUnsafeHTML] : [])
     let compiler = BlockCompiler(compiler: MarkdownCompiler(configuration: config), renderers: renderers)
     let result: BlockResult
-    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
-    if let nodeK, let moduleK {
+    if recognizeMath, let nodeK, let moduleK {
         result = try compiler.renderRecognizingMath(source, mathRenderer: KaTeXNodeRenderer(node: nodeK, module: moduleK))
     } else {
         result = try compiler.render(source)
     }
-    #else
-    result = try compiler.render(source)
-    #endif
     for diagnostic in result.diagnostics { writeError("block \(diagnostic.blockIndex) [\(diagnostic.language)]: \(diagnostic.message)") }
     if strict && !result.diagnostics.isEmpty { throw CLIError.message("Rendering failed in strict mode") }
     let html = document ? "<!doctype html>\n<html><head><meta charset=\"utf-8\"></head><body>\n" + result.html + "\n</body></html>\n" : result.html

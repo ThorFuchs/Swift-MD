@@ -109,9 +109,11 @@ Both executable and module paths must be trusted absolute paths. Node 26.5.0 was
 used in the present local test; the lockfile requires Node >=22.12.0 for its
 `commander` dependency. See [adapter documentation](Adapters/SwiftMDBlocks/README.md).
 
-`math` and `mermaid` code fences opt into the respective renderer. `$$` block
-syntax and inline math are not implemented: SwiftGFM parses those as ordinary
-Markdown, so adding them correctly requires parser integration. `--unsafe-html`
+In the unreleased development candidate, pass `--markdown-math` alongside
+the KaTeX options to recognize `$...$` and `$$...$$`; it is disabled by
+default, including when KaTeX is configured for `math` fences. The equivalent
+Swift API option is `recognizeMath: true`. See the [math profile](Documentation/INTEGRATED_RENDERING.md)
+for syntax limitations and error handling. `--unsafe-html`
 explicitly enables raw HTML and unsafe links; neither it nor ordinary rendering
 is a sanitizer. Extension renderers and host CSS are separate trust boundaries.
 The Node adapters themselves enforce no hard process time, memory or live

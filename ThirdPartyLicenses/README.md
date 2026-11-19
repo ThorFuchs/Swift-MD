@@ -14,7 +14,7 @@ and any fixture licensing whenever the distributed file set changes.
 
 | Dependency | Selected identity | License / notes |
 | --- | --- | --- |
-| SwiftGFM | 1.0.1, tag commit 2cb9450cf755858d338525fe64081b5f04864a2d | Apache-2.0; see SwiftGFM-NOTICE.txt and cmark-gfm-COPYING.txt |
+| SwiftGFM | 1.1.0, tag commit 9a4176be3bda0953f4ddb91ec63de77d1ad230fa | Apache-2.0; see SwiftGFM-NOTICE.txt and cmark-gfm-COPYING.txt |
 | cmark-gfm | 27d942c8b0a62d192f616e5bf3578f4b6a89e180 | See cmark-gfm-COPYING.txt; fixtures have separate CC BY-SA notice |
 | Swift-Highlight | 1.0.1, tag commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564 | Apache-2.0; imported HighlightKit MIT and highlight.js BSD-3-Clause, see included notices |
 | SwiftHTML | 0.1.0, public tag commit afe888a7a54d83118919ef640c87b06b7c16eb05 | Apache-2.0; see SwiftHTML-Apache-2.0.txt |

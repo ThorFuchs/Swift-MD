@@ -35,44 +35,38 @@ public struct MermaidOptions: Sendable {
 /// all renderers are disabled, the baseline SwiftGFM bytes are preserved.
 /// Renderer failures retain the original escaped block and produce diagnostics.
 /// Node and module paths are trusted configuration; Node is not sandboxed.
+/// Dollar-delimited Markdown math is separately enabled with `recognizeMath`;
+/// enabling it requires a configured math renderer.
 public struct SwiftMDRenderer: Sendable {
     private let compiler: BlockCompiler
-    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
     private let mathRenderer: KaTeXNodeRenderer?
-    #endif
 
     public init(
         configuration: MarkdownConfiguration = .gfm,
         highlight: Bool = true,
         math: NodeModule? = nil,
-        mermaid: MermaidOptions? = nil
+        mermaid: MermaidOptions? = nil,
+        recognizeMath: Bool = false
     ) throws {
+        guard !recognizeMath || math != nil else { throw MarkdownMathConfigurationError.rendererRequired }
         var renderers: [any BlockRenderer] = []
-        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
-        var prototypeMathRenderer: KaTeXNodeRenderer?
-        #endif
+        var selectedMathRenderer: KaTeXNodeRenderer?
         if let math {
             let renderer = try KaTeXNodeRenderer(node: math.node, module: math.module)
             renderers.append(renderer)
-            #if SWIFTMD_EXPERIMENTAL_GFM_MATH
-            prototypeMathRenderer = renderer
-            #endif
+            if recognizeMath { selectedMathRenderer = renderer }
         }
         if let mermaid {
             renderers.append(try PeleNodeRenderer(node: mermaid.runtime.node, module: mermaid.runtime.module, prefix: mermaid.svgPrefix))
         }
         if highlight { renderers.append(HighlightRenderer()) }
         compiler = BlockCompiler(compiler: MarkdownCompiler(configuration: configuration), renderers: renderers)
-        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
-        self.mathRenderer = prototypeMathRenderer
-        #endif
+        self.mathRenderer = selectedMathRenderer
     }
 
     /// Compile Markdown to HTML and diagnostics in one call.
     public func render(_ markdown: String) throws -> BlockResult {
-        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
         if let mathRenderer { return try compiler.renderRecognizingMath(markdown, mathRenderer: mathRenderer) }
-        #endif
         return try compiler.render(markdown)
     }
 }

@@ -59,6 +59,11 @@ public struct BlockDiagnostic: Sendable, Equatable {
     public let message: String
 }
 
+/// An opt-in Markdown feature was requested without its required renderer.
+public enum MarkdownMathConfigurationError: Error, Sendable, Equatable {
+    case rendererRequired
+}
+
 public enum BlockProcessingError: Error, Sendable { case missingBody }
 
 public struct BlockResult: Sendable {

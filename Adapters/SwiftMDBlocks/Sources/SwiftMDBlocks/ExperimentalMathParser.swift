@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-#if SWIFTMD_EXPERIMENTAL_GFM_MATH
 import Foundation
 import SwiftGFM
 
 extension BlockCompiler {
-    /// Local integration prototype. Requires an unreleased SwiftGFM math parser.
-    /// Not enabled for public builds until a matching SwiftGFM release exists.
+    /// Explicitly recognize supported dollar-delimited Markdown mathematics.
+    /// Unsafe raw HTML, NUL and malformed display blocks produce an escaped
+    /// document fallback and a diagnostic. This profile does not sanitize HTML.
     public func renderRecognizingMath(_ source: String, mathRenderer: any MathMLRenderer) throws -> BlockResult {
         let parsed: MarkdownMathDocument
         do {
@@ -35,4 +35,3 @@ extension BlockCompiler {
         return try render(parts, mathRenderer: mathRenderer)
     }
 }
-#endif

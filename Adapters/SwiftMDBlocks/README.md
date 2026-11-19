@@ -24,6 +24,9 @@ for diagnostic in result.diagnostics { print(diagnostic.message) }
 
 Highlighting is enabled by default; pass `highlight: false` to turn it off.
 Math and Mermaid are enabled independently by supplying their configuration.
+In the unreleased candidate, pass `recognizeMath: true` as well to recognize
+inline and display Markdown mathematics; KaTeX configuration is required. The
+default preserves literal dollar-delimited text and existing `math` fences.
 With all three disabled, output is byte-identical to the core. Renderer errors
 produce diagnostics and preserve escaped source; check diagnostics rather than
 assuming every requested block rendered successfully. Prefixes must be unique
@@ -91,5 +94,5 @@ an OS sandbox for aggregate memory and stronger isolation.
 The optional package currently resolves Swift-Highlight even for other products;
 the root Core package avoids that dependency. Swift-Highlight is pinned to its
 public 1.0.1 tag (commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564). A public
-SwiftHTML-based adapter distribution requires a verified stable SwiftHTML
-release. No `$$` or inline mathematics is implemented.
+SwiftHTML-based adapter distribution requires its own release checks. See the
+[math profile](../../Documentation/INTEGRATED_RENDERING.md) for parser limits.

@@ -14,7 +14,7 @@ const katex = process.env.SWIFTMD_KATEX || join(root, 'Tools/NodeDependencies/no
 const pele = process.env.SWIFTMD_PELE || join(root, 'Tools/NodeDependencies/node_modules/pele/dist/pele.js');
 const input = `# Browser test
 
-${process.env.SWIFTMD_EXPERIMENTAL_MATH_BROWSER ? 'Inline $x^2$\u0301 text.\n\n$$\n\\frac{x}{2}\n$$\n' : ''}
+${process.env.SWIFTMD_MARKDOWN_MATH_BROWSER ? 'Inline $x^2$\u0301 text.\n\n$$\n\\frac{x}{2}\n$$\n' : ''}
 | Key | Value |
 | --- | --- |
 | test | [example](https://example.com) |
@@ -44,9 +44,8 @@ A[Start] --> B[Finish]
 const dir = await mkdtemp(join(tmpdir(), 'swiftmd-browser-'));
 let chrome;
 try {
-  let rendered = execFileSync(cli, ['--strict', '--document', '--highlight', '--katex-node', node, '--katex-module', katex, '--pele-node', node, '--pele-module', pele, '--svg-prefix', 'browser-test'], { input, encoding: 'utf8' });
-  // Optional fragments must come from the Swift KaTeX adapter probe, not from
-  // Markdown delimiter recognition (which is not implemented yet).
+  let rendered = execFileSync(cli, [...(process.env.SWIFTMD_MARKDOWN_MATH_BROWSER ? ['--markdown-math'] : []), '--strict', '--document', '--highlight', '--katex-node', node, '--katex-module', katex, '--pele-node', node, '--pele-module', pele, '--svg-prefix', 'browser-test'], { input, encoding: 'utf8' });
+  // Optional probe fragments exercise the direct Swift KaTeX adapter API.
   if (process.env.SWIFTMD_MATHML_PROBE) {
     const probe = JSON.parse(await readFile(process.env.SWIFTMD_MATHML_PROBE, 'utf8'));
     rendered = rendered.replace('</body>', `${probe.composed}</body>`);
@@ -105,7 +104,7 @@ try {
   const expectedGfm = new Map([[279, true], [280, true], [649, false], [650, false]]);
   if (report.gfm.length !== expectedGfm.size || report.gfm.some(c => c.sameDOM !== expectedGfm.get(c.number))) throw Error('Unexpected GFM browser DOM comparison: ' + JSON.stringify(report.gfm));
   if (networkRequests.some(url => url !== pathToFileURL(file).href)) throw Error('Unexpected browser request: ' + JSON.stringify(networkRequests));
-  if (process.env.SWIFTMD_EXPERIMENTAL_MATH_BROWSER && (!report.combiningMark || report.maths.length < 3 || report.maths.slice(0, 3).some(m => m.namespace !== 'http://www.w3.org/1998/Math/MathML' || m.box.width <= 0 || m.box.height <= 0) || report.maths[0].display !== null || report.maths[1].display !== 'block' || report.maths[2].display !== 'block')) throw Error('Experimental Markdown math failed: ' + JSON.stringify(report));
+  if (process.env.SWIFTMD_MARKDOWN_MATH_BROWSER && (!report.combiningMark || report.maths.length < 3 || report.maths.slice(0, 3).some(m => m.namespace !== 'http://www.w3.org/1998/Math/MathML' || m.box.width <= 0 || m.box.height <= 0) || report.maths[0].display !== null || report.maths[1].display !== 'block' || report.maths[2].display !== 'block')) throw Error('Markdown math failed: ' + JSON.stringify(report));
   if (process.env.SWIFTMD_MATHML_PROBE && [report.inlineProbe, report.displayProbe].some(p => !p || p.namespace !== 'http://www.w3.org/1998/Math/MathML' || p.box.width <= 0 || p.box.height <= 0)) throw Error('MathML probe failed: ' + JSON.stringify(report));
   if (process.env.SWIFTMD_MATHML_PROBE && (report.inlineProbe.display !== null || report.displayProbe.display !== 'block')) throw Error('Incorrect MathML display modes: ' + JSON.stringify(report));
   if (report.scriptRan || report.scriptsInOutput || !report.table || !report.highlighted || report.math?.namespace !== 'http://www.w3.org/1998/Math/MathML' || report.math.box.width <= 0 || report.math.box.height <= 0 || report.svgs.length !== 2 || report.svgs.some(s => s.namespace !== 'http://www.w3.org/2000/svg' || !s.viewBox || s.box.width <= 0 || s.box.height <= 0 || !s.geometry || s.labelledby !== s.id + '-title' || s.describedby !== s.id + '-desc' || s.title !== 'Example diagram' || s.desc !== 'Two connected nodes' || !s.text.includes('Start') || !s.text.includes('Finish')) || report.svgs[0].id === report.svgs[1].id) throw Error('Browser assertions failed: ' + JSON.stringify(report));

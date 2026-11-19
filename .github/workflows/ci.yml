@@ -172,7 +172,7 @@ jobs:
           test -n "$SWIFTHTML_URL" && test -n "$SWIFTHTML_VERSION" || { echo 'Public SwiftHTML version is not configured; publication gate blocked' >&2; exit 1; }
           CANDIDATE="$(mktemp -d)/mirror"
           python3 Scripts/generate-adapter-mirror.py "$CANDIDATE" \
-            --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --core-version 0.1.0 --gfm-version 1.1.0 --highlight-version 1.0.1 \
             --swifthtml-url "$SWIFTHTML_URL" --swifthtml-version "$SWIFTHTML_VERSION" \
             --verify-public-dependencies --include-locked-renderers
           python3 Scripts/test-public-candidate.py "$CANDIDATE" --node "$(command -v node)"
@@ -180,3 +180,7 @@ jobs:
         run: |
           swift build --package-path Tools/SwiftMDCLI -c release -j 4 -Xswiftc -no-whole-module-optimization
           SWIFTMD_NODE="$(command -v node)" SWIFTMD_CLI="$GITHUB_WORKSPACE/Tools/SwiftMDCLI/.build/release/swift-md" python3 Scripts/test-cli.py
+          SWIFTMD_NODE="$(command -v node)" SWIFTMD_CLI="$GITHUB_WORKSPACE/Tools/SwiftMDCLI/.build/release/swift-md" \
+            SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex" \
+            SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
+            python3 Scripts/test-markdown-math-cli.py

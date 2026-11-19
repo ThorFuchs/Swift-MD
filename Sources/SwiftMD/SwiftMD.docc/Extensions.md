@@ -19,5 +19,7 @@ fragments share a page. Pele links and images are disabled.
 Unrecognized or invalid blocks retain readable, escaped source and produce a
 diagnostic. In CLI `--strict` mode a diagnostic prevents output. The renderer
 order is deterministic; `math` and `mermaid` are reserved for their renderers.
-Inline math and `$$` delimiters are not implemented. See the repository's
-example gallery for inputs, actual HTML and browser screenshots.
+The unreleased adapter candidate optionally recognizes inline and display
+mathematics with `recognizeMath: true` when KaTeX is configured; the core
+profile remains unchanged. See the repository's integrated rendering guide
+for syntax limits and diagnostics, and the example gallery for browser output.
