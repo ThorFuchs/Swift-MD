@@ -39,6 +39,11 @@ nodes throw `DOCXError.unsupported` instead of silently losing content.
 Blockquotes are indented; nested blockquotes share the same indentation. Text
 layout, fonts, and line wrapping are determined by the opening application.
 
+The package includes a Word settings part with compatibility mode `15`
+(Word 2013 feature set). Without it, Word treats this export as a legacy
+Word 2007-compatible document. This setting does not certify compatibility
+with other Word versions or applications.
+
 The ZIP writer implements only deterministic, uncompressed, non-ZIP64 entries
 for the adapter's fixed internal part names. It performs no filesystem access.
 An invalid style, an XML 1.0 forbidden character, excessive nesting, or an

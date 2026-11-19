@@ -35,10 +35,16 @@ final class DOCXExporterTests: XCTestCase {
         XCTAssertFalse(data.isEmpty)
         XCTAssertEqual(data, try DOCXExporter().render(fixture), "output is deterministic")
         let entries = try parts(data)
-        XCTAssertEqual(Set(entries.keys), Set(["[Content_Types].xml", "_rels/.rels", "word/document.xml", "word/_rels/document.xml.rels", "word/styles.xml", "word/numbering.xml"]))
+        XCTAssertEqual(Set(entries.keys), Set(["[Content_Types].xml", "_rels/.rels", "word/document.xml", "word/_rels/document.xml.rels", "word/styles.xml", "word/numbering.xml", "word/settings.xml"]))
         for (name, content) in entries { XCTAssertTrue(XMLParser(data: content).parse(), "invalid XML: \(name)") }
         let doc = try XCTUnwrap(String(data: XCTUnwrap(entries["word/document.xml"]), encoding: .utf8))
         let styles = try XCTUnwrap(String(data: XCTUnwrap(entries["word/styles.xml"]), encoding: .utf8))
+        let settings = String(decoding: try XCTUnwrap(entries["word/settings.xml"]), as: UTF8.self)
+        let rels = String(decoding: try XCTUnwrap(entries["word/_rels/document.xml.rels"]), as: UTF8.self)
+        let contentTypes = String(decoding: try XCTUnwrap(entries["[Content_Types].xml"]), as: UTF8.self)
+        XCTAssertTrue(settings.contains("w:name=\"compatibilityMode\" w:uri=\"http://schemas.microsoft.com/office/word\" w:val=\"15\""))
+        XCTAssertTrue(rels.contains("relationships/settings\" Target=\"settings.xml\""))
+        XCTAssertTrue(contentTypes.contains("PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\""))
         let numbering = try XCTUnwrap(String(data: XCTUnwrap(entries["word/numbering.xml"]), encoding: .utf8))
         for text in ["SwiftMD — Grüße 世界 🐉", "bold", "italic", "inline code", "First item", "Nested item", "Third", "Äpfel", "猫", "Hallo &amp; &lt;Welt&gt;", "A quotation."] {
             XCTAssertTrue(doc.contains(text), "missing \(text)")
