@@ -58,6 +58,41 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: swift test -j 4
+  linux-archive:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.22.1'
+      - name: Build local candidate and prepare clean target inputs
+        run: |
+          swift package --package-path Tools/SwiftMDCLI resolve
+          Scripts/build-linux-candidate.sh "$RUNNER_TEMP/swiftmd-candidate.tar.gz"
+          npm ci --ignore-scripts --prefix Tools/NodeDependencies
+          mkdir -p "$RUNNER_TEMP/archive-test/test/Scripts" \
+            "$RUNNER_TEMP/archive-test/test/Tools/SwiftMDCLI" \
+            "$RUNNER_TEMP/archive-test/test/Tools/NodeDependencies"
+          tar -xzf "$RUNNER_TEMP/swiftmd-candidate.tar.gz" -C "$RUNNER_TEMP/archive-test"
+          cp "$(command -v node)" "$RUNNER_TEMP/archive-test/node"
+          cp Scripts/test-cli.py "$RUNNER_TEMP/archive-test/test/Scripts/"
+          cp Tools/SwiftMDCLI/Package.resolved "$RUNNER_TEMP/archive-test/test/Tools/SwiftMDCLI/"
+          cp -a Tools/NodeDependencies/node_modules "$RUNNER_TEMP/archive-test/test/Tools/NodeDependencies/"
+      - name: Test candidate on clean Ubuntu without Swift
+        run: |
+          docker run --rm -v "$RUNNER_TEMP/archive-test:/work" ubuntu:24.04 sh -euxc '
+            apt-get update -qq
+            apt-get install -y --no-install-recommends python3 libxml2 libicu74 zlib1g liblzma5 libstdc++6 libgcc-s1 libatomic1
+            if command -v swift; then exit 1; fi
+            cd /work/SwiftMD
+            sha256sum -c SHA256SUMS
+            test -f licenses/SwiftSoup-MIT.txt
+            test -f licenses/SwiftSoup-jsoup-MIT.txt
+            if ldd bin/swift-md | grep "not found"; then exit 1; fi
+            SWIFTMD_NODE=/work/node SWIFTMD_CLI=/work/SwiftMD/bin/swift-md python3 /work/test/Scripts/test-cli.py
+          '
   integration:
     runs-on: ubuntu-latest
     container: swift:6.2.4
