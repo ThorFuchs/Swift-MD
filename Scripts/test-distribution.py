@@ -100,9 +100,16 @@ def main():
         lru_source = call('git', 'show', html_revision + ':Vendor/SwiftSoup/Sources/LRUCache.swift', cwd=html, capture=True)
         if 'Copyright © 2021 Nick Lockwood' not in lru_source or 'Permission is hereby granted, free of charge' not in lru_source:
             raise ValueError('SwiftHTML LRUCache copyright or license marker changed')
-        lru_notice = (source / 'ThirdPartyLicenses/LRUCache-MIT.txt').read_bytes()
+        lru_notice = (source / 'ThirdPartyLicenses/SwiftHTML-LRUCache-MIT.txt').read_bytes()
+        html_apache = call('git', 'show', html_revision + ':LICENSE', cwd=html, capture=True).encode()
+        html_lru = call('git', 'show', html_revision + ':Sources/SwiftHTML/Resources/ThirdPartyLicenses/LRUCache-MIT.txt',
+                        cwd=html, capture=True).encode()
+        if html_lru != lru_notice or (source / 'ThirdPartyLicenses/SwiftHTML-Apache-2.0.txt').read_bytes() != html_apache:
+            raise ValueError('retained SwiftHTML licenses differ from the tested commit')
         if (mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources/LRUCache-MIT.txt').read_bytes() != lru_notice:
             raise ValueError('generated mirror LRUCache notice differs from retained notice')
+        if (mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources/SwiftHTML-Apache-2.0.txt').read_bytes() != html_apache:
+            raise ValueError('generated mirror SwiftHTML license differs from tested commit')
         assets = mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
         for package in ('katex', 'pele'):
             for filename, digest in origin['renderer_resources'][package]['files_sha256'].items():
@@ -192,7 +199,8 @@ print("Adapter versioned consumer: all three real renderers OK")
             raise ValueError('Adapter consumer resolved a different SwiftHTML revision')
         if 'swiftsoup' in pins or any(p.name.lower() == 'swiftsoup' for p in (consumer / '.build/checkouts').iterdir()):
             raise ValueError('adapter consumer unexpectedly fetched the external SwiftSoup package')
-        for name, content in ((license_name, html_license.encode()), ('LRUCache-MIT.txt', lru_notice)):
+        for name, content in ((license_name, html_license.encode()), ('LRUCache-MIT.txt', lru_notice),
+                              ('SwiftHTML-Apache-2.0.txt', html_apache)):
             resources = [p for p in (consumer / '.build').rglob(name)
                          if 'checkouts' not in p.parts and ('resources' in str(p).lower() or '.bundle' in str(p))]
             if not any(p.read_bytes() == content for p in resources):

@@ -43,7 +43,13 @@ A[Start] --> B[Finish]
 const dir = await mkdtemp(join(tmpdir(), 'swiftmd-browser-'));
 let chrome;
 try {
-  const rendered = execFileSync(cli, ['--strict', '--document', '--highlight', '--katex-node', node, '--katex-module', katex, '--pele-node', node, '--pele-module', pele, '--svg-prefix', 'browser-test'], { input, encoding: 'utf8' });
+  let rendered = execFileSync(cli, ['--strict', '--document', '--highlight', '--katex-node', node, '--katex-module', katex, '--pele-node', node, '--pele-module', pele, '--svg-prefix', 'browser-test'], { input, encoding: 'utf8' });
+  // Optional fragments must come from the Swift KaTeX adapter probe, not from
+  // Markdown delimiter recognition (which is not implemented yet).
+  if (process.env.SWIFTMD_MATHML_PROBE) {
+    const probe = JSON.parse(await readFile(process.env.SWIFTMD_MATHML_PROBE, 'utf8'));
+    rendered = rendered.replace('</body>', `<p id="swiftmd-inline-math">Before ${probe.inline} after</p><div id="swiftmd-display-math">${probe.display}</div></body>`);
+  }
   // If page scripts unexpectedly execute, this sentinel exposes the failure.
   const document = rendered.replace('</head>', '<style>body{font:16px sans-serif;margin:24px} svg{display:block;margin:12px 0} .hljs-keyword{color:#7b1fa2}</style><script>window.__swiftmdPageScriptRan=true</script></head>');
   const file = join(dir, 'test.html'); await writeFile(file, document);
@@ -82,7 +88,9 @@ try {
       const e = inspect(expected), a = inspect(actual);
       return {number, sameDOM:JSON.stringify(e.tree) === JSON.stringify(a.tree), expectedText:e.text, actualText:a.text};
     });
+    const mathProbe = id => { const el = document.querySelector(id + ' math'); return el && {namespace:el.namespaceURI, display:el.getAttribute('display'), box:box(el)}; };
     return { scriptRan: window.__swiftmdPageScriptRan === true, gfm,
+      inlineProbe:mathProbe('#swiftmd-inline-math'), displayProbe:mathProbe('#swiftmd-display-math'),
       math: math && {namespace:math.namespaceURI, box:box(math), text:math.textContent},
       svgs: svgs.map(s => ({namespace:s.namespaceURI, viewBox:s.getAttribute('viewBox'), id:s.id, labelledby:s.getAttribute('aria-labelledby'), describedby:s.getAttribute('aria-describedby'), title:s.querySelector('title')?.textContent, desc:s.querySelector('desc')?.textContent, box:box(s), geometry:s.querySelector('path')?.getBBox().width, text:s.textContent})),
       table:!!document.querySelector('table'), highlighted:!!document.querySelector('.hljs-keyword'),
@@ -95,6 +103,8 @@ try {
   const expectedGfm = new Map([[279, true], [280, true], [649, false], [650, false]]);
   if (report.gfm.length !== expectedGfm.size || report.gfm.some(c => c.sameDOM !== expectedGfm.get(c.number))) throw Error('Unexpected GFM browser DOM comparison: ' + JSON.stringify(report.gfm));
   if (networkRequests.some(url => url !== pathToFileURL(file).href)) throw Error('Unexpected browser request: ' + JSON.stringify(networkRequests));
+  if (process.env.SWIFTMD_MATHML_PROBE && [report.inlineProbe, report.displayProbe].some(p => !p || p.namespace !== 'http://www.w3.org/1998/Math/MathML' || p.box.width <= 0 || p.box.height <= 0)) throw Error('MathML probe failed: ' + JSON.stringify(report));
+  if (process.env.SWIFTMD_MATHML_PROBE && (report.inlineProbe.display !== null || report.displayProbe.display !== 'block')) throw Error('Incorrect MathML display modes: ' + JSON.stringify(report));
   if (report.scriptRan || report.scriptsInOutput || !report.table || !report.highlighted || report.math?.namespace !== 'http://www.w3.org/1998/Math/MathML' || report.math.box.width <= 0 || report.math.box.height <= 0 || report.svgs.length !== 2 || report.svgs.some(s => s.namespace !== 'http://www.w3.org/2000/svg' || !s.viewBox || s.box.width <= 0 || s.box.height <= 0 || !s.geometry || s.labelledby !== s.id + '-title' || s.describedby !== s.id + '-desc' || s.title !== 'Example diagram' || s.desc !== 'Two connected nodes' || !s.text.includes('Start') || !s.text.includes('Finish')) || report.svgs[0].id === report.svgs[1].id) throw Error('Browser assertions failed: ' + JSON.stringify(report));
   const screenshot = await send('Page.captureScreenshot', {format:'png'});
   if (process.env.SWIFTMD_BROWSER_SCREENSHOT) await writeFile(process.env.SWIFTMD_BROWSER_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));

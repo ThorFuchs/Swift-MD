@@ -56,6 +56,48 @@ unimplemented. Backend failures preserve an escaped source block and provide a
 diagnostic rather than silently succeeding. A local mirror can be generated and
 tested with synthetic tags; this does not publish a mirror, tag or release.
 
+The local KaTeX backends also implement `MathMLRenderer.renderMath(literal:
+displayMode:)` for callers that already have a TeX literal. Both Node and
+JavaScriptCore pass that literal as data to KaTeX, use the same trust and
+expansion settings as the fence adapter, and produce MathML in inline or
+display mode. This low-level API does **not** recognize math in Markdown and
+does not change the behavior of `SwiftMDIntegrated.render`.
+
+An optional math-aware Markdown parser is needed before `$…$` and `$$…$$`
+can be supported correctly. SwiftGFM's read-only AST and rendered HTML cannot
+reconstruct original TeX after Markdown has consumed escapes, entities or
+emphasis, and its source positions are not a lossless token mapping. Math
+recognition must also define code and HTML exclusions, nested block containers,
+link text and targets, and table-pipe precedence. A global regex or a search
+through rendered text is not a reliable substitute. The unchanged Core path
+must continue to return SwiftGFM's exact bytes.
+
+For a browser check of the direct Node backend's two MathML modes (not of
+Markdown delimiter parsing), set trusted absolute Node and KaTeX paths and run:
+
+```sh
+SWIFTMD_NODE="$(command -v node)" \
+SWIFTMD_KATEX="$PWD/Tools/NodeDependencies/node_modules/katex" \
+swift run --package-path Tests/MathMLBrowserProbe MathMLBrowserProbe > /tmp/swiftmd-mathml-probe.json
+SWIFTMD_NODE="$(command -v node)" \
+SWIFTMD_MATHML_PROBE=/tmp/swiftmd-mathml-probe.json node Scripts/test-browser.mjs
+```
+
+The browser test disables page scripts and checks MathML namespaces, the
+inline/display distinction and measurable geometry; it also exercises the
+existing CLI's fenced math, syntax highlighting and SVG output.
+On 19 November 2026 this probe passed in Chromium on macOS arm64 with page
+scripts disabled. The 30 adapter tests passed in both debug and optimized
+builds with the real Node and JavaScriptCore renderers; they compare the two
+backends for both modes, including invalid TeX, input limits and disabled
+untrusted link/image commands. These direct-renderer checks do not establish
+support for Markdown math delimiters.
+
+The same day `Scripts/test-all.sh` passed again on macOS against SwiftHTML
+candidate `9ccb0f058c12c4a00d9b78585de2d06c01e0f672`, including the
+independent cmark comparison and real renderer tests. Its known published-GFM
+baseline deviations remain. SwiftHTML's public version is not yet available.
+
 On 18 November 2026, an iOS 27.2 simulator ran a temporary app using the actual
 local `SwiftMDJavaScriptCore` product, Swift-Highlight, KaTeX 0.19.1 and Pele
 1.13.0. A GFM table, highlighted Swift, MathML, SVG and an invalid-math fallback
@@ -152,7 +194,7 @@ were synthetic, temporary and local to the container; no mirror was published.
 No hosted CI run has been completed for this integration. A normal container
 run does not establish the separately configured systemd/cgroup security
 boundary. No browser test was run in this Linux environment. SwiftHTML's
-own-code license and public stable tag remain unresolved, and the
+public stable tag remains unresolved, and the
 previously published 1.0.0 mirror still uses its original backend. The locally
 copied license resources help package applications preserve notices; they do
 not prove that every downstream static-binary distribution includes them.

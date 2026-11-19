@@ -44,7 +44,8 @@ def main():
         raise ValueError('candidate unexpectedly contains the old SwiftMDSoup source')
     resources = candidate / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources'
     for resource, notice in (('SwiftSoup-2.14.4-LICENSE.txt', 'SwiftHTML-SwiftSoup-2.14.4-MIT.txt'),
-                             ('LRUCache-MIT.txt', 'LRUCache-MIT.txt')):
+                             ('LRUCache-MIT.txt', 'SwiftHTML-LRUCache-MIT.txt'),
+                             ('SwiftHTML-Apache-2.0.txt', 'SwiftHTML-Apache-2.0.txt')):
         if (resources / resource).read_bytes() != (candidate / 'ThirdPartyLicenses' / notice).read_bytes():
             raise ValueError(f'candidate SwiftHTML backend license mismatch: {resource}')
     assets = candidate / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'

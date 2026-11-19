@@ -1,0 +1,24 @@
+{
+  "originHash" : "b79d5071d0b76546d182568c4421f5931680859c393ece0d8a7cfa9c86ab7d1a",
+  "pins" : [
+    {
+      "identity" : "swift-gfm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ThorFuchs/Swift-GFM.git",
+      "state" : {
+        "revision" : "2cb9450cf755858d338525fe64081b5f04864a2d",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "swift-highlight",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ThorFuchs/Swift-Highlight.git",
+      "state" : {
+        "revision" : "71d23c52a4afe154acdcc3b8aee968f0bf1b8564",
+        "version" : "1.0.1"
+      }
+    }
+  ],
+  "version" : 3
+}

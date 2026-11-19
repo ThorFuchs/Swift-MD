@@ -5,6 +5,7 @@ import XCTest
 import SwiftMD
 import SwiftMDCompiler
 import SwiftMDJavaScriptCore
+import SwiftMDKaTeXNode
 
 final class JavaScriptCoreCompilerTests: XCTestCase {
     func scripts() throws -> (String, String) {
@@ -71,6 +72,32 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
         let nodeResult = try SwiftMDRenderer(math: NodeModule(node: node, module: katexModule), mermaid: MermaidOptions(runtime: NodeModule(node: node, module: peleModule), svgPrefix: "same-page")).render(source)
         XCTAssertTrue(apple.diagnostics.isEmpty && nodeResult.diagnostics.isEmpty)
         XCTAssertEqual(apple.html, nodeResult.html)
+    }
+
+    func testRealKaTeXInlineAndDisplayModesMatchNode() throws {
+        let (katex, _) = try scripts()
+        let env = ProcessInfo.processInfo.environment
+        guard let node = env["SWIFTMD_NODE"], let module = env["SWIFTMD_KATEX"] else {
+            throw XCTSkip("Set real Node and KaTeX paths for cross-backend comparison")
+        }
+        let apple = try KaTeXJavaScriptCoreRenderer(script: katex)
+        let nodeRenderer = try KaTeXNodeRenderer(node: node, module: module)
+        let tex = #"\frac{x_1}{y^2} + \text{<tag> \& hello}"#
+        for displayMode in [false, true] {
+            let result = try apple.renderMath(literal: tex, displayMode: displayMode)
+            XCTAssertEqual(result, try nodeRenderer.renderMath(literal: tex, displayMode: displayMode))
+            XCTAssertEqual(result.contains("display=\"block\""), displayMode)
+            XCTAssertTrue(result.contains("<mfrac>"))
+            XCTAssertFalse(result.contains("<tag>"))
+            XCTAssertThrowsError(try apple.renderMath(literal: #"\unknowncommand"#, displayMode: displayMode))
+            XCTAssertThrowsError(try apple.renderMath(literal: String(repeating: "x", count: 16_385), displayMode: displayMode))
+        }
+        for unsafe in [#"\href{javascript:alert(1)}{click}"#, #"\includegraphics{https://evil.test/image.png}"#] {
+            let result = try apple.renderMath(literal: unsafe, displayMode: false)
+            XCTAssertEqual(result, try nodeRenderer.renderMath(literal: unsafe, displayMode: false))
+            XCTAssertFalse(result.contains("<a "))
+            XCTAssertFalse(result.contains("<img"))
+        }
     }
 
     func testConcurrentUseOfOneJavaScriptCoreRenderer() async throws {

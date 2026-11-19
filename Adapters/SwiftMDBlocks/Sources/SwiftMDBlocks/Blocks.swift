@@ -20,6 +20,13 @@ public protocol BlockRenderer: Sendable {
     func render(literal: String, language: String, index: Int) throws -> BlockReplacement
 }
 
+/// Renders trusted-configuration TeX to a MathML HTML fragment.
+/// This renderer does not recognize Markdown delimiters; callers must supply
+/// the original TeX and select inline or display layout explicitly.
+public protocol MathMLRenderer: Sendable {
+    func renderMath(literal: String, displayMode: Bool) throws -> String
+}
+
 public struct BlockDiagnostic: Sendable, Equatable {
     public enum Kind: Sendable { case unsupportedLanguage, renderFailed, unsupportedContent }
     public let kind: Kind

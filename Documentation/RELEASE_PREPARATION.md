@@ -42,8 +42,9 @@ python3 Scripts/test-distribution.py
 This gate is distinct from `Scripts/test-all.sh`. Synthetic local tags do not
 demonstrate a public SwiftHTML release. The existing 1.0.0 mirror is published
 with the prior backend; this integration is local only. Public CI and a new
-mirror release need an accessible, stable SwiftHTML tag and a reviewed license
-for its own code. Before publication, verify each public tag, its commit,
+mirror release need an accessible, stable SwiftHTML tag. The candidate's own
+code is Apache-2.0, with retained MIT notices for its bundled dependencies;
+review the actual distributed notices before publication. Verify each public tag, its commit,
 dependency accessibility, mirror provenance and distribution licenses again.
 
 The generator requires exactly one mode: `--local-test` explicitly marks its

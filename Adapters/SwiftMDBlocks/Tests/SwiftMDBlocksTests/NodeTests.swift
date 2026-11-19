@@ -52,6 +52,28 @@ final class NodeTests: XCTestCase {
         XCTAssertFalse(result.html.contains("<script>"))
         XCTAssertTrue(result.html.contains("&lt;script&gt;"))
     }
+    func testRealKaTeXInlineAndDisplayModes() throws {
+        let (math, _) = try renderers()
+        let tex = #"\frac{x_1}{y^2} + \text{<tag> \& hello}"#
+        let inline = try math.renderMath(literal: tex, displayMode: false)
+        let display = try math.renderMath(literal: tex, displayMode: true)
+        for output in [inline, display] {
+            XCTAssertTrue(output.contains("<math xmlns=\"http://www.w3.org/1998/Math/MathML\""))
+            XCTAssertTrue(output.contains("<mfrac>"))
+            XCTAssertTrue(output.contains("&lt;tag&gt;"))
+            XCTAssertFalse(output.contains("<tag>"))
+            XCTAssertFalse(output.contains("<script"))
+        }
+        XCTAssertFalse(inline.contains("display=\"block\""))
+        XCTAssertTrue(display.contains("display=\"block\""))
+        XCTAssertThrowsError(try math.renderMath(literal: #"\unknowncommand"#, displayMode: false))
+        XCTAssertThrowsError(try math.renderMath(literal: String(repeating: "x", count: 16_385), displayMode: false))
+        for unsafe in [#"\href{javascript:alert(1)}{click}"#, #"\includegraphics{https://evil.test/image.png}"#] {
+            let output = try math.renderMath(literal: unsafe, displayMode: false)
+            XCTAssertFalse(output.contains("<a "))
+            XCTAssertFalse(output.contains("<img"))
+        }
+    }
     func testEightRealDiagramTypes() throws {
         let (_, diagram) = try renderers()
         let samples = ["flowchart LR\nA-->B", "sequenceDiagram\nAlice->>Bob: Hello", "classDiagram\nA <|-- B", "stateDiagram-v2\n[*] --> Active", "erDiagram\nUSER ||--o{ POST : writes", "gantt\n title A\n dateFormat YYYY-MM-DD\n section X\n Task :a, 2020-01-01, 2d", "pie\n \"A\" : 2\n \"B\" : 3", "mindmap\n  root((Root))\n    Child"]

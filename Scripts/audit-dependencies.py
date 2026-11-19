@@ -75,6 +75,7 @@ def main():
                     'Package.swift', 'Sources', 'Vendor/SwiftSoup', 'Scripts/verify-upstream.py').strip(),
             'SwiftHTML package source contains uncommitted changes')
     subprocess.run([sys.executable, str(html / 'Scripts/verify-upstream.py')], check=True)
+    subprocess.run([sys.executable, str(html / 'Scripts/verify-notices.py')], check=True)
     resources = ROOT / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources'
     soup_license = git(html, 'show', revision + ':Vendor/SwiftSoup/LICENSE')
     require(soup_license == (NOTICE / 'SwiftHTML-SwiftSoup-2.14.4-MIT.txt').read_bytes() ==
@@ -82,9 +83,12 @@ def main():
     lru_source = git(html, 'show', revision + ':Vendor/SwiftSoup/Sources/LRUCache.swift')
     require('Copyright © 2021 Nick Lockwood'.encode() in lru_source and
             b'Permission is hereby granted, free of charge' in lru_source, 'SwiftHTML LRUCache license marker changed')
-    require((NOTICE / 'LRUCache-MIT.txt').read_bytes() == (resources / 'LRUCache-MIT.txt').read_bytes(),
+    require(git(html, 'show', revision + ':Sources/SwiftHTML/Resources/ThirdPartyLicenses/LRUCache-MIT.txt') ==
+            (NOTICE / 'SwiftHTML-LRUCache-MIT.txt').read_bytes() == (resources / 'LRUCache-MIT.txt').read_bytes(),
             'SwiftHTML LRUCache notice mismatch')
-    print(f'SwiftHTML local revision and two backend notices: {revision}; own-code license remains a release gate')
+    require(git(html, 'show', revision + ':LICENSE') == (NOTICE / 'SwiftHTML-Apache-2.0.txt').read_bytes() ==
+            (resources / 'SwiftHTML-Apache-2.0.txt').read_bytes(), 'SwiftHTML Apache license mismatch')
+    print(f'SwiftHTML local revision and three license resources: {revision}; public release remains a gate')
 
     for name, digest in FIXTURE_HASHES.items():
         content = (FIXTURES / name).read_bytes()
