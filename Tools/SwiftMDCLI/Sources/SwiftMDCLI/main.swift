@@ -26,7 +26,7 @@ func run() throws {
         func value() throws -> String { guard !args.isEmpty else { throw CLIError.message("Missing value for \(arg)") }; return args.removeFirst() }
         switch arg {
         case "--help", "-h": print("Usage: swift-md [--highlight] [--katex-node PATH --katex-module PATH] [--pele-node PATH --pele-module PATH --svg-prefix ID] [--document] [--unsafe-html] [--strict] [--output PATH] [INPUT]"); return
-        case "--version": print("SwiftMD 0.1.0; SwiftGFM 1.0.1 (2cb9450cf755858d338525fe64081b5f04864a2d); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)"); return
+        case "--version": print("SwiftMD 1.0.0; SwiftGFM 1.0.1 (2cb9450cf755858d338525fe64081b5f04864a2d); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)"); return
         case "--output", "-o": output = try value()
         case "--katex-node": nodeK = try value()
         case "--katex-module": moduleK = try value()

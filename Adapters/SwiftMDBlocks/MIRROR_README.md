@@ -8,7 +8,7 @@ bundled, renderer-archive integrity and file hashes.
 After the mirror is published, add it to a Swift package with:
 
 ```swift
-.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "0.1.0")
+.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "1.0.0")
 ```
 
 Add `.product(name: "SwiftMDBundled", package: "Swift-MD-Adapters")` to the
