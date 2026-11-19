@@ -57,6 +57,10 @@ def main():
         source = temp / 'source'
         mirror = temp / 'SwiftMDAdapters'
         call('git', 'clone', '--quiet', '--bare', '--no-hardlinks', str(ROOT), str(core))
+        # The source can already have a real release tag of this name. Remove
+        # only the copied ref in this disposable bare clone before creating our
+        # explicitly synthetic test tag at the commit under test.
+        call('git', 'update-ref', '-d', f'refs/tags/{TEST_VERSION}', cwd=core)
         call('git', 'tag', TEST_VERSION, source_commit, cwd=core)
         call('git', 'clone', '--quiet', '--no-hardlinks', str(ROOT), str(source))
         call('git', 'checkout', '--quiet', '--detach', source_commit, cwd=source)
