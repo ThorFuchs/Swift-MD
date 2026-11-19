@@ -21,7 +21,7 @@ and any fixture licensing whenever the distributed file set changes.
 | LRUCache | 1.3.0 | MIT |
 | swift-atomics | 1.3.1 | Apache-2.0 |
 | KaTeX | npm 0.19.1 | MIT; the renderer also identifies React adaptations under Apache-2.0 and glyph-derived SVG material under SIL OFL 1.1; see KaTeX-THIRD-PARTY.md |
-| Pele | npm 1.13.0 | MIT, with Lucide ISC notice, esbuild MIT runtime helpers and lexer rules ported from Mermaid; see Pele-THIRD-PARTY.md |
+| Pele | npm 1.13.0 | MIT, with Lucide ISC notice, esbuild MIT runtime helpers, lexer rules ported from Mermaid, and d3-related Gantt behavior; see Pele-THIRD-PARTY.md |
 | commander | npm 15.1.0 | MIT |
 
 Swift-Highlight 1.0.1 replaces identified fixture quotations and a named

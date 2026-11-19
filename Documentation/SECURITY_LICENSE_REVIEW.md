@@ -178,6 +178,24 @@ grammar headers also declare MIT and name Knut Sveidqvist with copyright years
 2015 and 2023. Those file-level notices are now included alongside the bundled
 resources; the Pele source does not identify an exact Mermaid revision.
 
+Pele's Gantt axis source also describes behavior following d3-time,
+d3-time-format and d3's time scale. No d3 `node_modules` inputs occur in the
+recorded esbuild metafiles; this does not settle whether code is derivative.
+As a precaution, the relevant ISC notices from identified public d3 reference
+tags are included with the renderer. Their upstream commits and checksums are
+documented in `ThirdPartyLicenses/Pele-THIRD-PARTY.md`; the source does not
+identify an exact d3 revision.
+
+On 19 November 2026, ScanCode Toolkit 33.0.0rc1 scanned a locally generated
+adapter candidate from source commit `b95d3fce967e51f1b0fff93b42dee8c5d16d5dd4`:
+58 files were scanned with no scanner errors. It reported an MS-RL reference
+in minified `pele.global.js`. Its matched text is `ms:Rl}};`, a JavaScript
+property and minified identifier, not the text `MS-RL` or a license notice.
+The corresponding unminified code is in Pele's `src/diagrams/gantt/axis.ts`.
+This determination addresses that specific scanner match only. The scan was
+run before the d3 notice additions; recheck the final distribution. Automated
+license detection does not determine rights or replace review.
+
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
 the archives. On 17 November 2026 it checked 655 installed files; all three

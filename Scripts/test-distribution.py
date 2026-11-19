@@ -85,6 +85,8 @@ def main():
             ('Pele-THIRD-PARTY.md', 'Pele-THIRD-PARTY.md'),
             ('Pele-esbuild-MIT.txt', 'Pele-esbuild-MIT.txt'),
             ('Pele-Mermaid-MIT.txt', 'Pele-Mermaid-MIT.txt'),
+            ('Pele-d3-time-ISC.txt', 'Pele-d3-time-ISC.txt'),
+            ('Pele-d3-time-format-and-scale-ISC.txt', 'Pele-d3-time-format-and-scale-ISC.txt'),
         ):
             if (assets / resource).read_bytes() != (source / 'ThirdPartyLicenses' / original).read_bytes():
                 raise ValueError(f'generated renderer notice mismatch: {resource}')

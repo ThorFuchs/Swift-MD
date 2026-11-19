@@ -65,6 +65,24 @@ Their SHA-256 digests at that commit are respectively
 `2230b9f958f7c2f2381149b0e484cd203ff919cf43abd065beba7ab6b5a660a5` and
 `65a1aaa24f2a9f5416b89b9774847e832cc2e810bb4233d77ad756c94f8baf8f`.
 
+Pele's `src/diagrams/gantt/axis.ts` says its time-axis behavior follows
+`d3-time`, `d3-time-format` and d3's time scale. The esbuild metafiles contain
+no d3 `node_modules` source files; this observation does not establish whether
+any Pele code is derived from those projects. As a precaution, the following
+unmodified ISC notices are included alongside the bundled renderer:
+
+* `Pele-d3-time-ISC.txt`: d3-time `v3.1.0`, commit
+  `d66bba6f83801b2f3a3e6440dba8df3357669c73`, SHA-256
+  `faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884`.
+* `Pele-d3-time-format-and-scale-ISC.txt`: d3-time-format `v4.1.0`, commit
+  `76cfef1da81b70404c0226ec9db9b0d56fa09461`, and d3-scale `v4.0.2`, commit
+  `83555bd759c7314420bd4240642beda5e258db9e`. Their license files are
+  byte-identical, SHA-256
+  `e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee`.
+
+These are documented reference versions, not a claim that the Pele author
+used these exact commits.
+
 The build settings omit legal comments. This inventory and reproducibility
 evidence do not establish the origin or licensing of every upstream source
 fragment and are not a legal clearance to publish the mirror.

@@ -117,6 +117,13 @@ def main():
     require(hashlib.sha256((NOTICE / 'Pele-Mermaid-MIT.txt').read_bytes()).hexdigest() ==
             'ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80', 'Pele Mermaid license checksum')
     print('Pele Mermaid license checksum: OK')
+    for name, digest in (
+        ('Pele-d3-time-ISC.txt', 'faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884'),
+        ('Pele-d3-time-format-and-scale-ISC.txt', 'e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee'),
+    ):
+        require(hashlib.sha256((NOTICE / name).read_bytes()).hexdigest() == digest,
+                f'Pele d3 license checksum: {name}')
+    print('Pele d3 ISC license checksums: 2/2 match')
     pele_notices = (NOTICE / 'Pele-THIRD-PARTY.md').read_text(encoding='utf-8')
     for marker in ('Copyright (c) 2015 Knut Sveidqvist', 'Copyright (c) 2023 Knut Sveidqvist'):
         require(marker in pele_notices, f'Pele Mermaid grammar notice missing: {marker}')

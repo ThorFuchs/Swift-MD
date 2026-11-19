@@ -173,7 +173,8 @@ def main():
             data = (ROOT / source).read_bytes()
             loaded_resources[target] = data
             renderer_resources['katex']['files_sha256'][target] = hashlib.sha256(data).hexdigest()
-        for name in ('Pele-THIRD-PARTY.md', 'Pele-esbuild-MIT.txt', 'Pele-Mermaid-MIT.txt'):
+        for name in ('Pele-THIRD-PARTY.md', 'Pele-esbuild-MIT.txt', 'Pele-Mermaid-MIT.txt',
+                     'Pele-d3-time-ISC.txt', 'Pele-d3-time-format-and-scale-ISC.txt'):
             data = (ROOT / 'ThirdPartyLicenses' / name).read_bytes()
             loaded_resources[name] = data
             renderer_resources['pele']['files_sha256'][name] = hashlib.sha256(data).hexdigest()
