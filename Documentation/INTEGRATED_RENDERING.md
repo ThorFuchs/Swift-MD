@@ -100,6 +100,16 @@ baseline deviations remain. SwiftHTML's public version is not yet available.
 The subsequent candidate `d669913150990db1b7637659f71bea5ac9a10876` changes
 only SwiftHTML validation documentation; the 30 adapter tests and the license
 and provenance checks passed again against that exact local commit on macOS.
+The SwiftHTML session also tested that exact commit on native Linux ARM64:
+14 debug and 14 release tests, release build, renamed-checkout example and a
+synthetic versioned consumer passed. The final Linux consumer used a temporary
+shell harness because an Ubuntu package download stalled; the checked-in
+Python consumer test had passed for the preceding code-identical candidate.
+The exact commit's macOS versioned consumer also passed. The x86-64 emulation
+results apply to the preceding code-identical candidate: debug tests and release
+build passed, an initial release-test build crashed the Swift compiler with
+signal 4, and a clean single-job retry passed all 14 tests. The crash remains
+unexplained and is not evidence of native x86-64 behavior.
 From SwiftMD commit `7949e36fda16e8b61766298e8aa577b2cdb6d439`, all eight
 mirror-policy tests and the fresh versioned Core, integrated adapter and
 SwiftSoup-coexistence consumers passed with explicitly synthetic local tags.
