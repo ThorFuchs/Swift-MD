@@ -21,8 +21,8 @@ feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
 and verifies their SHA-512 integrity while generating the test mirror. It creates
 disposable local Git repositories, synthetic `1.0.0` tags for SwiftMD and its
-generated mirror, a synthetic `0.0.1` SwiftHTML tag, and fresh version-based
-consumers. The resolved SwiftHTML checkout must match the release revision in
+generated mirror, and fresh version-based consumers using the real public
+SwiftHTML release. The resolved SwiftHTML checkout must match the release revision in
 `Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
 with `--local-test` and is marked unpublishable. The gate resolves the actual
@@ -59,8 +59,8 @@ to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
 `release_review_required: true`. Containerized Git operations trust only the
 explicit source checkout for each invocation and do not modify global config.
 
-For a disposable local test, `Scripts/test-distribution.py` creates and checks
-the synthetic SwiftHTML tag automatically. Public candidate generation requires
+For a disposable local test, `Scripts/test-distribution.py` verifies the public
+SwiftHTML tag but keeps the generated mirror explicitly local. Public candidate generation requires
 explicit `--swifthtml-url` and `--swifthtml-version` values and is fail-closed
 if `public_repository` or `public_version` is unset in the provenance file.
 A public-dependency candidate can be generated with:

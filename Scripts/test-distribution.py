@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Test version-based consumers using disposable, explicitly synthetic tags."""
+"""Test disposable versioned consumers against the public SwiftHTML release."""
 import json
 import hashlib
 import os
@@ -11,7 +11,6 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_VERSION = '1.0.0'  # Synthetic; only in disposable local repositories, never publish.
-HTML_TEST_VERSION = '0.0.1'  # Also synthetic; never publish.
 HTML_SOURCE = ROOT / 'Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML'
 
 
@@ -53,7 +52,12 @@ def main():
         if not value or not Path(value).is_absolute() or not Path(value).exists():
             raise ValueError(f'{key} must name an existing absolute path')
     source_commit = call('git', 'rev-parse', 'HEAD', cwd=ROOT, capture=True).strip()
-    html_revision = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())['tested_revision']
+    provenance = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())
+    html_revision = provenance['tested_revision']
+    html_version = provenance['public_version']
+    html_url = provenance['public_repository']
+    if not html_version or not html_url:
+        raise ValueError('a verified public SwiftHTML release is required')
     if call('git', 'rev-parse', 'HEAD', cwd=HTML_SOURCE, capture=True).strip() != html_revision:
         raise ValueError('resolved SwiftHTML checkout does not match the tested revision')
     if call('git', 'status', '--porcelain', '--untracked-files=all', '--', 'Package.swift', 'Sources',
@@ -72,16 +76,14 @@ def main():
         call('git', 'update-ref', '-d', f'refs/tags/{TEST_VERSION}', cwd=core)
         call('git', 'tag', TEST_VERSION, source_commit, cwd=core)
         call('git', 'clone', '--quiet', '--bare', '--no-hardlinks', str(HTML_SOURCE), str(html))
-        call('git', 'update-ref', '-d', f'refs/tags/{HTML_TEST_VERSION}', cwd=html)
-        call('git', 'tag', HTML_TEST_VERSION, html_revision, cwd=html)
         call('git', 'clone', '--quiet', '--no-hardlinks', str(ROOT), str(source))
         call('git', 'checkout', '--quiet', '--detach', source_commit, cwd=source)
         core_url = core.as_uri()
-        # SwiftMD, SwiftHTML and mirror tags are explicitly synthetic and local.
+        # SwiftMD and mirror tags are synthetic; SwiftHTML uses its public tag.
         call(sys.executable, str(source / 'Scripts/generate-adapter-mirror.py'), str(mirror),
              '--core-version', TEST_VERSION, '--gfm-version', pin('swift-gfm')['version'],
              '--highlight-version', pin('swift-highlight')['version'], '--core-url', core_url,
-             '--swifthtml-url', html.as_uri(), '--swifthtml-version', HTML_TEST_VERSION,
+             '--swifthtml-url', html_url, '--swifthtml-version', html_version,
              '--local-test', '--include-locked-renderers')
         origin = json.loads((mirror / 'MIRROR-ORIGIN.json').read_text())
         if origin['source_commit'] != source_commit or origin['local_test_only'] is not True:
@@ -195,7 +197,7 @@ print("Adapter versioned consumer: all three real renderers OK")
                 raise ValueError(f'{identity} consumer tag or commit changed')
         if pins['swift-md']['revision'] != source_commit:
             raise ValueError('Adapter consumer resolved a different SwiftMD source commit')
-        if pins['swift-html']['revision'] != html_revision or pins['swift-html'].get('version') != HTML_TEST_VERSION:
+        if pins['swift-html']['revision'] != html_revision or pins['swift-html'].get('version') != html_version:
             raise ValueError('Adapter consumer resolved a different SwiftHTML revision')
         if 'swiftsoup' in pins or any(p.name.lower() == 'swiftsoup' for p in (consumer / '.build/checkouts').iterdir()):
             raise ValueError('adapter consumer unexpectedly fetched the external SwiftSoup package')
@@ -228,7 +230,7 @@ precondition(result.diagnostics.isEmpty && result.html.contains("<math"))
 print("Vendored and external SwiftSoup modules coexist")
 ''')
         call('swift', 'run', '--package-path', str(coexist), '-j', '4', 'CoexistConsumer')
-        print(f'Consumer gate passed for commit {source_commit}; SwiftMD, SwiftHTML and mirror tags are synthetic and local only.')
+        print(f'Consumer gate passed for commit {source_commit}; SwiftMD and mirror tags are synthetic and local only; SwiftHTML {html_version} uses its public tag.')
 
 
 if __name__ == '__main__':

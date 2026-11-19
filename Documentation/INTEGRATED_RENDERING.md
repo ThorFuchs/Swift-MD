@@ -87,6 +87,17 @@ flagged build as a released package. The prototype rejects `allowUnsafeHTML`,
 NUL input and unclosed display fences, and does not recognize mathematics in
 table cells or image descriptions. Its syntax and parser edge cases remain
 under test. In the ordinary build only the existing `math` fence is recognized.
+For these math-parser document errors, SwiftMD emits the entire original
+Markdown as escaped code plus a diagnostic; strict CLI mode emits no HTML.
+
+On 19 November 2026, an isolated macOS ARM64 SwiftPM-edit build using local
+SwiftGFM commit `67e12f43b859ec5e9801d7d32e46851c04e59836` passed 38 adapter
+tests and six experimental CLI tests with real renderers. Node and
+JavaScriptCore matched for the combined math/highlight/Mermaid document.
+Chromium with page scripts disabled displayed inline math, display math,
+fenced math and SVG with correct namespaces and measurable geometry; adjacent
+combining Unicode was retained. The local SwiftGFM commit is unreleased and
+does not constitute a public SwiftPM dependency or hosted CI evidence.
 
 For a browser check of the direct Node backend's two MathML modes (not of
 Markdown delimiter parsing), set trusted absolute Node and KaTeX paths and run:

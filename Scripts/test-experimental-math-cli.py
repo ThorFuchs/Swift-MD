@@ -57,7 +57,13 @@ class MathCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn(b'$x^2$', result.stdout)
         self.assertNotIn(b'<math', result.stdout)
-        result = self.run_cli(*OPTIONS, text='$$\nx^2\n')
+        unclosed = '$$\nx^2 <script>\n'
+        result = self.run_cli(*OPTIONS, text=unclosed)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b'&lt;script&gt;', result.stdout)
+        self.assertNotIn(b'<script>', result.stdout)
+        self.assertIn(b'[math]', result.stderr)
+        result = self.run_cli(*OPTIONS, '--strict', text=unclosed)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b'')
 
@@ -79,9 +85,14 @@ class MathCLI(unittest.TestCase):
         self.assertIn('$q$', html)
 
     def test_unsafe_html_is_explicitly_rejected_for_math_profile(self):
-        result = self.run_cli(*OPTIONS, '--unsafe-html', text='Inline $x$.')
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, b'')
+        result = self.run_cli(*OPTIONS, '--unsafe-html', text='<script>x</script> Inline $x$.')
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b'&lt;script&gt;', result.stdout)
+        self.assertNotIn(b'<script>', result.stdout)
+        self.assertIn(b'[math]', result.stderr)
+        strict = self.run_cli(*OPTIONS, '--unsafe-html', '--strict', text='Inline $x$.')
+        self.assertNotEqual(strict.returncode, 0)
+        self.assertEqual(strict.stdout, b'')
 
 
 if __name__ == '__main__':
