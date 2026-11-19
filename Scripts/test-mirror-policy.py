@@ -41,7 +41,7 @@ class MirrorPolicyTests(unittest.TestCase):
             index += 1
         env['GIT_CONFIG_COUNT'] = str(index)
         return subprocess.run([sys.executable, str(GENERATOR), str(destination),
-                               '--core-version', '0.1.0', '--gfm-version', '1.0.1',
+                               '--core-version', '0.1.0', '--gfm-version', '1.1.0',
                                '--highlight-version', '1.0.1', '--swifthtml-url', self.html.as_uri(),
                                '--swifthtml-version', '0.0.1', *flags],
                               capture_output=True, text=True, env=env, timeout=30)
@@ -88,7 +88,7 @@ class MirrorPolicyTests(unittest.TestCase):
         args = SimpleNamespace(core_url='https://github.com/ThorFuchs/Swift-MD.git',
                                gfm_url='https://github.com/ThorFuchs/Swift-GFM.git',
                                highlight_url='https://github.com/ThorFuchs/Swift-Highlight.git',
-                               core_version='0.1.0', gfm_version='1.0.1', highlight_version='1.0.1',
+                               core_version='0.1.0', gfm_version='1.1.0', highlight_version='1.0.1',
                                swifthtml_url=html['public_repository'], swifthtml_version=html['public_version'])
         head = subprocess.check_output(['git', '-c', f'safe.directory={ROOT}', '-C', str(ROOT),
                                         'rev-parse', 'HEAD'], text=True).strip()
@@ -105,7 +105,7 @@ class MirrorPolicyTests(unittest.TestCase):
 
     def test_corrupt_renderer_archive_does_not_create_destination(self):
         dest = self.root / 'corrupt-mirror'
-        argv = [str(GENERATOR), str(dest), '--core-version', '0.1.0', '--gfm-version', '1.0.1',
+        argv = [str(GENERATOR), str(dest), '--core-version', '0.1.0', '--gfm-version', '1.1.0',
                 '--highlight-version', '1.0.1', '--swifthtml-url', self.html.as_uri(),
                 '--swifthtml-version', '0.0.1', '--local-test', '--include-locked-renderers']
         with patch.object(sys, 'argv', argv), \
