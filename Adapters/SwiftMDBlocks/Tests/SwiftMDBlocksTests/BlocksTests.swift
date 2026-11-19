@@ -168,6 +168,20 @@ final class BlocksTests: XCTestCase {
         XCTAssertTrue(result.html.contains("After"))
     }
 
+    func testEmptyMathRendererResultIsNotSuccessful() throws {
+        struct EmptyMathRenderer: MathMLRenderer {
+            func renderMath(literal: String, displayMode: Bool) throws -> String { "" }
+        }
+        let source = "$<bad> & x$"
+        let result = try BlockCompiler(renderers: []).render([
+            .html("<p>"), .math(.init(index: 3, literal: "x", source: source, displayMode: false)), .html("</p>")
+        ], mathRenderer: EmptyMathRenderer())
+        XCTAssertEqual(result.diagnostics.count, 1)
+        XCTAssertEqual(result.diagnostics.first?.kind, .renderFailed)
+        XCTAssertEqual(result.diagnostics.first?.blockIndex, 3)
+        XCTAssertEqual(result.html, "<p>$&lt;bad&gt; &amp; x$</p>")
+    }
+
     func testRawCodeWithCommentIsNotTreatedAsTextOnly() throws {
         let config = MarkdownConfiguration(options: [.allowUnsafeHTML])
         let source = "<pre><code class=\"language-swift\">let x<!-- comment --> = 1</code></pre>\n"

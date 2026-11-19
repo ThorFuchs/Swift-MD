@@ -27,6 +27,30 @@ public protocol MathMLRenderer: Sendable {
     func renderMath(literal: String, displayMode: Bool) throws -> String
 }
 
+/// A math occurrence supplied by a trusted, math-aware Markdown parser.
+/// `source` is the original delimited spelling used for the failure fallback.
+public struct MathOccurrence: Sendable {
+    public let index: Int
+    public let literal: String
+    public let source: String
+    public let displayMode: Bool
+
+    public init(index: Int, literal: String, source: String, displayMode: Bool) {
+        self.index = index
+        self.literal = literal
+        self.source = source
+        self.displayMode = displayMode
+    }
+}
+
+/// Parts of a single HTML document stream produced by a trusted parser.
+/// HTML fragments may be incomplete individually. A math occurrence must be
+/// placed at an HTML text or block position, never in an attribute or comment.
+public enum MathDocumentPart: Sendable {
+    case html(String)
+    case math(MathOccurrence)
+}
+
 public struct BlockDiagnostic: Sendable, Equatable {
     public enum Kind: Sendable { case unsupportedLanguage, renderFailed, unsupportedContent }
     public let kind: Kind
@@ -55,6 +79,59 @@ public struct BlockCompiler: Sendable {
 
     public func render(_ source: String) throws -> BlockResult {
         let original = try compiler.render(source).html
+        return try processHTML(original)
+    }
+
+    /// Render a document stream from a trusted math-aware parser. Raw HTML and
+    /// renderer output remain explicit caller trust boundaries. This method
+    /// does not recognize Markdown math delimiters on its own.
+    public func render(_ parts: [MathDocumentPart], mathRenderer: any MathMLRenderer) throws -> BlockResult {
+        let original = parts.map { part in
+            switch part { case .html(let html): html; case .math(let math): math.source }
+        }.joined()
+        var html = ""
+        var replacements: [(String, String)] = []
+        var diagnostics: [BlockDiagnostic] = []
+        for part in parts {
+            switch part {
+            case .html(let fragment):
+                html += fragment
+            case .math(let math):
+                let replacement: String
+                do {
+                    let rendered = try mathRenderer.renderMath(literal: math.literal, displayMode: math.displayMode)
+                    guard !rendered.isEmpty, rendered.contains("<math") else { throw MathFragmentError.invalidOutput }
+                    replacement = rendered
+                } catch {
+                    let escaped = math.source.replacingOccurrences(of: "&", with: "&amp;")
+                        .replacingOccurrences(of: "<", with: "&lt;")
+                        .replacingOccurrences(of: ">", with: "&gt;")
+                    replacement = math.displayMode ? "<pre><code>\(escaped)</code></pre>" : escaped
+                    diagnostics.append(.init(kind: .renderFailed, blockIndex: math.index,
+                                             language: "math", message: String(describing: error)))
+                }
+                var marker: String
+                repeat { marker = "SWIFTMDMATH" + UUID().uuidString.replacingOccurrences(of: "-", with: "") }
+                while original.contains(marker) || replacements.contains(where: { $0.0 == marker || $0.1.contains(marker) })
+                html += marker
+                replacements.append((marker, replacement))
+            }
+        }
+        let processed = try processHTML(html)
+        html = processed.html
+        for (marker, replacement) in replacements {
+            guard let range = html.range(of: marker),
+                  html.range(of: marker, range: range.upperBound..<html.endIndex) == nil else {
+                throw BlockProcessingError.missingBody
+            }
+            html.replaceSubrange(range, with: replacement)
+        }
+        return BlockResult(html: html, diagnostics: diagnostics + processed.diagnostics)
+    }
+
+    private enum MathFragmentError: Error { case invalidOutput }
+
+    private func processHTML(_ original: String) throws -> BlockResult {
         if renderers.isEmpty { return BlockResult(html: original, diagnostics: []) }
         let doc = try HTMLDocument.parseFragment(original)
         guard let body = doc.body else { throw BlockProcessingError.missingBody }

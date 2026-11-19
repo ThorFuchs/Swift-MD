@@ -74,6 +74,44 @@ final class NodeTests: XCTestCase {
             XCTAssertFalse(output.contains("<img"))
         }
     }
+
+    func testStructuredMathStreamWithRealRenderersAndEscapedFallback() throws {
+        let (math, diagram) = try renderers()
+        let parts: [MathDocumentPart] = [
+            .html("<p>Inline "),
+            .math(.init(index: 0, literal: #"x^2"#, source: #"$x^2$"#, displayMode: false)),
+            .html(" and broken "),
+            .math(.init(index: 1, literal: #"\badcommand{<script>}"#, source: #"$\badcommand{<script>}$"#, displayMode: false)),
+            .html(".</p><p>Before</p>"),
+            .math(.init(index: 2, literal: #"\frac{x}{2}"#, source: "$$\\frac{x}{2}$$", displayMode: true)),
+            .html("<pre><code class=\"language-swift\">let x = 1\n</code></pre>"),
+            .html("<pre><code class=\"language-mermaid\">flowchart LR\nA--&gt;B\n</code></pre>")
+        ]
+        let result = try BlockCompiler(renderers: [diagram, HighlightRenderer()]).render(parts, mathRenderer: math)
+        XCTAssertEqual(result.diagnostics.count, 1)
+        XCTAssertEqual(result.diagnostics.first?.kind, .renderFailed)
+        XCTAssertEqual(result.diagnostics.first?.blockIndex, 1)
+        XCTAssertTrue(result.html.contains(try math.renderMath(literal: "x^2", displayMode: false)))
+        XCTAssertTrue(result.html.contains(try math.renderMath(literal: #"\frac{x}{2}"#, displayMode: true)))
+        XCTAssertTrue(result.html.contains(#"$\badcommand{&lt;script&gt;}$"#))
+        XCTAssertFalse(result.html.contains("<script>"))
+        XCTAssertTrue(result.html.contains("hljs-keyword"))
+        XCTAssertTrue(result.html.contains("id=\"page-1\""))
+        XCTAssertTrue(result.html.contains("viewBox="))
+        XCTAssertFalse(result.html.contains("SWIFTMDMATH"))
+    }
+
+    func testStructuredDisplayMathFailurePreservesEscapedSource() throws {
+        let (math, _) = try renderers()
+        let source = "$$\n\\badcommand{<script> & x}\n$$"
+        let parts: [MathDocumentPart] = [.html("<p>before</p>"),
+            .math(.init(index: 0, literal: #"\badcommand{<script> & x}"#, source: source, displayMode: true)),
+            .html("<p>after</p>")]
+        let result = try BlockCompiler(renderers: []).render(parts, mathRenderer: math)
+        XCTAssertEqual(result.diagnostics.count, 1)
+        XCTAssertTrue(result.html.contains("<pre><code>$$\n\\badcommand{&lt;script&gt; &amp; x}\n$$</code></pre>"))
+        XCTAssertFalse(result.html.contains("<script>"))
+    }
     func testEightRealDiagramTypes() throws {
         let (_, diagram) = try renderers()
         let samples = ["flowchart LR\nA-->B", "sequenceDiagram\nAlice->>Bob: Hello", "classDiagram\nA <|-- B", "stateDiagram-v2\n[*] --> Active", "erDiagram\nUSER ||--o{ POST : writes", "gantt\n title A\n dateFormat YYYY-MM-DD\n section X\n Task :a, 2020-01-01, 2d", "pie\n \"A\" : 2\n \"B\" : 3", "mindmap\n  root((Root))\n    Child"]

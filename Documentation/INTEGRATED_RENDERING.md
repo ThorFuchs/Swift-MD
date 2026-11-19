@@ -72,6 +72,15 @@ link text and targets, and table-pipe precedence. A global regex or a search
 through rendered text is not a reliable substitute. The unchanged Core path
 must continue to return SwiftGFM's exact bytes.
 
+As a bridge for a future trusted math-aware parser, `BlockCompiler` accepts an
+ordered HTML/math document stream. It renders each TeX literal outside the
+parser, processes other blocks, then inserts MathML without passing it through
+HTML reserialization. Failed or empty math output retains the escaped original
+delimited source and emits a diagnostic. The caller must supply trusted HTML
+segments and only place math at HTML text or block positions, not in attributes
+or comments. This bridge is not itself a Markdown parser or a sanitizer and is
+not yet connected to the one-call compiler.
+
 For a browser check of the direct Node backend's two MathML modes (not of
 Markdown delimiter parsing), set trusted absolute Node and KaTeX paths and run:
 

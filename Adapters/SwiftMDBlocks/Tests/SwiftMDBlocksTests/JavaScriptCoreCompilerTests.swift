@@ -6,6 +6,8 @@ import SwiftMD
 import SwiftMDCompiler
 import SwiftMDJavaScriptCore
 import SwiftMDKaTeXNode
+import SwiftMDBlocks
+import SwiftMDHighlight
 
 final class JavaScriptCoreCompilerTests: XCTestCase {
     func scripts() throws -> (String, String) {
@@ -98,6 +100,33 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
             XCTAssertFalse(result.contains("<a "))
             XCTAssertFalse(result.contains("<img"))
         }
+    }
+
+    func testStructuredMathStreamMatchesNode() throws {
+        let (katex, _) = try scripts()
+        let env = ProcessInfo.processInfo.environment
+        guard let node = env["SWIFTMD_NODE"], let module = env["SWIFTMD_KATEX"] else {
+            throw XCTSkip("Set real Node and KaTeX paths for cross-backend comparison")
+        }
+        let parts: [MathDocumentPart] = [
+            .html("<p>Inline "),
+            .math(.init(index: 0, literal: "x^2", source: "$x^2$", displayMode: false)),
+            .html(" and failure "),
+            .math(.init(index: 1, literal: #"\badcommand{<script>}"#, source: #"$\badcommand{<script>}$"#, displayMode: false)),
+            .html("</p>"),
+            .math(.init(index: 2, literal: #"\frac{x}{2}"#, source: #"$$\frac{x}{2}$$"#, displayMode: true)),
+            .html("<pre><code class=\"language-swift\">let x = 1\n</code></pre>")
+        ]
+        let compiler = BlockCompiler(renderers: [HighlightRenderer()])
+        let apple = try compiler.render(parts, mathRenderer: KaTeXJavaScriptCoreRenderer(script: katex))
+        let nodeResult = try compiler.render(parts, mathRenderer: KaTeXNodeRenderer(node: node, module: module))
+        XCTAssertEqual(apple.html, nodeResult.html)
+        XCTAssertEqual(apple.diagnostics.count, 1)
+        XCTAssertEqual(nodeResult.diagnostics.count, 1)
+        XCTAssertEqual(apple.diagnostics.first?.blockIndex, 1)
+        XCTAssertTrue(apple.html.contains(#"$\badcommand{&lt;script&gt;}$"#))
+        XCTAssertTrue(apple.html.contains("display=\"block\""))
+        XCTAssertTrue(apple.html.contains("hljs-keyword"))
     }
 
     func testConcurrentUseOfOneJavaScriptCoreRenderer() async throws {

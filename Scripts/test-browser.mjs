@@ -48,7 +48,7 @@ try {
   // Markdown delimiter recognition (which is not implemented yet).
   if (process.env.SWIFTMD_MATHML_PROBE) {
     const probe = JSON.parse(await readFile(process.env.SWIFTMD_MATHML_PROBE, 'utf8'));
-    rendered = rendered.replace('</body>', `<p id="swiftmd-inline-math">Before ${probe.inline} after</p><div id="swiftmd-display-math">${probe.display}</div></body>`);
+    rendered = rendered.replace('</body>', `${probe.composed}</body>`);
   }
   // If page scripts unexpectedly execute, this sentinel exposes the failure.
   const document = rendered.replace('</head>', '<style>body{font:16px sans-serif;margin:24px} svg{display:block;margin:12px 0} .hljs-keyword{color:#7b1fa2}</style><script>window.__swiftmdPageScriptRan=true</script></head>');

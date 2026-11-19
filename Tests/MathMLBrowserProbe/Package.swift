@@ -7,6 +7,8 @@ let package = Package(
     platforms: [.macOS(.v15)],
     dependencies: [.package(name: "SwiftMDBlocks", path: "../../Adapters/SwiftMDBlocks")],
     targets: [.executableTarget(name: "MathMLBrowserProbe", dependencies: [
-        .product(name: "SwiftMDKaTeXNode", package: "SwiftMDBlocks")
+        .product(name: "SwiftMDKaTeXNode", package: "SwiftMDBlocks"),
+        .product(name: "SwiftMDBlocks", package: "SwiftMDBlocks"),
+        .product(name: "SwiftMDHighlight", package: "SwiftMDBlocks")
     ])]
 )
