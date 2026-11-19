@@ -97,6 +97,11 @@ The same day `Scripts/test-all.sh` passed again on macOS against SwiftHTML
 candidate `9ccb0f058c12c4a00d9b78585de2d06c01e0f672`, including the
 independent cmark comparison and real renderer tests. Its known published-GFM
 baseline deviations remain. SwiftHTML's public version is not yet available.
+From SwiftMD commit `7949e36fda16e8b61766298e8aa577b2cdb6d439`, all eight
+mirror-policy tests and the fresh versioned Core, integrated adapter and
+SwiftSoup-coexistence consumers passed with explicitly synthetic local tags.
+The consumer check also verified the SwiftHTML Apache, SwiftSoup MIT and
+vendored LRUCache MIT license resources in the built package.
 
 On 18 November 2026, an iOS 27.2 simulator ran a temporary app using the actual
 local `SwiftMDJavaScriptCore` product, Swift-Highlight, KaTeX 0.19.1 and Pele
