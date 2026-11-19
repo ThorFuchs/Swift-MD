@@ -104,8 +104,9 @@ was tested with the separate SwiftHTML commit
 * Chromium with page JavaScript disabled rendered MathML and two identical
   diagrams with SVG namespaces, `viewBox`, measurable geometry, distinct IDs,
   titles and descriptions. An iOS 27.2 simulator app using the generated
-  `SwiftMDBundled` product passed the combined rendering and fallback test;
-  this is not a physical-device result.
+  `SwiftMDBundled` product passed the combined rendering and fallback test. The
+  simulator test used public Core 0.1.0 and synthetic local SwiftHTML/mirror
+  tags; it is not a physical-device result.
 * A generated local-only mirror passed independent Core and adapter consumers,
   all three real renderers, license-resource checks and coexistence with a
   separately requested SwiftSoup. The SwiftMD, SwiftHTML and mirror tags used
