@@ -17,7 +17,9 @@ The published 1.0.0 adapter mirror includes fixture-free SwiftSoup 2.11.3 as
 package and its fixture-free SwiftSoup 2.14.4 backend. The adapter currently
 requires the sibling checkout `../Swift-HTML` at the revision recorded in
 `Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. This local integration has
-not been published; the existing 1.0.0 mirror is unchanged.
+not been published; the existing 1.0.0 mirror is unchanged. The actual test
+scope and remaining release gates are recorded in
+[integrated rendering](Documentation/INTEGRATED_RENDERING.md#local-swifthtml-integration-verification-19-november-2026).
 
 Version 1.0.0 distributes the Core and its optional adapters as separate
 packages. Available versions are listed on the

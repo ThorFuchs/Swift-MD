@@ -82,3 +82,43 @@ The script generates an explicitly local-only mirror, creates a disposable app
 that imports only `SwiftMDBundled`, and checks real combined rendering and a
 failure fallback inside the simulator. It uninstalls only its own uniquely
 named test app. It does not create a remote mirror or publish a release.
+
+## Local SwiftHTML integration verification (19 November 2026)
+
+The implementation at SwiftMD commit `1e30ca12b869298074ad6d4f2168d4fd8f2941e7`
+was tested with the separate SwiftHTML commit
+`8bc39e2bd950c89f79fcb006ec552edee0926a2e` on macOS 27.3 arm64, Apple Swift
+6.4.2, Node 26.5.0 and Chromium 157.0.8103.79:
+
+* `Scripts/test-all.sh` passed 704 bundled cmark expectation cases and compared
+  705 inputs byte-for-byte with an independently built cmark-gfm
+  `27d942c8b0a62d192f616e5bf3578f4b6a89e180` C renderer. Two upstream-disabled
+  cases and one `<IGNORE>` expectation remain separately skipped. The existing
+  published GFM 0.29 analysis found 651/677 exact in the `all` profile; no
+  complete GFM conformance is claimed.
+* All 27 adapter tests passed with real Node and JavaScriptCore renderers,
+  including exact code-literal whitespace, author-written raw HTML and
+  fail-closed SVG cases. Seven CLI tests passed in both debug and optimized
+  builds. Swift 6.4.2 reports that the native SwiftPM build system used for the
+  optimized build is deprecated.
+* Chromium with page JavaScript disabled rendered MathML and two identical
+  diagrams with SVG namespaces, `viewBox`, measurable geometry, distinct IDs,
+  titles and descriptions. An iOS 27.2 simulator app using the generated
+  `SwiftMDBundled` product passed the combined rendering and fallback test;
+  this is not a physical-device result.
+* A generated local-only mirror passed independent Core and adapter consumers,
+  all three real renderers, license-resource checks and coexistence with a
+  separately requested SwiftSoup. The SwiftMD, SwiftHTML and mirror tags used
+  there were synthetic and existed only in disposable repositories. Eight
+  mirror-policy tests passed, including rejection of the wrong SwiftHTML
+  revision and blocking public generation without an approved stable tag.
+* The provenance audit matched the two backend notice resources and eight
+  pinned Swift notices; npm archive integrity and 655 installed files matched.
+  `npm audit --omit=dev --ignore-scripts` reported zero known advisories at
+  that time. These checks are not a legal or security audit.
+
+No Linux runtime test of this integration or hosted CI run has been completed.
+SwiftHTML's own-code license and public stable tag remain unresolved, and the
+previously published 1.0.0 mirror still uses its original backend. The locally
+copied license resources help package applications preserve notices; they do
+not prove that every downstream static-binary distribution includes them.
