@@ -98,6 +98,10 @@ Chromium with page scripts disabled displayed inline math, display math,
 fenced math and SVG with correct namespaces and measurable geometry; adjacent
 combining Unicode was retained. The local SwiftGFM commit is unreleased and
 does not constitute a public SwiftPM dependency or hosted CI evidence.
+The documentation-only SwiftGFM 1.1.0 candidate
+`ccfb8d401c500d1c14567eecf39dd9a2d887f464` was subsequently checked with the
+two focused cross-backend integration tests and all eight experimental CLI
+tests; those also passed locally on macOS ARM64.
 An additional macOS consumer test of SwiftMD commit
 `37a3a594631290274889619c9a33d53d0f9eaca8` used the generated `SwiftMDBundled`
 product, public SwiftHTML 0.1.0 and a local synthetic tag at SwiftGFM commit
@@ -105,6 +109,18 @@ product, public SwiftHTML 0.1.0 and a local synthetic tag at SwiftGFM commit
 one call produced inline, display and fenced MathML, highlighting and SVG;
 invalid TeX returned escaped source and a diagnostic. SwiftMD, SwiftGFM and
 mirror test tags were disposable and local; this is not a public release.
+
+To repeat that local-only distribution check from clean committed checkouts:
+
+```sh
+SWIFTMD_NODE="$(command -v node)" \
+SWIFTMD_EXPERIMENTAL_GFM_SOURCE=/absolute/path/to/tested/Swift-GFM \
+python3 Scripts/test-experimental-math-distribution.py
+```
+
+The script creates disposable Git repositories and tags, configures a SwiftPM
+mirror only inside its temporary consumer, and removes them afterward. It does
+not change tags or Git configuration in either source repository.
 
 An independent run in a native Linux ARM64 Ubuntu 24.04.5 container used
 SwiftMD `3fa0b1dbd844fe857bc89770ed64e2a1f80a2551`, local SwiftGFM
