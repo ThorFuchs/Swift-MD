@@ -17,7 +17,7 @@ and any fixture licensing whenever the distributed file set changes.
 | SwiftGFM | 1.0.1, tag commit 2cb9450cf755858d338525fe64081b5f04864a2d | Apache-2.0; see SwiftGFM-NOTICE.txt and cmark-gfm-COPYING.txt |
 | cmark-gfm | 27d942c8b0a62d192f616e5bf3578f4b6a89e180 | See cmark-gfm-COPYING.txt; fixtures have separate CC BY-SA notice |
 | Swift-Highlight | 1.0.1, tag commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564 | Apache-2.0; imported HighlightKit MIT and highlight.js BSD-3-Clause, see included notices |
-| SwiftSoup | d86f244ed497d48012782e2f59c985a55e77b3f5 (2.11.3) | MIT |
+| SwiftSoup | d86f244ed497d48012782e2f59c985a55e77b3f5 (2.11.3) | MIT root license; the separately fetched source snapshot contains third-party web-page fixtures requiring further review; see SwiftSoup-SOURCE-AUDIT.md |
 | LRUCache | 1.3.0 | MIT |
 | swift-atomics | 1.3.1 | Apache-2.0 |
 | KaTeX | npm 0.19.1 | MIT; the renderer also identifies React adaptations under Apache-2.0 and glyph-derived SVG material under SIL OFL 1.1; see KaTeX-THIRD-PARTY.md |

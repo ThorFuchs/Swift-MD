@@ -148,6 +148,18 @@ comparison is recorded here; it does not modify the sister repository or its
 history. SwiftPM independently fetches Swift-Highlight's source, while the
 generated SwiftMD adapter mirror does not copy those fixtures into itself.
 
+An independent source scan on 19 November also identified a separately fetched
+SwiftSoup 2.11.3 source-distribution issue: its performance-test corpus contains
+six saved third-party web pages. The Google page includes an explicit dual
+MIT/GPL notice for Math.uuid.js and another third-party code notice. The
+generated mirror does not copy these files, but SwiftPM fetches the upstream
+SwiftSoup source package. The [SwiftSoup source audit](../ThirdPartyLicenses/SwiftSoup-SOURCE-AUDIT.md)
+records the precise path, checksum and scope. The presence of a notice is not
+evidence of infringement; it does mean SwiftSoup's root MIT license alone is
+not a complete inventory of the fetched source snapshot. Review this corpus
+or select and verify an alternative distribution before treating the source
+dependency review as complete.
+
 The bundled KaTeX 0.19.1 `dist/katex.js` contains attribution for utility
 functions adapted from Facebook's React under Apache-2.0 and for SVG data
 adapted from font glyphs under SIL OFL 1.1. The mirror now includes the
@@ -192,9 +204,36 @@ adapter candidate from source commit `b95d3fce967e51f1b0fff93b42dee8c5d16d5dd4`:
 in minified `pele.global.js`. Its matched text is `ms:Rl}};`, a JavaScript
 property and minified identifier, not the text `MS-RL` or a license notice.
 The corresponding unminified code is in Pele's `src/diagrams/gantt/axis.ts`.
-This determination addresses that specific scanner match only. The scan was
-run before the d3 notice additions; recheck the final distribution. Automated
-license detection does not determine rights or replace review.
+This determination addresses that specific scanner match only. A second scan
+of the mirror generated from `55cb84e54cadfe0ff10958563e30842250d30965` after
+the d3 notice additions covered 62 files without scanner errors. In the
+third-party inventory README it also inferred CC BY-SA 3.0 and an unknown
+license from generic CC BY-SA and `cmark-gfm-COPYING.txt` references; those
+lines contain no version 3.0 declaration, and the retained cmark notice is the
+source for the actual fixture terms. These are triage observations about the
+scanner's matches, not a change to any underlying license.
+
+The same ScanCode setup separately scanned the `71d23c5` Swift-Highlight
+1.0.1 source snapshot (986 files) with no scanner errors. Detected license
+expressions were combinations of Apache-2.0, MIT and BSD-3-Clause. This scan
+does not include Git history. A separate scan of the SwiftMD `55cb84e` source
+archive covered 123 files with no scanner errors; its MS-RL, CC BY-SA 3.0 and
+unknown-license-reference matches occur in this review's discussion, generic
+notice references or the generator's literal `LICENSE` paths. They do not
+identify an additional bundled implementation under those terms. These are
+specific match triage findings, not determinations about all source content.
+SwiftGFM 1.0.1's `2cb9450` source archive, including its vendored cmark-gfm
+snapshot, was scanned separately: 185 files, no scanner errors, with Apache-2.0,
+CC BY-SA 4.0, MIT and BSD-2-Clause expressions reported. No scan covers prior
+Git history. A fourth scan of the pinned SwiftSoup, LRUCache and swift-atomics
+source archives covered 295 files without scanner errors. Its MIT/GPL match in
+the SwiftSoup Google fixture led to the separate source-audit issue above; other
+unknown-license-reference matches appeared in swift-atomics documentation and
+pull request templates. The source archives, not their Git histories, were scanned.
+ScanCode was the 33.0.0rc1 release candidate
+using its 33.0.0rc1 license data, pluggy 1.5.0, and a locally built libmagic
+5.48; it was run on macOS arm64. Automated detection does not determine rights
+or replace review, and a new distribution must be checked separately.
 
 With `--npm-tarballs`, the audit downloads the three lockfile URLs, verifies
 their SHA-512 SRI values, and compares the installed regular-file contents with
