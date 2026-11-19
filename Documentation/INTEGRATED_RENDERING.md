@@ -98,7 +98,9 @@ was tested with the separate SwiftHTML commit
   complete GFM conformance is claimed.
 * All 27 adapter tests passed with real Node and JavaScriptCore renderers,
   including exact code-literal whitespace, author-written raw HTML and
-  fail-closed SVG cases. Seven CLI tests passed in both debug and optimized
+  fail-closed SVG cases. A subsequent adapter run with an additional regression
+  for byte-preserving insertion of two validated SVG fragments passed all 28
+  tests with no skips. Seven CLI tests passed in both debug and optimized
   builds. Swift 6.4.2 reports that the native SwiftPM build system used for the
   optimized build is deprecated.
 * Chromium with page JavaScript disabled rendered MathML and two identical

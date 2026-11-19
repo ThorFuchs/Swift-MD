@@ -146,6 +146,28 @@ final class BlocksTests: XCTestCase {
         XCTAssertTrue(result.html.contains("<span>literal preserved</span>"))
     }
 
+    func testValidatedSVGFragmentsAreEmbeddedByteForByte() throws {
+        struct SVGRenderer: BlockRenderer {
+            func accepts(language: String) -> Bool { language == "diagram" }
+            func render(literal: String, language: String, index: Int) throws -> BlockReplacement {
+                .validatedSVG(try ValidatedSVG(Self.fragment(index), expectedID: "page-\(index)"))
+            }
+            static func fragment(_ index: Int) -> String {
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"page-\(index)\" viewBox=\"0 0 10 10\" aria-label=\"A &amp; B\"><text x=\"1\" y=\"2\">Grüße &amp; 😀</text></svg>"
+            }
+        }
+        let source = "Before\n\n```diagram\na\n```\n\nMiddle\n\n```diagram\na\n```\n\nAfter\n"
+        let result = try BlockCompiler(renderers: [SVGRenderer()]).render(source)
+        XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
+        for index in 0..<2 {
+            let expected = SVGRenderer.fragment(index)
+            XCTAssertEqual(result.html.components(separatedBy: expected).count, 2)
+        }
+        XCTAssertTrue(result.html.contains("Before"))
+        XCTAssertTrue(result.html.contains("Middle"))
+        XCTAssertTrue(result.html.contains("After"))
+    }
+
     func testRawCodeWithCommentIsNotTreatedAsTextOnly() throws {
         let config = MarkdownConfiguration(options: [.allowUnsafeHTML])
         let source = "<pre><code class=\"language-swift\">let x<!-- comment --> = 1</code></pre>\n"
