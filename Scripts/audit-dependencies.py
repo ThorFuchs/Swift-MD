@@ -33,7 +33,6 @@ NOTICES = (
     ('Swift-Highlight', 'swift-highlight', 'THIRD_PARTY_NOTICES.md', 'SwiftHighlight-THIRD-PARTY.md'),
     ('Swift-Highlight', 'swift-highlight', 'Licenses/HighlightKit-MIT.txt', 'SwiftHighlight-HighlightKit-MIT.txt'),
     ('Swift-Highlight', 'swift-highlight', 'Licenses/highlight.js-BSD-3-Clause.txt', 'SwiftHighlight-highlight.js-BSD-3-Clause.txt'),
-    ('SwiftSoup', 'swiftsoup', 'LICENSE', 'SwiftSoup-MIT.txt'),
     ('LRUCache', 'lrucache', 'LICENSE.md', 'LRUCache-MIT.txt'),
     ('swift-atomics', 'swift-atomics', 'LICENSE.txt', 'swift-atomics-Apache-2.0.txt'),
 )
@@ -66,18 +65,11 @@ def main():
         require(content == (NOTICE / target).read_bytes(), f'notice mismatch: {target}')
     print(f'Pinned Swift package notices: {len(NOTICES)}/{len(NOTICES)} byte-identical')
 
-    # SwiftPM fetches the upstream source snapshot separately, including test
-    # fixtures outside the library target. Detect changes to the identified
-    # third-party page while its rights and distribution are being reviewed.
-    soup = CHECKOUTS / 'SwiftSoup'
-    google = git(soup, 'show', pins['swiftsoup'] + ':Tests-macOS/corpus/Google.html')
-    require(hashlib.sha256(google).hexdigest() ==
-            '094d6a66d4540a9539eb02315b830bc7219a4e141893d4dd5f5757125c7fd46c',
-            'SwiftSoup Google corpus fixture changed; revisit source audit')
-    require(b'Math.uuid.js (v1.4)' in google and b'Dual licensed under the MIT and GPL licenses.' in google,
-            'SwiftSoup Google corpus third-party notice changed; revisit source audit')
-    require((NOTICE / 'SwiftSoup-SOURCE-AUDIT.md').is_file(), 'SwiftSoup source audit is missing')
-    print('SwiftSoup third-party test page identity and review notice: OK (rights review remains open)')
+    require('swiftsoup' not in pins, 'SwiftSoup must not be resolved as an external package')
+    cli_pins = {p['identity']: p['state']['revision'] for p in json.loads(
+        (ROOT / 'Tools/SwiftMDCLI/Package.resolved').read_text())['pins']}
+    require(cli_pins == pins, 'CLI and adapter lockfiles must resolve the same dependencies without SwiftSoup')
+    subprocess.run([sys.executable, str(ROOT / 'Scripts/audit-vendored-swiftsoup.py')], check=True)
 
     for name, digest in FIXTURE_HASHES.items():
         content = (FIXTURES / name).read_bytes()

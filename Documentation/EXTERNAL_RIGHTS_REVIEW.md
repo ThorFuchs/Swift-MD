@@ -1,5 +1,12 @@
 # External rights review: SwiftMD 1.0 candidate
 
+**Historical packet:** This document describes the earlier candidate that
+resolved SwiftSoup remotely. The current candidate vendors only its library
+sources and omits its test corpus, as described in
+[the updated source audit](../ThirdPartyLicenses/SwiftSoup-SOURCE-AUDIT.md).
+It remains here as provenance for the earlier review, not as a description of
+the current mirror's dependencies.
+
 This is an evidence packet for a qualified external reviewer. It does not
 decide the governing law, copyright ownership, license compliance, or whether
 any material infringes rights. The reviewer should assess the actual intended

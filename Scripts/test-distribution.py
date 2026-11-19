@@ -71,6 +71,13 @@ def main():
             raise ValueError('generated mirror provenance or local-test marker mismatch')
         if set(origin['renderer_resources']) != {'katex', 'pele'}:
             raise ValueError('generated mirror omitted pinned renderer provenance')
+        original_vendor = source / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup'
+        mirrored_vendor = mirror / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup'
+        original_files = {p.relative_to(original_vendor) for p in original_vendor.rglob('*') if p.is_file()}
+        mirrored_files = {p.relative_to(mirrored_vendor) for p in mirrored_vendor.rglob('*') if p.is_file()}
+        if original_files != mirrored_files or any((original_vendor / p).read_bytes() !=
+                                                   (mirrored_vendor / p).read_bytes() for p in original_files):
+            raise ValueError('mirror vendor snapshot differs from the committed source')
         assets = mirror / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
         for package in ('katex', 'pele'):
             for filename, digest in origin['renderer_resources'][package]['files_sha256'].items():
@@ -156,8 +163,36 @@ print("Adapter versioned consumer: all three real renderers OK")
                 raise ValueError(f'{identity} consumer tag or commit changed')
         if pins['swift-md']['revision'] != source_commit:
             raise ValueError('Adapter consumer resolved a different SwiftMD source commit')
-        if pins['swiftsoup'].get('version') != '2.11.3' or pins['swiftsoup']['revision'] != 'd86f244ed497d48012782e2f59c985a55e77b3f5':
-            raise ValueError('SwiftSoup mirror version does not match the tested local revision')
+        if 'swiftsoup' in pins or any(p.name.lower() == 'swiftsoup' for p in (consumer / '.build/checkouts').iterdir()):
+            raise ValueError('adapter consumer unexpectedly fetched the external SwiftSoup package')
+        for name in ('LICENSE', 'JSOUP-LICENSE.txt'):
+            resources = [p for p in (consumer / '.build').rglob(name)
+                         if 'checkouts' not in p.parts and ('resources' in str(p).lower() or '.bundle' in str(p))]
+            if not any(p.read_bytes() == (original_vendor / name).read_bytes() for p in resources):
+                raise ValueError(f'vendored SwiftSoup notice missing from built package resources: {name}')
+        # An application may deliberately depend on the original SwiftSoup as
+        # well. Its module must coexist with the vendored SwiftMDSoup module.
+        coexist = temp / 'CoexistConsumer'
+        write(coexist / 'Package.swift', f'''// swift-tools-version: 6.1
+import PackageDescription
+let package = Package(name: "CoexistConsumer", platforms: [.macOS(.v15)], dependencies: [
+    .package(url: {json.dumps(mirror.as_uri())}, exact: "{TEST_VERSION}"),
+    .package(url: "https://github.com/scinfu/SwiftSoup.git", exact: "2.11.3")
+], targets: [.executableTarget(name: "CoexistConsumer", dependencies: [
+    .product(name: "SwiftMDBundled", package: "SwiftMDAdapters"),
+    .product(name: "SwiftSoup", package: "SwiftSoup")])])
+''')
+        write(coexist / 'Sources/CoexistConsumer/main.swift', '''import Foundation
+import SwiftMDBundled
+import SwiftSoup
+let doc = try SwiftSoup.parse("<p>independent</p>")
+let text = try doc.select("p").text()
+precondition(text == "independent")
+let result = try SwiftMDIntegrated.render("```math\\nx^2\\n```\\n", svgPrefix: "coexist", nodeExecutable: ProcessInfo.processInfo.environment["SWIFTMD_NODE"]!)
+precondition(result.diagnostics.isEmpty && result.html.contains("<math"))
+print("Vendored and external SwiftSoup modules coexist")
+''')
+        call('swift', 'run', '--package-path', str(coexist), '-j', '4', 'CoexistConsumer')
         print(f'Consumer gate passed for commit {source_commit}; SwiftMD/mirror tags are synthetic and local only.')
 
 

@@ -12,6 +12,11 @@ process on Linux. The generated MathML and SVG are embedded in the HTML; their
 display does not require client-side JavaScript. See the security contract
 before using the adapters with untrusted input.
 
+The adapter distribution includes the SwiftSoup library source as the private
+`SwiftMDSoup` module, without SwiftSoup's test fixtures. Its original MIT notice
+and an additional jsoup license reference accompany that source. SwiftSoup is
+not fetched as a separate dependency unless an application requests it itself.
+
 This branch prepares version 1.0.0. Its 1.0 installation examples require the
 corresponding Core and adapter tags to be published; the currently published
 release can be checked on the [releases page](https://github.com/ThorFuchs/Swift-MD/releases).

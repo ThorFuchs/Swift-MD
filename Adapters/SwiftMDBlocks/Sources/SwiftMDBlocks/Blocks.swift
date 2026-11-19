@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 import SwiftMD
-import SwiftSoup
+import SwiftMDSoup
 
 /// Trusted HTML returned by a block renderer. The caller is responsible for its safety.
 public enum BlockReplacement: Sendable {
@@ -49,7 +49,7 @@ public struct BlockCompiler: Sendable {
     public func render(_ source: String) throws -> BlockResult {
         let original = try compiler.render(source).html
         if renderers.isEmpty { return BlockResult(html: original, diagnostics: []) }
-        let doc = try SwiftSoup.parseBodyFragment(original)
+        let doc = try SwiftMDSoup.parseBodyFragment(original)
         doc.outputSettings().prettyPrint(pretty: false)
         guard let body = doc.body() else { throw BlockProcessingError.missingBody }
         var diagnostics: [BlockDiagnostic] = []

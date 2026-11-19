@@ -36,14 +36,6 @@
         "revision" : "71d23c52a4afe154acdcc3b8aee968f0bf1b8564",
         "version" : "1.0.1"
       }
-    },
-    {
-      "identity" : "swiftsoup",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/scinfu/SwiftSoup.git",
-      "state" : {
-        "revision" : "d86f244ed497d48012782e2f59c985a55e77b3f5"
-      }
     }
   ],
   "version" : 3

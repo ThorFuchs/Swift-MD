@@ -31,13 +31,30 @@ def main():
     if origin.get('local_test_only') is not False or origin.get('release_review_required') is not True:
         raise ValueError('candidate must have public-dependency preflight and retain the review requirement')
     tags = origin['verified_public_tags']
-    if set(tags) != {'swift-md', 'swift-gfm', 'swift-highlight', 'swiftsoup', 'lrucache', 'swift-atomics'}:
+    if set(tags) != {'swift-md', 'swift-gfm', 'swift-highlight', 'lrucache', 'swift-atomics'}:
         raise ValueError('candidate did not verify all public Swift dependency tags')
+    if origin.get('vendored_swiftsoup', {}).get('revision') != 'd86f244ed497d48012782e2f59c985a55e77b3f5':
+        raise ValueError('candidate has unexpected vendored SwiftSoup provenance')
     manifest = (candidate / 'Package.swift').read_text()
-    if 'file://' in manifest or 'LOCAL TEST ONLY' in manifest or not node.is_file():
+    if 'file://' in manifest or 'LOCAL TEST ONLY' in manifest or 'github.com/scinfu/SwiftSoup' in manifest or not node.is_file():
         raise ValueError('candidate cannot use file dependencies and Node must exist')
     if any(path.is_symlink() for path in candidate.rglob('*')):
         raise ValueError('candidate must not contain symbolic links')
+    vendor = candidate / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup'
+    vendor_info = json.loads((vendor / 'UPSTREAM.json').read_text())
+    if vendor_info.get('upstream_commit') != origin['vendored_swiftsoup']['revision']:
+        raise ValueError('vendored SwiftSoup provenance mismatch')
+    expected = set(vendor_info['files']) | {'UPSTREAM.json', 'JSOUP-LICENSE.txt'}
+    actual = {p.relative_to(vendor).as_posix() for p in vendor.rglob('*') if p.is_file()}
+    if actual != expected or any('fixture' in p.lower() or 'corpus' in p.lower() for p in actual):
+        raise ValueError('unexpected SwiftSoup files in the candidate')
+    for name, details in vendor_info['files'].items():
+        if hashlib.sha256((vendor / name).read_bytes()).hexdigest() != details['vendored_sha256']:
+            raise ValueError(f'candidate vendored SwiftSoup hash mismatch: {name}')
+    if (vendor / 'LICENSE').read_bytes() != (candidate / 'ThirdPartyLicenses/SwiftSoup-MIT.txt').read_bytes():
+        raise ValueError('candidate SwiftSoup license mismatch')
+    if (vendor / 'JSOUP-LICENSE.txt').read_bytes() != (candidate / 'ThirdPartyLicenses/SwiftSoup-jsoup-MIT.txt').read_bytes():
+        raise ValueError('candidate jsoup reference license mismatch')
     assets = candidate / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBundled/RendererAssets'
     for package in ('katex', 'pele'):
         for name, digest in origin['renderer_resources'][package]['files_sha256'].items():
@@ -72,11 +89,13 @@ print("Verified candidate consumer: all three real renderers passed")
         env['SWIFTMD_NODE'] = str(node)
         subprocess.run(['swift', 'run', '--package-path', str(consumer), '-j', '4', 'Consumer'], check=True, env=env)
         resolved = {p['identity']: p['state'] for p in json.loads((consumer / 'Package.resolved').read_text())['pins']}
+        if 'swiftsoup' in resolved or any(p.name.lower() == 'swiftsoup' for p in (consumer / '.build/checkouts').iterdir()):
+            raise ValueError('consumer unexpectedly downloaded the external SwiftSoup package')
         for identity, expected in tags.items():
             actual = resolved[identity]
             if actual.get('version') != expected['version'] or actual.get('revision') != expected['revision']:
                 raise ValueError(f'{identity}: consumer resolved a different public tag or commit')
-        print('All six public dependency tags and revisions matched preflight; only the mirror tag was synthetic.')
+        print('All five public dependency tags and revisions matched preflight; SwiftSoup is vendored and the mirror tag was synthetic.')
 
 
 if __name__ == '__main__':

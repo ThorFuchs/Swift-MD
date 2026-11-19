@@ -148,19 +148,18 @@ comparison is recorded here; it does not modify the sister repository or its
 history. SwiftPM independently fetches Swift-Highlight's source, while the
 generated SwiftMD adapter mirror does not copy those fixtures into itself.
 
-An independent source scan on 19 November also identified a separately fetched
+An independent source scan on 19 November identified a previously fetched
 SwiftSoup 2.11.3 source-distribution issue: its performance-test corpus contains
 six saved third-party web pages. The Google page includes an explicit dual
 MIT/GPL notice for Math.uuid.js and another third-party code notice. The
-generated mirror does not copy these files, but SwiftPM fetches the upstream
-SwiftSoup source package. The [SwiftSoup source audit](../ThirdPartyLicenses/SwiftSoup-SOURCE-AUDIT.md)
-records the precise path, checksum and scope. The presence of a notice is not
-evidence of infringement; it does mean SwiftSoup's root MIT license alone is
-not a complete inventory of the fetched source snapshot. Review this corpus
-or select and verify an alternative distribution before treating the source
-dependency review as complete.
-The [external review packet](EXTERNAL_RIGHTS_REVIEW.md) lists the intended
-distribution paths, exact evidence and questions for a qualified reviewer.
+previous distribution resolved that upstream source package. The present
+candidate instead vendors only its library sources, retains the MIT license and
+a jsoup reference notice, and removes the remote SwiftSoup dependency. Its
+source tree, per-file hashes and module-name substitutions are independently
+verifiable. The [SwiftSoup source audit](../ThirdPartyLicenses/SwiftSoup-SOURCE-AUDIT.md)
+records the historical corpus observation and present vendor scope. This avoids
+fetching the corpus for ordinary adapter consumers without determining its
+rights. Previously released tags and upstream histories remain unchanged.
 
 The bundled KaTeX 0.19.1 `dist/katex.js` contains attribution for utility
 functions adapted from Facebook's React under Apache-2.0 and for SVG data
@@ -232,6 +231,11 @@ source archives covered 295 files without scanner errors. Its MIT/GPL match in
 the SwiftSoup Google fixture led to the separate source-audit issue above; other
 unknown-license-reference matches appeared in swift-atomics documentation and
 pull request templates. The source archives, not their Git histories, were scanned.
+On 19 November, the replacement fixture-free SwiftSoup vendor directory was
+scanned separately: 58 files, no scan errors. The detected license expressions
+were MIT in the two license copies and provenance metadata; the source's own
+copyright notice was also detected. This scan does not establish ownership or
+license compliance by itself, nor does it scan upstream or repository history.
 ScanCode was the 33.0.0rc1 release candidate
 using its 33.0.0rc1 license data, pluggy 1.5.0, and a locally built libmagic
 5.48; it was run on macOS arm64. Automated detection does not determine rights

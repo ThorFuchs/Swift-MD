@@ -75,7 +75,7 @@ class MirrorPolicyTests(unittest.TestCase):
             'https://github.com/ThorFuchs/Swift-MD.git': 'f' * 40,
             'https://github.com/ThorFuchs/Swift-GFM.git': pins['swift-gfm'],
             'https://github.com/ThorFuchs/Swift-Highlight.git': pins['swift-highlight'],
-            'https://github.com/scinfu/SwiftSoup.git': pins['swiftsoup'],
+            'https://github.com/scinfu/SwiftSoup.git': 'd86f244ed497d48012782e2f59c985a55e77b3f5',
             'https://github.com/nicklockwood/LRUCache.git': pins['lrucache'],
             'https://github.com/apple/swift-atomics.git': pins['swift-atomics'],
         }

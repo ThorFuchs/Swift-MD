@@ -33,6 +33,9 @@ for diagnostic in result.diagnostics { print(diagnostic.message) }
 SwiftPM resolves the Swift dependencies and supplies the pinned KaTeX and Pele
 scripts as package resources. Apple platforms run those scripts in
 JavaScriptCore; Linux needs a separately installed trusted Node executable.
+SwiftSoup library sources are included as the internal `SwiftMDSoup` module,
+without the upstream test fixtures; the accompanying MIT and jsoup license
+notices are included with the package.
 MathML and SVG are precomputed and need no client-side JavaScript to display.
 Highlighting supplies classes; the host supplies CSS.
 

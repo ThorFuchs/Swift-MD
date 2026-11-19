@@ -37,9 +37,11 @@ The initializer also allows a renderer to be reused on separate pages. Never
 combine multiple outputs from the same fixed prefix on one page; use a distinct
 prefix for each separately rendered fragment.
 
-SwiftPM resolves SwiftGFM, Swift-Highlight and SwiftSoup in the generated
-mirror; KaTeX and Pele are bundled resources, not npm dependencies installed
-by the consumer. Apple platforms use JavaScriptCore and do not need Node or a
+SwiftPM resolves SwiftGFM, Swift-Highlight, LRUCache and swift-atomics in the
+generated mirror. The fixture-free SwiftSoup library source is vendored as the
+separate `SwiftMDSoup` module with its notices; the external SwiftSoup package
+is not a dependency. KaTeX and Pele are bundled resources, not npm dependencies
+installed by the consumer. Apple platforms use JavaScriptCore and do not need Node or a
 WebView. Linux requires the explicitly supplied trusted Node executable. The
 generated MathML and SVG need no client-side JavaScript. Both backends have
 input and output checks but no hard execution deadline or aggregate memory

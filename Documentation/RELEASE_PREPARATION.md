@@ -22,12 +22,12 @@ feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
 and verifies their SHA-512 integrity while generating the test mirror. It creates
 disposable local Git repositories, synthetic `1.0.0` tags for SwiftMD and its
-generated mirror, and **two fresh version-based consumers**. It never creates
+generated mirror, and fresh version-based consumers. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
 with `--local-test` and is marked unpublishable. The gate resolves the actual
 public SwiftGFM and Swift-Highlight versions from the committed lockfile, checks
-that SwiftSoup 2.11.3 resolves to the locally tested revision, and runs all
-three real renderers in the adapter consumer. The Core consumer is a separate
+that normal consumers do not fetch SwiftSoup, tests coexistence with a separately
+requested SwiftSoup package, and runs all three real renderers. The Core consumer is a separate
 package and does not add the adapter dependencies. For containers with a
 different UID, Git is told to trust only the selected source checkout and its
 `.git` directory for the test subprocesses; no persistent global Git
@@ -67,7 +67,7 @@ python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(comman
 ```
 
 The latter creates a disposable synthetic tag for the mirror only. Core and
-all five Swift upstreams resolve from their real public tags and are checked
+all four Swift upstream dependencies resolve from their real public tags and are checked
 against the verified revisions. On a public branch push, the Linux integration
 job runs this additional check; pull requests explicitly skip it because their
 merge commits need not be advertised branches or tags. The separate synthetic

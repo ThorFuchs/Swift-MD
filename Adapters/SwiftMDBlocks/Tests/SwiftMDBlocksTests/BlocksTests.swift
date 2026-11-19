@@ -2,7 +2,7 @@
 import XCTest
 import SwiftMDBlocks
 import SwiftMDHighlight
-import SwiftSoup
+import SwiftMDSoup
 import SwiftMD
 import SwiftGFM
 
@@ -11,7 +11,7 @@ final class BlocksTests: XCTestCase {
         let input = "```swift metadata\nlet word = \"<hello> 😀 &\" // comment\n```\n"
         let result = try BlockCompiler(renderers: [HighlightRenderer()]).render(input)
         XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
-        let code = try XCTUnwrap(SwiftSoup.parseBodyFragment(result.html).select("pre > code").first())
+        let code = try XCTUnwrap(SwiftMDSoup.parseBodyFragment(result.html).select("pre > code").first())
         XCTAssertEqual(try code.text(trimAndNormaliseWhitespace: false), "let word = \"<hello> 😀 &\" // comment\n")
         XCTAssertFalse(try code.select("span.hljs-keyword").isEmpty())
         XCTAssertFalse(try code.select("span.hljs-string").isEmpty())
@@ -23,7 +23,7 @@ final class BlocksTests: XCTestCase {
         XCTAssertEqual(result.diagnostics.count, 2)
         XCTAssertEqual(result.diagnostics[0].kind, .renderFailed)
         XCTAssertEqual(result.diagnostics[1].kind, .unsupportedLanguage)
-        let blocks = try SwiftSoup.parseBodyFragment(result.html).select("pre > code").array()
+        let blocks = try SwiftMDSoup.parseBodyFragment(result.html).select("pre > code").array()
         XCTAssertEqual(try blocks[0].text(trimAndNormaliseWhitespace: false), "<test>\n")
         XCTAssertEqual(try blocks[1].text(trimAndNormaliseWhitespace: false), "x^2\n")
     }
@@ -44,7 +44,7 @@ final class BlocksTests: XCTestCase {
         """
         let result = try compiler.render(source)
         XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
-        let doc = try SwiftSoup.parseBodyFragment(result.html)
+        let doc = try SwiftMDSoup.parseBodyFragment(result.html)
         XCTAssertEqual(try doc.select("pre span.hljs-keyword").size(), 2)
         XCTAssertEqual(try doc.select("table").size(), 1)
         XCTAssertEqual(try doc.select("a").first()?.attr("href"), "https://example.com")
@@ -62,7 +62,7 @@ final class BlocksTests: XCTestCase {
         let source = "> ~~~SWIFT data\r\n> let a = \"&\"\r\n> ~~~\r\n\r\n```swift\n```\n\n```swift\nlet a = \"&\"\n```"
         let result = try BlockCompiler(renderers: [HighlightRenderer()]).render(source)
         XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
-        let blocks = try SwiftSoup.parseBodyFragment(result.html).select("pre > code").array()
+        let blocks = try SwiftMDSoup.parseBodyFragment(result.html).select("pre > code").array()
         XCTAssertEqual(blocks.count, 3)
         XCTAssertEqual(try blocks[0].text(trimAndNormaliseWhitespace: false), "let a = \"&\"\n")
         XCTAssertEqual(try blocks[1].text(trimAndNormaliseWhitespace: false), "")
@@ -84,7 +84,7 @@ final class BlocksTests: XCTestCase {
         XCTAssertTrue(ok.html.contains("<b>first</b>"))
         let failed = try BlockCompiler(renderers: [Renderer(fails: true), HighlightRenderer()]).render(source)
         XCTAssertEqual(failed.diagnostics.first?.kind, .renderFailed)
-        let code = try XCTUnwrap(SwiftSoup.parseBodyFragment(failed.html).select("pre > code").first())
+        let code = try XCTUnwrap(SwiftMDSoup.parseBodyFragment(failed.html).select("pre > code").first())
         XCTAssertEqual(try code.text(trimAndNormaliseWhitespace: false), "original & text\n")
         XCTAssertEqual(try code.select("span").size(), 0)
     }
@@ -93,7 +93,7 @@ final class BlocksTests: XCTestCase {
         let source = "```js\nconst x = \"</code><script>alert(1)</script> & 😀\";\n```\n"
         let result = try BlockCompiler(renderers: [HighlightRenderer()]).render(source)
         XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
-        let doc = try SwiftSoup.parseBodyFragment(result.html)
+        let doc = try SwiftMDSoup.parseBodyFragment(result.html)
         XCTAssertEqual(try doc.select("script").size(), 0)
         let code = try XCTUnwrap(doc.select("pre > code").first())
         XCTAssertEqual(try code.text(trimAndNormaliseWhitespace: false), "const x = \"</code><script>alert(1)</script> & 😀\";\n")
@@ -105,6 +105,6 @@ final class BlocksTests: XCTestCase {
         let source = "<pre><code class=\"language-swift\">let <em>x</em> = 1</code></pre>\n"
         let result = try BlockCompiler(compiler: MarkdownCompiler(configuration: config), renderers: [HighlightRenderer()]).render(source)
         XCTAssertEqual(result.diagnostics.first?.kind, .unsupportedContent)
-        XCTAssertEqual(try SwiftSoup.parseBodyFragment(result.html).select("pre code em").size(), 1)
+        XCTAssertEqual(try SwiftMDSoup.parseBodyFragment(result.html).select("pre code em").size(), 1)
     }
 }

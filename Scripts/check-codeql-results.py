@@ -10,6 +10,8 @@ REQUIRED = {
         'Sources/SwiftMD/MarkdownCompiler.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Blocks.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/ValidatedSVG.swift',
+        'Adapters/SwiftMDBlocks/Vendor/SwiftSoup/Sources/SwiftSoup.swift',
+        'Adapters/SwiftMDBlocks/Vendor/SwiftSoup/Sources/HtmlTreeBuilder.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDHighlight/Highlight.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDKaTeXNode/KaTeX.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDPeleNode/Pele.swift',
@@ -21,6 +23,7 @@ REQUIRED = {
     'python': {
         'Scripts/generate-adapter-mirror.py',
         'Scripts/audit-dependencies.py',
+        'Scripts/audit-vendored-swiftsoup.py',
         'Scripts/run-linux-supervised.py',
         'Scripts/run-linux-systemd.py',
         'Scripts/systemd-worker-guard.py',

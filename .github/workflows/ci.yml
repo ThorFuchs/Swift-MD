@@ -84,6 +84,14 @@ jobs:
         run: Scripts/test-all.sh
       - name: Check committed example HTML
         run: python3 Scripts/render-examples.py --binary Tools/SwiftMDCLI/.build/debug/swift-md --node "$(command -v node)" --check
+      - name: Verify vendored SwiftSoup against upstream source only
+        run: |
+          git clone --filter=blob:none --no-checkout --depth 1 --branch 2.11.3 https://github.com/scinfu/SwiftSoup.git /tmp/swiftsoup-reference
+          git -C /tmp/swiftsoup-reference sparse-checkout set --cone Sources
+          git -C /tmp/swiftsoup-reference checkout --detach d86f244ed497d48012782e2f59c985a55e77b3f5
+          test ! -e /tmp/swiftsoup-reference/Tests-macOS/corpus
+          python3 Scripts/audit-vendored-swiftsoup.py --upstream-source /tmp/swiftsoup-reference
+          python3 Scripts/test-vendored-swiftsoup.py
       - name: Verify pinned notices, fixtures, and npm archives
         run: |
           curl --fail --silent --show-error --location \
