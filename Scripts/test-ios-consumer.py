@@ -43,7 +43,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='swiftmd-ios-consumer-') as name:
         temp = Path(name)
         mirror = temp / 'SwiftMDAdapters'
-        html_source = (ROOT / 'Adapters/SwiftMDBlocks/../../../Swift-HTML').resolve()
+        html_source = ROOT / 'Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML'
         html_revision = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())['tested_revision']
         if call('git', '-C', str(html_source), 'rev-parse', 'HEAD', capture=True).strip() != html_revision:
             raise ValueError('SwiftHTML checkout differs from the tested revision')

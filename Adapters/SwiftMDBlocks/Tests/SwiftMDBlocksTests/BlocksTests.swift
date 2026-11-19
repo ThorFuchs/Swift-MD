@@ -182,6 +182,24 @@ final class BlocksTests: XCTestCase {
         XCTAssertEqual(result.html, "<p>$&lt;bad&gt; &amp; x$</p>")
     }
 
+    func testValidatedSVGPreservesAdjacentCombiningUnicode() throws {
+        struct SVGRenderer: BlockRenderer {
+            let svg: String
+            func accepts(language: String) -> Bool { language == "diagram" }
+            func render(literal: String, language: String, index: Int) throws -> BlockReplacement {
+                .validatedSVG(try ValidatedSVG(svg, expectedID: "page-0"))
+            }
+        }
+        struct UnusedMathRenderer: MathMLRenderer {
+            func renderMath(literal: String, displayMode: Bool) throws -> String { "" }
+        }
+        let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"page-0\" viewBox=\"0 0 10 10\"><text>x</text></svg>"
+        let parts: [MathDocumentPart] = [.html("<pre><code class=\"language-diagram\">x</code></pre>\u{0301}")]
+        let result = try BlockCompiler(renderers: [SVGRenderer(svg: svg)]).render(parts, mathRenderer: UnusedMathRenderer())
+        XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
+        XCTAssertEqual(result.html, svg + "\u{0301}")
+    }
+
     func testRawCodeWithCommentIsNotTreatedAsTextOnly() throws {
         let config = MarkdownConfiguration(options: [.allowUnsafeHTML])
         let source = "<pre><code class=\"language-swift\">let x<!-- comment --> = 1</code></pre>\n"

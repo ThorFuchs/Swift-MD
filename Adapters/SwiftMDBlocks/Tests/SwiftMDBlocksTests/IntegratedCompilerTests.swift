@@ -37,4 +37,52 @@ final class IntegratedCompilerTests: XCTestCase {
         XCTAssertThrowsError(try SwiftMDRenderer(math: NodeModule(node: "node", module: "/tmp/module")))
         XCTAssertThrowsError(try SwiftMDRenderer(mermaid: MermaidOptions(runtime: NodeModule(node: "/usr/bin/node", module: "/tmp/module"), svgPrefix: "bad prefix")))
     }
+
+    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+    func testExperimentalMarkdownMathWithRealRenderers() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let node = env["SWIFTMD_NODE"], let katex = env["SWIFTMD_KATEX"], let pele = env["SWIFTMD_PELE"] else {
+            throw XCTSkip("Set real Node, KaTeX and Pele paths")
+        }
+        let renderer = try SwiftMDRenderer(math: NodeModule(node: node, module: katex),
+            mermaid: MermaidOptions(runtime: NodeModule(node: node, module: pele), svgPrefix: "math-document"))
+        let source = #"""
+        | A | B |
+        | - | - |
+        | x | [link](https://example.com) |
+
+        Inline $x^2$ and code `$no_math$`.
+
+        $$
+        \frac{x}{2}
+        $$
+
+        ```math
+        y^2
+        ```
+
+        ```swift
+        let x = 1
+        ```
+
+        ```mermaid
+        flowchart LR
+        A-->B
+        ```
+        """#
+        let result = try renderer.render(source)
+        XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
+        XCTAssertEqual(result.html.components(separatedBy: "<math ").count - 1, 3)
+        XCTAssertEqual(result.html.components(separatedBy: "display=\"block\"").count - 1, 2)
+        XCTAssertTrue(result.html.contains("<table>"))
+        XCTAssertTrue(result.html.contains("$no_math$"))
+        XCTAssertTrue(result.html.contains("hljs-keyword"))
+        XCTAssertTrue(result.html.contains("<svg"))
+        XCTAssertFalse(result.html.contains("SWIFTGFMMATH"))
+        let invalid = try renderer.render(#"Broken $\badcommand{<script>}$ here."#)
+        XCTAssertEqual(invalid.diagnostics.count, 1)
+        XCTAssertTrue(invalid.html.contains("&lt;script&gt;"))
+        XCTAssertFalse(invalid.html.contains("<script>"))
+    }
+    #endif
 }

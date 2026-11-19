@@ -102,6 +102,8 @@ def verify_public_dependencies(args, commit):
     html_revision = public_tag(args.swifthtml_url, args.swifthtml_version)
     if html_revision != html['tested_revision']:
         raise ValueError('SwiftHTML public tag differs from the tested revision')
+    if pins.get('swift-html', {}).get('version') != args.swifthtml_version or pins.get('swift-html', {}).get('revision') != html_revision:
+        raise ValueError('SwiftHTML public tag differs from the adapter lockfile')
     verified['swift-html'] = {'url': args.swifthtml_url, 'version': args.swifthtml_version, 'revision': html_revision}
     core = public_tag(args.core_url, args.core_version)
     refs = public_refs(args.core_url, 'refs/heads/*', 'refs/tags/*')
@@ -232,7 +234,7 @@ let package = Package(
         .package(url: SWIFTHTML_URL, exact: SWIFTHTML_VERSION),
     ],
     targets: [
-        .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftHTML", package: "Swift-HTML")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks", resources: [.copy("Resources/SwiftSoup-2.14.4-LICENSE.txt"), .copy("Resources/LRUCache-MIT.txt"), .copy("Resources/SwiftHTML-Apache-2.0.txt")]),
+        .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftHTML", package: "Swift-HTML"), .product(name: "SwiftGFM", package: "Swift-GFM")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks", resources: [.copy("Resources/SwiftSoup-2.14.4-LICENSE.txt"), .copy("Resources/LRUCache-MIT.txt"), .copy("Resources/SwiftHTML-Apache-2.0.txt")]),
         .target(name: "SwiftMDHighlight", dependencies: ["SwiftMDBlocks", .product(name: "SwiftHighlight", package: "Swift-Highlight"), .product(name: "SwiftHighlightHTML", package: "Swift-Highlight")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDHighlight"),
         .target(name: "SwiftMDKaTeXNode", dependencies: ["SwiftMDBlocks"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDKaTeXNode"),
         .target(name: "SwiftMDPeleNode", dependencies: ["SwiftMDBlocks", "SwiftMDKaTeXNode"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDPeleNode"),

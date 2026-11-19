@@ -1,7 +1,6 @@
 {
-  "tested_revision": "d669913150990db1b7637659f71bea5ac9a10876",
-  "local_sibling": "../../../Swift-HTML",
-  "public_repository": null,
-  "public_version": null,
-  "note": "Local integration candidate; a verified stable SwiftHTML release is required for public adapter distribution."
+  "tested_revision": "afe888a7a54d83118919ef640c87b06b7c16eb05",
+  "public_repository": "https://github.com/ThorFuchs/Swift-HTML.git",
+  "public_version": "0.1.0",
+  "note": "Public tag verified against the tested release commit; adapter mirror release still requires its own review."
 }

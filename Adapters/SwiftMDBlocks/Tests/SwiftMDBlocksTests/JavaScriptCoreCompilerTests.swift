@@ -129,6 +129,42 @@ final class JavaScriptCoreCompilerTests: XCTestCase {
         XCTAssertTrue(apple.html.contains("hljs-keyword"))
     }
 
+    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+    func testExperimentalMarkdownMathMatchesNode() throws {
+        let (katex, pele) = try scripts()
+        let env = ProcessInfo.processInfo.environment
+        guard let node = env["SWIFTMD_NODE"], let module = env["SWIFTMD_KATEX"], let peleModule = env["SWIFTMD_PELE"] else {
+            throw XCTSkip("Set real Node renderer paths")
+        }
+        let source = #"""
+        Inline $x^2$ and broken $\badcommand{<script>}$.
+
+        $$
+        \frac{x}{2}
+        $$
+
+        ```swift
+        let x = 1
+        ```
+
+        ```mermaid
+        flowchart LR
+        A-->B
+        ```
+        """#
+        let apple = try SwiftMDAppleRenderer(katexScript: katex, peleScript: pele, svgPrefix: "math-compare").render(source)
+        let nodeResult = try SwiftMDRenderer(math: NodeModule(node: node, module: module),
+            mermaid: MermaidOptions(runtime: NodeModule(node: node, module: peleModule), svgPrefix: "math-compare")).render(source)
+        XCTAssertEqual(apple.html, nodeResult.html)
+        XCTAssertEqual(apple.diagnostics.count, 1)
+        XCTAssertEqual(nodeResult.diagnostics.count, 1)
+        XCTAssertTrue(apple.html.contains("&lt;script&gt;"))
+        XCTAssertFalse(apple.html.contains("<script>"))
+        XCTAssertTrue(apple.html.contains("<svg"))
+        XCTAssertTrue(apple.html.contains("hljs-keyword"))
+    }
+    #endif
+
     func testConcurrentUseOfOneJavaScriptCoreRenderer() async throws {
         let (katex, pele) = try scripts()
         let renderer = try SwiftMDAppleRenderer(katexScript: katex, peleScript: pele, svgPrefix: "concurrent")

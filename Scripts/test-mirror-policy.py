@@ -27,7 +27,7 @@ class MirrorPolicyTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.html = self.root / 'Swift-HTML.git'
         subprocess.run(['git', 'clone', '--quiet', '--bare', '--no-hardlinks',
-                        str((ROOT / 'Adapters/SwiftMDBlocks/../../../Swift-HTML').resolve()), str(self.html)], check=True)
+                        str(ROOT / 'Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML'), str(self.html)], check=True)
         subprocess.run(['git', '-C', str(self.html), 'update-ref', '-d', 'refs/tags/0.0.1'], check=True)
         subprocess.run(['git', '-C', str(self.html), 'tag', '0.0.1',
                         generator.swifthtml_provenance()['tested_revision']], check=True)
@@ -78,18 +78,18 @@ class MirrorPolicyTests(unittest.TestCase):
     def test_public_preflight_rejects_wrong_tag_and_unadvertised_source(self):
         pins = {p['identity']: p['state']['revision'] for p in
                 json.loads((ROOT / 'Adapters/SwiftMDBlocks/Package.resolved').read_text())['pins']}
+        html = generator.swifthtml_provenance()
         revisions = {
             'https://github.com/ThorFuchs/Swift-MD.git': 'f' * 40,
             'https://github.com/ThorFuchs/Swift-GFM.git': pins['swift-gfm'],
             'https://github.com/ThorFuchs/Swift-Highlight.git': pins['swift-highlight'],
-            'https://example.invalid/Swift-HTML.git': generator.swifthtml_provenance()['tested_revision'],
+            html['public_repository']: html['tested_revision'],
         }
         args = SimpleNamespace(core_url='https://github.com/ThorFuchs/Swift-MD.git',
                                gfm_url='https://github.com/ThorFuchs/Swift-GFM.git',
                                highlight_url='https://github.com/ThorFuchs/Swift-Highlight.git',
                                core_version='0.1.0', gfm_version='1.0.1', highlight_version='1.0.1',
-                               swifthtml_url='https://example.invalid/Swift-HTML.git', swifthtml_version='0.0.1')
-        html = dict(generator.swifthtml_provenance(), public_repository=args.swifthtml_url, public_version=args.swifthtml_version)
+                               swifthtml_url=html['public_repository'], swifthtml_version=html['public_version'])
         head = subprocess.check_output(['git', '-c', f'safe.directory={ROOT}', '-C', str(ROOT),
                                         'rev-parse', 'HEAD'], text=True).strip()
         with patch.object(generator, 'swifthtml_provenance', return_value=html), \
@@ -117,8 +117,10 @@ class MirrorPolicyTests(unittest.TestCase):
 
     def test_public_mode_is_blocked_until_swifthtml_is_released(self):
         args = SimpleNamespace(swifthtml_url='https://example.invalid/Swift-HTML.git', swifthtml_version='0.0.1')
-        with self.assertRaisesRegex(ValueError, 'no verified public stable release'):
-            generator.verify_public_dependencies(args, '0' * 40)
+        html = dict(generator.swifthtml_provenance(), public_repository=None, public_version=None)
+        with patch.object(generator, 'swifthtml_provenance', return_value=html):
+            with self.assertRaisesRegex(ValueError, 'no verified public stable release'):
+                generator.verify_public_dependencies(args, '0' * 40)
 
     def test_local_mirror_rejects_a_different_swifthtml_revision(self):
         subprocess.run(['git', '-C', str(self.html), 'tag', '-f', '0.0.1', 'HEAD^'], check=True, capture_output=True)

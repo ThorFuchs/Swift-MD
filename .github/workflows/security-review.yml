@@ -31,6 +31,7 @@ jobs:
       - name: Prepare actual mirror source for Swift analysis
         if: ${{ matrix.language == 'swift' }}
         run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
           python3 Scripts/check-swifthtml-checkout.py
           SWIFTHTML_URL="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_repository"] or "")')"
           SWIFTHTML_VERSION="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_version"] or "")')"

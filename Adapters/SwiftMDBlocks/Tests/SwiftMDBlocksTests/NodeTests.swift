@@ -112,6 +112,20 @@ final class NodeTests: XCTestCase {
         XCTAssertTrue(result.html.contains("<pre><code>$$\n\\badcommand{&lt;script&gt; &amp; x}\n$$</code></pre>"))
         XCTAssertFalse(result.html.contains("<script>"))
     }
+
+    func testStructuredMathPreservesAdjacentCombiningUnicode() throws {
+        let (math, _) = try renderers()
+        let parts: [MathDocumentPart] = [
+            .html("<p>"), .math(.init(index: 0, literal: "x", source: "$x$", displayMode: false)),
+            .html("\u{0301} and \u{2764}\u{fe0f}"),
+            .math(.init(index: 1, literal: "y", source: "$y$", displayMode: false)), .html("</p>")
+        ]
+        let result = try BlockCompiler(renderers: [HighlightRenderer()]).render(parts, mathRenderer: math)
+        let x = try math.renderMath(literal: "x", displayMode: false)
+        let y = try math.renderMath(literal: "y", displayMode: false)
+        XCTAssertTrue(result.diagnostics.isEmpty, "\(result.diagnostics)")
+        XCTAssertEqual(result.html, "<p>\(x)\u{0301} and \u{2764}\u{fe0f}\(y)</p>")
+    }
     func testEightRealDiagramTypes() throws {
         let (_, diagram) = try renderers()
         let samples = ["flowchart LR\nA-->B", "sequenceDiagram\nAlice->>Bob: Hello", "classDiagram\nA <|-- B", "stateDiagram-v2\n[*] --> Active", "erDiagram\nUSER ||--o{ POST : writes", "gantt\n title A\n dateFormat YYYY-MM-DD\n section X\n Task :a, 2020-01-01, 2d", "pie\n \"A\" : 2\n \"B\" : 3", "mindmap\n  root((Root))\n    Child"]

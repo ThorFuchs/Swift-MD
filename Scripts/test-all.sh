@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+swift package --package-path "$ROOT/Adapters/SwiftMDBlocks" resolve
 python3 "$ROOT/Scripts/check-swifthtml-checkout.py"
 NODE=${SWIFTMD_NODE:-$(command -v node)}
 : "${SWIFTMD_CMARK_REFERENCE:?Set SWIFTMD_CMARK_REFERENCE to the independently built pinned cmark-gfm executable}"

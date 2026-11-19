@@ -17,7 +17,7 @@ and any fixture licensing whenever the distributed file set changes.
 | SwiftGFM | 1.0.1, tag commit 2cb9450cf755858d338525fe64081b5f04864a2d | Apache-2.0; see SwiftGFM-NOTICE.txt and cmark-gfm-COPYING.txt |
 | cmark-gfm | 27d942c8b0a62d192f616e5bf3578f4b6a89e180 | See cmark-gfm-COPYING.txt; fixtures have separate CC BY-SA notice |
 | Swift-Highlight | 1.0.1, tag commit 71d23c52a4afe154acdcc3b8aee968f0bf1b8564 | Apache-2.0; imported HighlightKit MIT and highlight.js BSD-3-Clause, see included notices |
-| SwiftHTML | local candidate revision d669913150990db1b7637659f71bea5ac9a10876 | Apache-2.0; see SwiftHTML-Apache-2.0.txt; public distribution blocked pending a public version |
+| SwiftHTML | 0.1.0, public tag commit afe888a7a54d83118919ef640c87b06b7c16eb05 | Apache-2.0; see SwiftHTML-Apache-2.0.txt |
 | SwiftSoup via SwiftHTML | 2.14.4, commit 8397a860c6955924b584c50c5265c6aac0970015 | Fixture-free source; MIT including jsoup notice in SwiftHTML-SwiftSoup-2.14.4-MIT.txt |
 | LRUCache via SwiftSoup | Source vendored by SwiftSoup 2.14.4 | MIT, Copyright 2021 Nick Lockwood; see SwiftHTML-LRUCache-MIT.txt |
 | SwiftSoup in released SwiftMD 1.0.0 | d86f244ed497d48012782e2f59c985a55e77b3f5 (2.11.3) | Historical released distribution; see SwiftSoup-SOURCE-AUDIT.md |

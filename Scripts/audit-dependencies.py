@@ -68,7 +68,7 @@ def main():
         (ROOT / 'Tools/SwiftMDCLI/Package.resolved').read_text())['pins']}
     require(cli_pins == pins, 'CLI and adapter lockfiles must resolve the same dependencies without SwiftSoup')
     provenance = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())
-    html = (ROOT / 'Adapters/SwiftMDBlocks' / provenance['local_sibling']).resolve()
+    html = CHECKOUTS / 'Swift-HTML'
     revision = provenance['tested_revision']
     require(git(html, 'rev-parse', 'HEAD').decode().strip() == revision, 'SwiftHTML checkout differs from tested revision')
     require(not git(html, 'status', '--porcelain', '--untracked-files=all', '--',
@@ -88,7 +88,7 @@ def main():
             'SwiftHTML LRUCache notice mismatch')
     require(git(html, 'show', revision + ':LICENSE') == (NOTICE / 'SwiftHTML-Apache-2.0.txt').read_bytes() ==
             (resources / 'SwiftHTML-Apache-2.0.txt').read_bytes(), 'SwiftHTML Apache license mismatch')
-    print(f'SwiftHTML local revision and three license resources: {revision}; public release remains a gate')
+    print(f'SwiftHTML resolved revision and three license resources: {revision}; SwiftMD release review remains required')
 
     for name, digest in FIXTURE_HASHES.items():
         content = (FIXTURES / name).read_bytes()

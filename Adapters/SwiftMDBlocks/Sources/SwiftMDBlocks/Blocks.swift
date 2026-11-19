@@ -112,20 +112,13 @@ public struct BlockCompiler: Sendable {
                 }
                 var marker: String
                 repeat { marker = "SWIFTMDMATH" + UUID().uuidString.replacingOccurrences(of: "-", with: "") }
-                while original.contains(marker) || replacements.contains(where: { $0.0 == marker || $0.1.contains(marker) })
+                while containsBytes(original, marker) || replacements.contains(where: { $0.0 == marker || containsBytes($0.1, marker) })
                 html += marker
                 replacements.append((marker, replacement))
             }
         }
         let processed = try processHTML(html)
-        html = processed.html
-        for (marker, replacement) in replacements {
-            guard let range = html.range(of: marker),
-                  html.range(of: marker, range: range.upperBound..<html.endIndex) == nil else {
-                throw BlockProcessingError.missingBody
-            }
-            html.replaceSubrange(range, with: replacement)
-        }
+        html = try insertFragments(processed.html, replacements)
         return BlockResult(html: html, diagnostics: diagnostics + processed.diagnostics)
     }
 
@@ -159,7 +152,7 @@ public struct BlockCompiler: Sendable {
                 case .blockHTML(let html): try pre.insertHTMLBefore(html); try pre.remove()
                 case .validatedSVG(let svg):
                     var marker: String
-                    repeat { marker = "SWIFTMD" + UUID().uuidString.replacingOccurrences(of: "-", with: "") } while original.contains(marker)
+                    repeat { marker = "SWIFTMD" + UUID().uuidString.replacingOccurrences(of: "-", with: "") } while containsBytes(original, marker)
                     try pre.insertTextBefore(marker); try pre.remove()
                     fragments.append((marker, svg.html))
                 }
@@ -167,11 +160,28 @@ public struct BlockCompiler: Sendable {
                 diagnostics.append(.init(kind: .renderFailed, blockIndex: index, language: language, message: String(describing: error)))
             }
         }
-        var html = try body.innerHTML()
-        for (marker, fragment) in fragments {
-            guard let range = html.range(of: marker), html.range(of: marker, range: range.upperBound..<html.endIndex) == nil else { throw BlockProcessingError.missingBody }
-            html.replaceSubrange(range, with: fragment)
-        }
+        let html = try insertFragments(body.innerHTML(), fragments)
         return BlockResult(html: html, diagnostics: diagnostics)
+    }
+
+    // String ranges use extended grapheme-cluster boundaries. A marker beside
+    // a combining character may have no String boundary at its end, so use
+    // exact UTF-8 byte ranges for collision checks and substitution.
+    private func containsBytes(_ text: String, _ marker: String) -> Bool {
+        Data(text.utf8).range(of: Data(marker.utf8)) != nil
+    }
+
+    private func insertFragments(_ html: String, _ fragments: [(String, String)]) throws -> String {
+        var bytes = Data(html.utf8)
+        for (marker, fragment) in fragments {
+            let needle = Data(marker.utf8)
+            guard let range = bytes.range(of: needle),
+                  bytes.range(of: needle, in: range.upperBound..<bytes.endIndex) == nil else {
+                throw BlockProcessingError.missingBody
+            }
+            bytes.replaceSubrange(range, with: fragment.utf8)
+        }
+        guard let result = String(data: bytes, encoding: .utf8) else { throw BlockProcessingError.missingBody }
+        return result
     }
 }

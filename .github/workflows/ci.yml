@@ -18,8 +18,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Require the tested SwiftHTML sibling checkout
-        run: python3 Scripts/check-swifthtml-checkout.py
+      - name: Resolve and verify the pinned SwiftHTML release
+        run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
       - name: Exercise Linux supervisor process boundaries
         run: |
           python3 Scripts/test-linux-supervisor.py \
@@ -66,8 +68,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - name: Require the tested SwiftHTML sibling checkout
-        run: python3 Scripts/check-swifthtml-checkout.py
+      - name: Resolve and verify the pinned SwiftHTML release
+        run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -104,8 +108,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - name: Require the tested SwiftHTML sibling checkout
-        run: python3 Scripts/check-swifthtml-checkout.py
+      - name: Resolve and verify the pinned SwiftHTML release
+        run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -131,7 +137,7 @@ jobs:
           git -C /tmp/swiftsoup-reference sparse-checkout set --cone Sources
           git -C /tmp/swiftsoup-reference checkout --detach 8397a860c6955924b584c50c5265c6aac0970015
           test ! -e /tmp/swiftsoup-reference/Tests-macOS/corpus
-          python3 ../Swift-HTML/Scripts/verify-upstream.py --reference /tmp/swiftsoup-reference
+          python3 Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML/Scripts/verify-upstream.py --reference /tmp/swiftsoup-reference
       - name: Verify pinned notices, fixtures, and npm archives
         run: |
           curl --fail --silent --show-error --location \

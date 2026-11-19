@@ -3,8 +3,8 @@
 The local `SwiftMDCompiler` product provides a unified API over the existing
 renderers. Node and module paths must be explicitly supplied as trusted
 absolute paths; install the pinned modules with `npm ci --ignore-scripts` in
-`Tools/NodeDependencies`. This development branch also needs the sibling
-`Swift-HTML` checkout at the revision in `SwiftHTML-PROVENANCE.json`. The
+`Tools/NodeDependencies`. This development branch resolves public SwiftHTML
+0.1.0 at the revision in `SwiftHTML-PROVENANCE.json`. The
 published 1.0.0 mirror predates this integration and remains unchanged.
 
 ```swift

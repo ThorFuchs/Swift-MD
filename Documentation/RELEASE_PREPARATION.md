@@ -22,7 +22,7 @@ absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
 and verifies their SHA-512 integrity while generating the test mirror. It creates
 disposable local Git repositories, synthetic `1.0.0` tags for SwiftMD and its
 generated mirror, a synthetic `0.0.1` SwiftHTML tag, and fresh version-based
-consumers. The sibling SwiftHTML checkout must be at the tested revision in
+consumers. The resolved SwiftHTML checkout must match the release revision in
 `Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
 with `--local-test` and is marked unpublishable. The gate resolves the actual
@@ -40,9 +40,9 @@ python3 Scripts/test-distribution.py
 ```
 
 This gate is distinct from `Scripts/test-all.sh`. Synthetic local tags do not
-demonstrate a public SwiftHTML release. The existing 1.0.0 mirror is published
-with the prior backend; this integration is local only. Public CI and a new
-mirror release need an accessible, stable SwiftHTML tag. The candidate's own
+demonstrate a public SwiftHTML release. SwiftHTML 0.1.0 is public; the existing
+SwiftMD 1.0.0 mirror uses the prior backend, while this integration is local
+only. The candidate's own
 code is Apache-2.0, with retained MIT notices for its bundled dependencies;
 review the actual distributed notices before publication. Verify each public tag, its commit,
 dependency accessibility, mirror provenance and distribution licenses again.
@@ -62,9 +62,8 @@ explicit source checkout for each invocation and do not modify global config.
 For a disposable local test, `Scripts/test-distribution.py` creates and checks
 the synthetic SwiftHTML tag automatically. Public candidate generation requires
 explicit `--swifthtml-url` and `--swifthtml-version` values and is fail-closed
-while `public_repository` or `public_version` is unset in the provenance file.
-Once an actual SwiftHTML release is reviewed and configured, a public-dependency
-candidate can be generated with:
+if `public_repository` or `public_version` is unset in the provenance file.
+A public-dependency candidate can be generated with:
 
 ```sh
 python3 Scripts/generate-adapter-mirror.py /tmp/swiftmd-candidate \
@@ -76,9 +75,9 @@ python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(comman
 
 The latter creates a disposable synthetic tag for the mirror only. Core,
 SwiftGFM, Swift-Highlight and SwiftHTML must resolve from verified public tags.
-The existing hosted jobs need a way to obtain the tested SwiftHTML sibling;
-until that is arranged and its stable tag exists, they are not release evidence
-for this branch. The separate synthetic local mirror test remains mandatory.
+Hosted jobs resolve the pinned public SwiftHTML release; they are not release
+evidence for this branch until they run for its actual commit. The separate
+synthetic local mirror test remains mandatory.
 
 ## Dependencies and current boundaries
 

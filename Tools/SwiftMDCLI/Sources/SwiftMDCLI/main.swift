@@ -26,7 +26,13 @@ func run() throws {
         func value() throws -> String { guard !args.isEmpty else { throw CLIError.message("Missing value for \(arg)") }; return args.removeFirst() }
         switch arg {
         case "--help", "-h": print("Usage: swift-md [--highlight] [--katex-node PATH --katex-module PATH] [--pele-node PATH --pele-module PATH --svg-prefix ID] [--document] [--unsafe-html] [--strict] [--output PATH] [INPUT]"); return
-        case "--version": print("SwiftMD 1.0.0; SwiftGFM 1.0.1 (2cb9450cf755858d338525fe64081b5f04864a2d); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)"); return
+        case "--version":
+            #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+            print("SwiftMD experimental; SwiftGFM experimental math parser (unreleased); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)")
+            #else
+            print("SwiftMD 1.0.0; SwiftGFM 1.0.1 (2cb9450cf755858d338525fe64081b5f04864a2d); cmark-gfm \(MarkdownEngine.backendVersion) \(MarkdownEngine.backendRevision)")
+            #endif
+            return
         case "--output", "-o": output = try value()
         case "--katex-node": nodeK = try value()
         case "--katex-module": moduleK = try value()
@@ -50,7 +56,17 @@ func run() throws {
     if let nodeP, let moduleP, let prefix { renderers.append(try PeleNodeRenderer(node: nodeP, module: moduleP, prefix: prefix)) }
     if highlight { renderers.append(HighlightRenderer()) }
     let config = MarkdownConfiguration(options: unsafe ? [.allowUnsafeHTML] : [])
-    let result = try BlockCompiler(compiler: MarkdownCompiler(configuration: config), renderers: renderers).render(source)
+    let compiler = BlockCompiler(compiler: MarkdownCompiler(configuration: config), renderers: renderers)
+    let result: BlockResult
+    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+    if let nodeK, let moduleK {
+        result = try compiler.renderRecognizingMath(source, mathRenderer: KaTeXNodeRenderer(node: nodeK, module: moduleK))
+    } else {
+        result = try compiler.render(source)
+    }
+    #else
+    result = try compiler.render(source)
+    #endif
     for diagnostic in result.diagnostics { writeError("block \(diagnostic.blockIndex) [\(diagnostic.language)]: \(diagnostic.message)") }
     if strict && !result.diagnostics.isEmpty { throw CLIError.message("Rendering failed in strict mode") }
     let html = document ? "<!doctype html>\n<html><head><meta charset=\"utf-8\"></head><body>\n" + result.html + "\n</body></html>\n" : result.html

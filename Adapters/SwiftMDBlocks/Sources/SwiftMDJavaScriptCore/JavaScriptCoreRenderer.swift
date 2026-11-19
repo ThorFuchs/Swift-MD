@@ -92,12 +92,22 @@ private struct DiagramRenderer: BlockRenderer {
 /// the final composed page. Without renderers, core HTML bytes are preserved.
 public struct SwiftMDAppleRenderer: Sendable {
     private let compiler: BlockCompiler
+    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+    private let mathRenderer: KaTeXJavaScriptCoreRenderer?
+    #endif
 
     public init(configuration: MarkdownConfiguration = .gfm, highlight: Bool = true,
                 katexScript: String? = nil, peleScript: String? = nil, svgPrefix: String? = nil) throws {
         var renderers: [any BlockRenderer] = []
+        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+        var prototypeMathRenderer: KaTeXJavaScriptCoreRenderer?
+        #endif
         if let katexScript {
-            renderers.append(try KaTeXJavaScriptCoreRenderer(script: katexScript))
+            let renderer = try KaTeXJavaScriptCoreRenderer(script: katexScript)
+            renderers.append(renderer)
+            #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+            prototypeMathRenderer = renderer
+            #endif
         }
         if let peleScript {
             guard let prefix = svgPrefix, !prefix.isEmpty, prefix.utf8.count <= 64,
@@ -115,9 +125,17 @@ public struct SwiftMDAppleRenderer: Sendable {
         }
         if highlight { renderers.append(HighlightRenderer()) }
         compiler = BlockCompiler(compiler: MarkdownCompiler(configuration: configuration), renderers: renderers)
+        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+        self.mathRenderer = prototypeMathRenderer
+        #endif
     }
 
     /// Compile Markdown to HTML and per-block diagnostics.
-    public func render(_ markdown: String) throws -> BlockResult { try compiler.render(markdown) }
+    public func render(_ markdown: String) throws -> BlockResult {
+        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+        if let mathRenderer { return try compiler.renderRecognizingMath(markdown, mathRenderer: mathRenderer) }
+        #endif
+        return try compiler.render(markdown)
+    }
 }
 #endif

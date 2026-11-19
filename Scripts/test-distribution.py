@@ -12,7 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 TEST_VERSION = '1.0.0'  # Synthetic; only in disposable local repositories, never publish.
 HTML_TEST_VERSION = '0.0.1'  # Also synthetic; never publish.
-HTML_SOURCE = (ROOT / 'Adapters/SwiftMDBlocks/../../../Swift-HTML').resolve()
+HTML_SOURCE = ROOT / 'Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML'
 
 
 def call(*args, cwd=None, capture=False):
@@ -55,7 +55,7 @@ def main():
     source_commit = call('git', 'rev-parse', 'HEAD', cwd=ROOT, capture=True).strip()
     html_revision = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())['tested_revision']
     if call('git', 'rev-parse', 'HEAD', cwd=HTML_SOURCE, capture=True).strip() != html_revision:
-        raise ValueError('SwiftHTML local checkout does not match the tested revision')
+        raise ValueError('resolved SwiftHTML checkout does not match the tested revision')
     if call('git', 'status', '--porcelain', '--untracked-files=all', '--', 'Package.swift', 'Sources',
             'Vendor/SwiftSoup', 'Scripts/verify-upstream.py', cwd=HTML_SOURCE, capture=True).strip():
         raise ValueError('SwiftHTML package source has uncommitted changes')

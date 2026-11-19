@@ -37,6 +37,9 @@ public struct MermaidOptions: Sendable {
 /// Node and module paths are trusted configuration; Node is not sandboxed.
 public struct SwiftMDRenderer: Sendable {
     private let compiler: BlockCompiler
+    #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+    private let mathRenderer: KaTeXNodeRenderer?
+    #endif
 
     public init(
         configuration: MarkdownConfiguration = .gfm,
@@ -45,19 +48,32 @@ public struct SwiftMDRenderer: Sendable {
         mermaid: MermaidOptions? = nil
     ) throws {
         var renderers: [any BlockRenderer] = []
+        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+        var prototypeMathRenderer: KaTeXNodeRenderer?
+        #endif
         if let math {
-            renderers.append(try KaTeXNodeRenderer(node: math.node, module: math.module))
+            let renderer = try KaTeXNodeRenderer(node: math.node, module: math.module)
+            renderers.append(renderer)
+            #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+            prototypeMathRenderer = renderer
+            #endif
         }
         if let mermaid {
             renderers.append(try PeleNodeRenderer(node: mermaid.runtime.node, module: mermaid.runtime.module, prefix: mermaid.svgPrefix))
         }
         if highlight { renderers.append(HighlightRenderer()) }
         compiler = BlockCompiler(compiler: MarkdownCompiler(configuration: configuration), renderers: renderers)
+        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+        self.mathRenderer = prototypeMathRenderer
+        #endif
     }
 
     /// Compile Markdown to HTML and diagnostics in one call.
     public func render(_ markdown: String) throws -> BlockResult {
-        try compiler.render(markdown)
+        #if SWIFTMD_EXPERIMENTAL_GFM_MATH
+        if let mathRenderer { return try compiler.renderRecognizingMath(markdown, mathRenderer: mathRenderer) }
+        #endif
+        return try compiler.render(markdown)
     }
 }
 #endif

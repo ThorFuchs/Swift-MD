@@ -14,13 +14,12 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "Swift-MD", path: "../.."),
-        // Local integration candidate until SwiftHTML has a published stable tag.
-        .package(name: "Swift-HTML", path: "../../../Swift-HTML"),
+        .package(url: "https://github.com/ThorFuchs/Swift-HTML.git", exact: "0.1.0"),
         .package(url: "https://github.com/ThorFuchs/Swift-GFM.git", exact: "1.0.1"),
         .package(url: "https://github.com/ThorFuchs/Swift-Highlight.git", exact: "1.0.1"),
     ],
     targets: [
-        .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftHTML", package: "Swift-HTML")], resources: [.copy("Resources/SwiftSoup-2.14.4-LICENSE.txt"), .copy("Resources/LRUCache-MIT.txt"), .copy("Resources/SwiftHTML-Apache-2.0.txt")]),
+        .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftHTML", package: "Swift-HTML"), .product(name: "SwiftGFM", package: "Swift-GFM")], resources: [.copy("Resources/SwiftSoup-2.14.4-LICENSE.txt"), .copy("Resources/LRUCache-MIT.txt"), .copy("Resources/SwiftHTML-Apache-2.0.txt")]),
         .target(name: "SwiftMDPeleNode", dependencies: ["SwiftMDBlocks", "SwiftMDKaTeXNode"]),
         .target(name: "SwiftMDKaTeXNode", dependencies: ["SwiftMDBlocks"]),
         .target(name: "SwiftMDHighlight", dependencies: ["SwiftMDBlocks", .product(name: "SwiftHighlight", package: "Swift-Highlight"), .product(name: "SwiftHighlightHTML", package: "Swift-Highlight")]),

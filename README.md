@@ -14,9 +14,9 @@ before using the adapters with untrusted input.
 
 The published 1.0.0 adapter mirror includes fixture-free SwiftSoup 2.11.3 as
 `SwiftMDSoup`. This development branch instead uses the independent SwiftHTML
-package and its fixture-free SwiftSoup 2.14.4 backend. The adapter currently
-requires the sibling checkout `../Swift-HTML` at the revision recorded in
-`Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. This local integration has
+package and its fixture-free SwiftSoup 2.14.4 backend. The adapter resolves
+public SwiftHTML 0.1.0 at the revision recorded in
+`Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. This new integration has
 not been published; the existing 1.0.0 mirror is unchanged. The actual test
 scope and remaining release gates are recorded in
 [integrated rendering](Documentation/INTEGRATED_RENDERING.md#local-swifthtml-integration-verification-19-november-2026).

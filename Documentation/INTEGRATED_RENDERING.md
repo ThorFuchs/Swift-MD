@@ -38,10 +38,9 @@ The initializer also allows a renderer to be reused on separate pages. Never
 combine multiple outputs from the same fixed prefix on one page; use a distinct
 prefix for each separately rendered fragment.
 
-The local adapter uses a sibling SwiftHTML checkout, which contains the
-fixture-free SwiftSoup 2.14.4 backend. A generated test mirror resolves that
-checkout through a synthetic, local-only tag. Public mirror generation is
-blocked until the tested SwiftHTML commit has an approved public stable tag.
+The adapter resolves public SwiftHTML 0.1.0, which contains the fixture-free
+SwiftSoup 2.14.4 backend. A generated test mirror may also resolve an explicitly
+synthetic, local-only tag. A public mirror must pass its own release gates.
 KaTeX and Pele are bundled resources, not npm dependencies
 installed by the consumer. Apple platforms use JavaScriptCore and do not need Node or a
 WebView. Linux requires the explicitly supplied trusted Node executable. The
@@ -78,8 +77,16 @@ parser, processes other blocks, then inserts MathML without passing it through
 HTML reserialization. Failed or empty math output retains the escaped original
 delimited source and emits a diagnostic. The caller must supply trusted HTML
 segments and only place math at HTML text or block positions, not in attributes
-or comments. This bridge is not itself a Markdown parser or a sanitizer and is
-not yet connected to the one-call compiler.
+or comments. This bridge is not itself a Markdown parser or a sanitizer.
+
+A local-only build flag, `SWIFTMD_EXPERIMENTAL_GFM_MATH`, connects this bridge
+to an unreleased math-aware SwiftGFM prototype and to the one-call compiler and
+CLI. This requires a separately edited local SwiftGFM checkout; the published
+SwiftGFM dependency does not expose that API. Do not enable or distribute this
+flagged build as a released package. The prototype rejects `allowUnsafeHTML`,
+NUL input and unclosed display fences, and does not recognize mathematics in
+table cells or image descriptions. Its syntax and parser edge cases remain
+under test. In the ordinary build only the existing `math` fence is recognized.
 
 For a browser check of the direct Node backend's two MathML modes (not of
 Markdown delimiter parsing), set trusted absolute Node and KaTeX paths and run:
@@ -105,7 +112,7 @@ support for Markdown math delimiters.
 The same day `Scripts/test-all.sh` passed again on macOS against SwiftHTML
 candidate `9ccb0f058c12c4a00d9b78585de2d06c01e0f672`, including the
 independent cmark comparison and real renderer tests. Its known published-GFM
-baseline deviations remain. SwiftHTML's public version is not yet available.
+baseline deviations remain. SwiftHTML 0.1.0 was subsequently published.
 The subsequent candidate `d669913150990db1b7637659f71bea5ac9a10876` changes
 only SwiftHTML validation documentation; the 30 adapter tests and the license
 and provenance checks passed again against that exact local commit on macOS.
@@ -227,10 +234,9 @@ all three real renderers and coexistence with an independently requested
 SwiftSoup package. The SwiftMD, SwiftHTML and mirror tags used by this test
 were synthetic, temporary and local to the container; no mirror was published.
 
-No hosted CI run has been completed for this integration. A normal container
+No hosted SwiftMD CI run has been completed for this integration. A normal container
 run does not establish the separately configured systemd/cgroup security
-boundary. No browser test was run in this Linux environment. SwiftHTML's
-public stable tag remains unresolved, and the
+boundary. No browser test was run in this Linux environment. The
 previously published 1.0.0 mirror still uses its original backend. The locally
 copied license resources help package applications preserve notices; they do
 not prove that every downstream static-binary distribution includes them.

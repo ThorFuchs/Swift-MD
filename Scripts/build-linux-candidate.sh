@@ -8,6 +8,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 [ ! -e "$1" ] || { echo 'Output already exists' >&2; exit 1; }
 [ -d "$(dirname -- "$1")" ] || { echo 'Output directory does not exist' >&2; exit 1; }
 [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=all)" ] || { echo 'Source checkout must be clean' >&2; exit 1; }
+swift package --package-path "$ROOT/Adapters/SwiftMDBlocks" resolve
 python3 "$ROOT/Scripts/check-swifthtml-checkout.py"
 case "$1" in /*) output=$1;; *) output=$(pwd)/$1;; esac
 commit=$(git -C "$ROOT" rev-parse HEAD)
@@ -38,7 +39,7 @@ not certify security, GFM conformance, or compatibility with other platforms.
 TEXT
 {
   printf 'Source commit: %s\n' "$commit"
-  printf 'SwiftHTML revision: '; git -C "$ROOT/../Swift-HTML" rev-parse HEAD
+  printf 'SwiftHTML revision: '; git -C "$ROOT/Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML" rev-parse HEAD
   printf 'System: '; uname -a
   printf 'Swift: '; swift --version | tr '\n' ' '; printf '\n'
   printf 'Node: '; if command -v node >/dev/null; then node --version; else printf 'not installed\n'; fi
