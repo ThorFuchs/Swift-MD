@@ -1,9 +1,8 @@
 # Public release preparation
 
-The proposed 1.0 API, deployment and platform boundaries are recorded in the
+The 1.0 API, deployment and platform boundaries are recorded in the
 [release contract](V1_RELEASE_CONTRACT.md) and
-[security contract](SECURITY_CONTRACT.md). They describe a candidate, not a
-published 1.0 release.
+[security contract](SECURITY_CONTRACT.md).
 
 This document records the release boundary and the checks needed to prepare a
 candidate. It does not authorize a visibility change, tag, mirror publication,
@@ -11,8 +10,8 @@ GitHub release, or distribution of an archive.
 
 SwiftMD is the sole source repository. The root SwiftPM product remains a
 SwiftGFM wrapper without optional renderer dependencies. The block adapters,
-Node renderers and CLI are experimental. A separately generated adapter mirror
-is the selected distribution design, not a published package. The proposed
+Node renderers and CLI are maintained here. A separately generated adapter mirror
+is the selected distribution design. The proposed
 GFM 0.29 parser profile is still a design with a failing targeted gate, not a
 feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 
@@ -94,9 +93,9 @@ local mirror test remains mandatory for both pushes and pull requests.
 * Platform claims require actual execution of the relevant Core, adapters and
   CLI. SwiftGFM's cross-builds alone do not establish adapter platform support.
   Browser evidence is focused Chromium coverage, not a cross-browser audit.
-* Release packaging, independent SVG and resource-isolation review, and final
-  license/fixture provenance review remain open. A local archive test from an
-  earlier commit is evidence only for that commit and architecture.
+* An automated scan is not an independent expert audit of SVG or process
+  isolation, and the provenance inventory is not an independent legal opinion.
+  A local archive test is evidence only for its specific commit and architecture.
 
 The published GFM 0.29 examples and cmark-gfm's bundled fixture suite are
 separate corpora with separate provenance and licenses. Their documented

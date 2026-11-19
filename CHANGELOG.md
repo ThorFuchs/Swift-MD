@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (release candidate)
+## 1.0.0
 
 The SwiftMD Core API retains byte-identical SwiftGFM rendering for the same
 configuration and keeps optional renderer dependencies outside the root package.
@@ -9,11 +9,11 @@ Swift highlighting, KaTeX block MathML and Pele diagram SVG. Apple uses
 JavaScriptCore; Linux requires a trusted local Node executable. Precomputed
 MathML and SVG do not require browser-side JavaScript.
 
-This candidate documents its API, platform and security contracts and supplies
+This version documents its API, platform and security contracts and supplies
 reproducible source/notice and independent scanner checks. Inline and `$$` math,
 general sanitization, hard in-process resource limits and complete GFM
-conformance are outside the contract. The adapter mirror, its tag and the
-1.0.0 Core tag require the final release checks before publication.
+conformance are outside the contract. The adapter mirror is generated from the
+reviewed SwiftMD source commit and retains the renderer and license notices.
 
 ## 0.1.0
 

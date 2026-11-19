@@ -17,9 +17,9 @@ The adapter distribution includes the SwiftSoup library source as the private
 and an additional jsoup license reference accompany that source. SwiftSoup is
 not fetched as a separate dependency unless an application requests it itself.
 
-This branch prepares version 1.0.0. Its 1.0 installation examples require the
-corresponding Core and adapter tags to be published; the currently published
-release can be checked on the [releases page](https://github.com/ThorFuchs/Swift-MD/releases).
+Version 1.0.0 distributes the Core and its optional adapters as separate
+packages. Available versions are listed on the
+[releases page](https://github.com/ThorFuchs/Swift-MD/releases).
 
 ## Install the core library
 
@@ -39,7 +39,7 @@ print(result.html)
 
 ## Compile with all bundled renderers
 
-After the adapter mirror is published, add it to the package dependencies:
+Add the generated adapter mirror to the package dependencies:
 
 ```swift
 .package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "1.0.0")

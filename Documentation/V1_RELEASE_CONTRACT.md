@@ -1,13 +1,12 @@
-# SwiftMD 1.0 candidate contract
+# SwiftMD 1.0 contract
 
-This is the proposed release contract, not evidence that 1.0 has been tagged
-or published. The Core repository is the only development source; the optional
+This describes the 1.0 contract. The Core repository is the only development source; the optional
 SwiftPM adapter package is generated from a reviewed Core repository commit.
 
 ## API and rendering
 
 The `SwiftMD` Core product and the public Swift APIs in the generated adapter
-products are intended to follow semantic versioning from their respective
+products follow semantic versioning from their respective
 1.0.0 tags. Deprecations and breaking changes require the appropriate version
 change. Availability remains limited by the platform, runtime and trust
 requirements of each API. New upstream renderer versions and serialized output
@@ -60,5 +59,4 @@ those results. A release must publish its tested version, architecture and scope
 
 The [release preparation](RELEASE_PREPARATION.md) and
 [security and license review](SECURITY_LICENSE_REVIEW.md) record the current
-procedure and unresolved evidence. Publishing 1.0 requires a final decision on
-those issues; this file does not substitute for that decision.
+procedure and evidence. This contract is not a security audit or legal opinion.

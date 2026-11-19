@@ -177,8 +177,8 @@ the lockfile-pinned esbuild 0.28.2. Metafiles report no `node_modules` inputs;
 the IIFE includes esbuild's synthetic runtime helpers. The esbuild MIT license
 and Pele's MIT/ISC license are included beside the bundled files; see
 `ThirdPartyLicenses/Pele-THIRD-PARTY.md`. These observations do not establish
-the origin and licensing of every source fragment. Further third-party review
-remains necessary before publishing the bundled mirror.
+the origin and licensing of every source fragment. No independent legal opinion
+has been obtained for the resulting distribution.
 
 On 18 November, a search of Pele's pinned `src/` found that its common journey
 and timeline lexer explicitly describes rules ported from Mermaid. The exact
@@ -265,8 +265,8 @@ distribution's complete file set separately. Swift-Highlight 1.0.1 replaces
 identified fixture quotations, while its older tag and Git history still retain
 the originals. No statement here determines rights in those historic copies.
 
-Before a public release, obtain independent review of the SVG policy and
-deployment isolation, perform distribution-specific license/provenance review,
-verify a candidate built from the final commit on clean target systems, and
-recheck live vulnerability data and tag identities. Existing tests do not
-substitute for these gates.
+For a public release, review the SVG policy, deployment isolation and the
+distribution's license and provenance evidence, verify a candidate built from
+the final commit on clean target systems, and recheck live vulnerability data
+and tag identities. The selected independent automated scan is not an expert
+security audit; the provenance inventory is not an independent legal opinion.
