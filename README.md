@@ -83,6 +83,12 @@ client-side JavaScript. Highlighting needs a host stylesheet. See the
 [DocC documentation](https://thorfuchs.github.io/Swift-MD/documentation/swiftmd/)
 includes the core API, extension guide and security boundaries.
 
+## Experimental DOCX projection
+
+The source checkout includes an [experimental DOCX adapter](Adapters/SwiftMDDOCX/README.md)
+that projects the SwiftGFM AST into editable WordprocessingML. It is not part of
+the published 1.0.0 packages. Its documented fallbacks and errors apply.
+
 ## Local CLI
 
 ```sh

@@ -58,6 +58,17 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: swift test -j 4
+  docx:
+    runs-on: ubuntu-latest
+    container: swift:6.2.4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install independent ZIP and XML verifier runtime
+        run: apt-get update && apt-get install -y --no-install-recommends python3
+      - name: Build and test optional DOCX projection
+        run: |
+          SWIFTMDDOCX_TEST_OUTPUT=/tmp/swiftmd-example.docx swift test --package-path Adapters/SwiftMDDOCX -j 4
+          python3 Scripts/check-docx-fixture.py /tmp/swiftmd-example.docx
   linux-archive:
     runs-on: ubuntu-24.04
     steps:
