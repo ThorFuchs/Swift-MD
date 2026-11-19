@@ -120,8 +120,39 @@ was tested with the separate SwiftHTML commit
   `npm audit --omit=dev --ignore-scripts` reported zero known advisories at
   that time. These checks are not a legal or security audit.
 
-No Linux runtime test of this integration or hosted CI run has been completed.
-SwiftHTML's own-code license and public stable tag remain unresolved, and the
+## Linux ARM64 integration verification (19 November 2026)
+
+The separate SwiftHTML session tested SwiftMD commit
+`7b47a5a3c2660732fc408396ff79c3ea3370ac13` with SwiftHTML commit
+`8bc39e2bd950c89f79fcb006ec552edee0926a2e` from clean, local Git bundles.
+The host was an Apple Silicon Mac Studio; Colima used Apple's virtualization
+framework for a native ARM64 Ubuntu 24.04.4 VM with Linux kernel 6.8.0-117.
+Tests ran in an Ubuntu 24.04.5 container from the official Swift 6.2.4 image
+`sha256:3459518b2e723a7c363d0f8cfa44fc796c77ecd8c18e92fd10e6f92dd78c0b12`,
+with Swift 6.2.4 and Node 24.22.1. Node's downloaded distribution was checked
+against the official SHA-256 list. This was not x86 emulation.
+
+`Scripts/test-all.sh` completed successfully: 704 bundled cmark fixture
+expectations, 705 inputs compared against a separately built cmark-gfm C
+renderer at `27d942c8b0a62d192f616e5bf3578f4b6a89e180`, 22 Linux adapter
+tests using the real Node renderers, seven CLI tests, five Linux limit tests
+and 14 supervisor tests passed. The published
+GFM comparison retained its known baseline deviations; this is not a claim of
+complete GFM conformance. JavaScriptCore tests are not available on Linux.
+SwiftHTML separately passed 14 debug tests, 14 release tests, a release build
+and a release consumer on the same Linux ARM64 environment.
+
+The optimized CLI build (`-Xswiftc -no-whole-module-optimization`) and all
+seven CLI tests passed. Eight mirror-policy tests and `Scripts/test-distribution.py`
+passed, including separate version-based Core and integrated adapter consumers,
+all three real renderers and coexistence with an independently requested
+SwiftSoup package. The SwiftMD, SwiftHTML and mirror tags used by this test
+were synthetic, temporary and local to the container; no mirror was published.
+
+No hosted CI run has been completed for this integration. A normal container
+run does not establish the separately configured systemd/cgroup security
+boundary. No browser test was run in this Linux environment. SwiftHTML's
+own-code license and public stable tag remain unresolved, and the
 previously published 1.0.0 mirror still uses its original backend. The locally
 copied license resources help package applications preserve notices; they do
 not prove that every downstream static-binary distribution includes them.
