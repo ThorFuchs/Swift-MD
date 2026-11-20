@@ -15,9 +15,10 @@ let result = try MarkdownCompiler().render("# Hello, SwiftMD\n")
 print(result.html)
 ```
 
-Optional, separately built adapters add Swift syntax highlighting, KaTeX
-MathML, and Pele SVG. Node runs during compilation for the latter two; the
-resulting document does not need JavaScript to display those fragments.
+Optional adapters add Swift syntax highlighting, KaTeX MathML, Pele SVG and
+an experimental editable DOCX projection. Apple platforms use JavaScriptCore
+for KaTeX and Pele; Linux uses a configured local Node process. The resulting
+HTML needs no client-side JavaScript to display MathML or SVG.
 
 ## Topics
 

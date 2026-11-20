@@ -73,6 +73,10 @@ jobs:
         run: |
           SWIFTMDDOCX_TEST_OUTPUT=/tmp/swiftmd-example.docx swift test --package-path Adapters/SwiftMDDOCX -j 4
           python3 Scripts/check-docx-fixture.py /tmp/swiftmd-example.docx
+      - name: Check generated research DOCX examples
+        run: |
+          swift build --package-path Examples/DOCXGenerator -j 4
+          python3 Scripts/render-docx-examples.py --binary Examples/DOCXGenerator/.build/debug/GalleryDOCX --check
   macos-integration:
     runs-on: macos-15
     steps:

@@ -73,10 +73,23 @@ scripts and their notices are SwiftPM resources; Linux still requires Node.
 | Diagrams | A `mermaid` code fence | Pele on JavaScriptCore or Node | SVG |
 
 KaTeX and Pele run at compile time; embedded MathML and SVG require no
-client-side JavaScript. Highlighting needs a host stylesheet. See the
-[example gallery](Examples/README.md) for Markdown, actual HTML and screenshots.
+client-side JavaScript. Highlighting needs a host stylesheet.
 
-![Combined SwiftMD example](Examples/Images/05-combined.png)
+## Example gallery
+
+These independently written, fictional research papers combine GFM tables,
+inline and display equations, Swift code and Mermaid diagrams. The screenshots
+show the actual HTML with the gallery's own stylesheet and page JavaScript
+disabled. The corresponding experimental DOCX files contain editable text;
+math and Mermaid are retained as source, not Word equations or diagrams.
+
+| A Tiny Study of Indoor Light | Reproducible Analysis of a Small Dataset |
+| :---: | :---: |
+| [![Fictional light study rendered as HTML](Examples/Images/06-research-light.png)](Examples/Markdown/06-research-light.md) | [![Fictional data analysis rendered as HTML](Examples/Images/07-research-reproducibility.png)](Examples/Markdown/07-research-reproducibility.md) |
+| [Markdown](Examples/Markdown/06-research-light.md) · [HTML](Examples/HTML/06-research-light.html) · [Word](Examples/DOCX/06-research-light.docx) | [Markdown](Examples/Markdown/07-research-reproducibility.md) · [HTML](Examples/HTML/07-research-reproducibility.html) · [Word](Examples/DOCX/07-research-reproducibility.docx) |
+
+See the [complete gallery](Examples/README.md) for additional focused examples,
+regeneration instructions and the limits of each output format.
 
 [DocC documentation](https://thorfuchs.github.io/Swift-MD/documentation/swiftmd/)
 includes the core API, extension guide and security boundaries.

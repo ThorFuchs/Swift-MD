@@ -1,4 +1,4 @@
-# Integrated rendering prototype
+# Integrated rendering
 
 SwiftMD's root product remains the byte-preserving Core. The local adapter
 package now contains two experimental renderers over the same block processing
@@ -8,8 +8,9 @@ trusted renderer code/configuration and return HTML plus block diagnostics.
 This integration uses public SwiftHTML 0.1.1. The earlier 1.0.0 and 1.1.0
 adapter-mirror releases use the prior backend.
 
-`Scripts/generate-adapter-mirror.py --include-locked-renderers` additionally
-prepares an experimental `SwiftMDBundled` product in the generated mirror. It
+The published adapter mirror includes the experimental `SwiftMDBundled`
+product. `Scripts/generate-adapter-mirror.py --include-locked-renderers`
+generates that product from the source repository. It
 downloads the exact npm tarballs referenced by `Tools/NodeDependencies/package-lock.json`,
 checks their SHA-512 integrity, extracts only the original KaTeX and Pele
 renderer files and their license texts, and records their SHA-256 hashes and
