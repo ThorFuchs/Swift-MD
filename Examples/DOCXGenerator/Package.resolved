@@ -1,0 +1,15 @@
+{
+  "originHash" : "2a93d07fc102b7cbbda33214374d648a06f5d45fc619554f20f038834ac92177",
+  "pins" : [
+    {
+      "identity" : "swift-gfm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ThorFuchs/Swift-GFM.git",
+      "state" : {
+        "revision" : "9a4176be3bda0953f4ddb91ec63de77d1ad230fa",
+        "version" : "1.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}

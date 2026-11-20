@@ -3,7 +3,7 @@
 Add the core product with Swift Package Manager:
 
 ```swift
-.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "1.0.0")
+.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "1.1.0")
 ```
 
 Add `.product(name: "SwiftMD", package: "Swift-MD")` to a target, then:
@@ -20,6 +20,31 @@ SwiftGFM and supply a `MarkdownConfiguration` to the compiler. Rendering
 errors throw; baseline diagnostics are empty. Raw HTML and unsafe URLs are
 controlled by that configuration, and the output is not sanitized.
 
-The optional adapters and CLI currently build from a local source checkout;
-the separate adapter distribution mirror has not been published. See the
-repository README for a complete CLI example and the example gallery.
+## Add the renderers
+
+The optional products are distributed in the generated, read-only adapter
+mirror. Add the mirror alongside Core:
+
+```swift
+.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "1.2.0")
+```
+
+Add `.product(name: "SwiftMDBundled", package: "Swift-MD-Adapters")` to your
+target. The integrated API combines syntax highlighting, KaTeX and Pele:
+
+```swift
+import SwiftMDBundled
+
+let result = try SwiftMDIntegrated.render(
+    "Inline $x^2$ and a diagram:\n\n```mermaid\nflowchart LR\nA-->B\n```\n",
+    svgPrefix: "unique-page-id",
+    recognizeMath: true
+)
+print(result.html)
+for diagnostic in result.diagnostics { print(diagnostic.message) }
+```
+
+On Linux, also pass `nodeExecutable` with a trusted absolute path to Node.
+Apple platforms use JavaScriptCore. Each independently rendered fragment on
+the same page needs a distinct SVG prefix. See <doc:Extensions> for supported
+syntax and trust boundaries, and <doc:ExampleGallery> for real outputs.

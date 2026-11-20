@@ -1,0 +1,47 @@
+<h1>A Tiny Study of Indoor Light</h1>
+<p><strong>Illustrative research paper · fictional data</strong></p>
+<h2>Abstract</h2>
+<p>This small example explores how a workstation's distance from a window might
+relate to measured illuminance. The measurements below are invented to
+illustrate a reproducible Markdown document, not a scientific finding.</p>
+<h2>Methods</h2>
+<p>We compare three imagined positions using the mean of repeated readings. For
+readings <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>x</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">x_1, \ldots, x_n</annotation></semantics></math></span>, the sample mean is:</p>
+<span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mover accent="true"><mi>x</mi><mo>ˉ</mo></mover><mo>=</mo><mfrac><mn>1</mn><mi>n</mi></mfrac><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>x</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\bar{x} = \frac{1}{n} \sum_{i=1}^{n} x_i
+</annotation></semantics></math></span>
+<table>
+<thead>
+<tr>
+<th align="left">Position</th>
+<th align="right">Distance from window</th>
+<th align="right">Mean illuminance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">A</td>
+<td align="right">0.5 m</td>
+<td align="right">610 lx</td>
+</tr>
+<tr>
+<td align="left">B</td>
+<td align="right">1.5 m</td>
+<td align="right">410 lx</td>
+</tr>
+<tr>
+<td align="left">C</td>
+<td align="right">3.0 m</td>
+<td align="right">220 lx</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-swift"><span class="hljs-keyword">func</span> <span class="hljs-title-function">mean</span>(<span class="hljs-keyword">_</span> <span class="hljs-params">readings</span>: [<span class="hljs-type">Double</span>]) -&gt; <span class="hljs-type">Double</span> {
+    readings.reduce(<span class="hljs-number">0</span>, <span class="hljs-operator">+</span>) <span class="hljs-operator">/</span> <span class="hljs-type">Double</span>(readings.count)
+}
+</code></pre>
+<h2>Study workflow</h2>
+<svg id="swiftmd-example-06-research-light-1" xmlns="http://www.w3.org/2000/svg" class="pele pele-flowchart" viewBox="0 0 790 64" width="790" height="64" style="max-width:100%;height:auto;--_bg:var(--pele-bg,#fff);--_fg:var(--pele-fg,#1f1f1f);--_m:var(--pele-muted,#6e6e6e);--_l:var(--pele-line,#1f1f1f);--_s:var(--pele-surface,#f3f3f3);--_a:var(--pele-surface-alt,#e6e6e6);--_b:var(--pele-border,#8a8a8a);--_c:var(--pele-accent,#5b7bd5);color:var(--_fg);--_r:var(--pele-radius,4px);--_fm:var(--pele-font-mono,monospace);font:16px sans-serif;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;font-family:var(--pele-font,sans-serif)" fill="var(--_fg)" role="graphics-document document" aria-roledescription="flowchart"><g class="pele-edges" fill="none" stroke="var(--_l)" stroke-linecap="round"><g class="pele-edge" data-id="L_A_B_0"><path d="M166.72,32L207.72,32"/><path class="pele-marker" d="M214.72,32L206.72,35.36L206.72,28.64Z" fill="var(--_l)" stroke="none"/></g><g class="pele-edge" data-id="L_B_C_0"><path d="M368.1,32L409.1,32"/><path class="pele-marker" d="M416.1,32L408.1,35.36L408.1,28.64Z" fill="var(--_l)" stroke="none"/></g><g class="pele-edge" data-id="L_C_D_0"><path d="M569.47,32L610.47,32"/><path class="pele-marker" d="M617.47,32L609.47,35.36L609.47,28.64Z" fill="var(--_l)" stroke="none"/></g></g><g class="pele-nodes"><g class="pele-node pele-shape-rect" data-id="A" transform="translate(87.36,32)"><rect x="-79.36" y="-24" width="158.72" height="48" fill="var(--_s)" stroke="var(--_b)" style="rx:var(--_r)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Choose positions</text></g><g class="pele-node pele-shape-rect" data-id="B" transform="translate(291.41,32)"><rect x="-76.69" y="-24" width="153.38" height="48" fill="var(--_s)" stroke="var(--_b)" style="rx:var(--_r)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Record readings</text></g><g class="pele-node pele-shape-rect" data-id="C" transform="translate(492.78,32)"><rect x="-76.69" y="-24" width="153.38" height="48" fill="var(--_s)" stroke="var(--_b)" style="rx:var(--_r)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Compute means</text></g><g class="pele-node pele-shape-rect" data-id="D" transform="translate(699.48,32)"><rect x="-82.01" y="-24" width="164.02" height="48" fill="var(--_s)" stroke="var(--_b)" style="rx:var(--_r)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Review limitations</text></g></g></svg>
+<h2>Discussion</h2>
+<p>In this fictional example the mean decreases with distance. A real study would
+need a calibrated sensor, repeated days, controlled weather and uncertainty
+estimates before drawing conclusions.</p>
