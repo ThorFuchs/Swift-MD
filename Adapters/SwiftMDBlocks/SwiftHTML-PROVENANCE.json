@@ -1,6 +1,6 @@
 {
-  "tested_revision": "afe888a7a54d83118919ef640c87b06b7c16eb05",
+  "tested_revision": "54eb43255083dcfcb9beca6c519c56389e7baaa5",
   "public_repository": "https://github.com/ThorFuchs/Swift-HTML.git",
-  "public_version": "0.1.0",
+  "public_version": "0.1.1",
   "note": "Public tag verified against the tested release commit; adapter mirror release still requires its own review."
 }

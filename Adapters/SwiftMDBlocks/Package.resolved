@@ -1,5 +1,5 @@
 {
-  "originHash" : "9367716f4e3515362792e720cd9961d4f95365b3b99fafa498965b9d1d2675a1",
+  "originHash" : "3338f6e11fd7e22bcb7a624eb5155e9068ad77343631202b1fbc63ac61a15c15",
   "pins" : [
     {
       "identity" : "swift-gfm",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ThorFuchs/Swift-HTML.git",
       "state" : {
-        "revision" : "afe888a7a54d83118919ef640c87b06b7c16eb05",
-        "version" : "0.1.0"
+        "revision" : "54eb43255083dcfcb9beca6c519c56389e7baaa5",
+        "version" : "0.1.1"
       }
     }
   ],

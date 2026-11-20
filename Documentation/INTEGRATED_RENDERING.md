@@ -5,7 +5,7 @@ package now contains two experimental renderers over the same block processing
 and SVG validation: `SwiftMDCompiler` uses Node on macOS/Linux, and
 `SwiftMDJavaScriptCore` uses JavaScriptCore on Apple platforms. Both accept
 trusted renderer code/configuration and return HTML plus block diagnostics.
-This integration uses public SwiftHTML 0.1.0. The earlier 1.0.0 and 1.1.0
+This integration uses public SwiftHTML 0.1.1. The earlier 1.0.0 and 1.1.0
 adapter-mirror releases use the prior backend.
 
 `Scripts/generate-adapter-mirror.py --include-locked-renderers` additionally
@@ -38,7 +38,7 @@ The initializer also allows a renderer to be reused on separate pages. Never
 combine multiple outputs from the same fixed prefix on one page; use a distinct
 prefix for each separately rendered fragment.
 
-The adapter resolves public SwiftHTML 0.1.0, which contains the fixture-free
+The adapter resolves public SwiftHTML 0.1.1, which contains the fixture-free
 SwiftSoup 2.14.4 backend. A generated test mirror may also resolve an explicitly
 synthetic, local-only tag. A public mirror must pass its own release gates.
 KaTeX and Pele are bundled resources, not npm dependencies

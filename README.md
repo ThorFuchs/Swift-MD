@@ -12,7 +12,7 @@ process on Linux. The generated MathML and SVG are embedded in the HTML; their
 display does not require client-side JavaScript. See the security contract
 before using the adapters with untrusted input.
 
-The optional adapter package uses SwiftHTML 0.1.0 and its fixture-free
+The optional adapter package uses SwiftHTML 0.1.1 and its fixture-free
 SwiftSoup 2.14.4 backend. SwiftMD Core and the generated adapters are separate
 packages; see the [releases page](https://github.com/ThorFuchs/Swift-MD/releases)
 for published versions.
