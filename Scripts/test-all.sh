@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+swift package --package-path "$ROOT/Adapters/SwiftMDBlocks" resolve
+python3 "$ROOT/Scripts/check-swifthtml-checkout.py"
 NODE=${SWIFTMD_NODE:-$(command -v node)}
 : "${SWIFTMD_CMARK_REFERENCE:?Set SWIFTMD_CMARK_REFERENCE to the independently built pinned cmark-gfm executable}"
 test -x "$SWIFTMD_CMARK_REFERENCE" || { echo 'Reference renderer is not executable' >&2; exit 1; }
@@ -18,6 +20,7 @@ test -f "$SWIFTMD_KATEX_JS" && test -f "$SWIFTMD_PELE_GLOBAL_JS" || { echo 'Miss
 python3 "$ROOT/Scripts/analyze-published-gfm.py" --reference "$SWIFTMD_CMARK_REFERENCE"
 python3 "$ROOT/Scripts/test-gfm029-profile.py" --candidate "$ROOT/Tools/SwiftMDCLI/.build/debug/swift-md" --reference "$SWIFTMD_CMARK_REFERENCE" --expect-baseline
 python3 "$ROOT/Scripts/test-cli.py"
+SWIFTMD_CLI="$ROOT/Tools/SwiftMDCLI/.build/debug/swift-md" python3 "$ROOT/Scripts/test-markdown-math-cli.py"
 if [ "$(uname -s)" = Linux ]; then
   python3 "$ROOT/Scripts/test-linux-limits.py"
   python3 "$ROOT/Scripts/test-linux-supervisor.py"

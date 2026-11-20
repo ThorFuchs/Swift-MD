@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0
+
+SwiftGFM 1.1.0 supplies opt-in Markdown mathematics. Set `recognizeMath: true`
+on an integrated renderer, or pass `--markdown-math` to the CLI, with KaTeX
+configured. Existing calls keep their original behavior: dollar-delimited text
+remains ordinary Markdown and configured `math` fences still render. Parser
+limitations and diagnostics are described in the integrated rendering guide.
+
+## 1.0.1
+
+The experimental `SwiftMDDOCX` adapter projects the SwiftGFM AST to editable
+WordprocessingML; it is distributed in the generated adapter package. Word
+compatibility mode is explicitly configured. The Core runtime was unchanged.
+
 ## 1.0.0
 
 The SwiftMD Core API retains byte-identical SwiftGFM rendering for the same

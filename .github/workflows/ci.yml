@@ -18,6 +18,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Resolve and verify the pinned SwiftHTML release
+        run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
       - name: Exercise Linux supervisor process boundaries
         run: |
           python3 Scripts/test-linux-supervisor.py \
@@ -69,12 +73,35 @@ jobs:
         run: |
           SWIFTMDDOCX_TEST_OUTPUT=/tmp/swiftmd-example.docx swift test --package-path Adapters/SwiftMDDOCX -j 4
           python3 Scripts/check-docx-fixture.py /tmp/swiftmd-example.docx
+  macos-integration:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.22.1'
+      - name: Test ordinary macOS builds and real renderers
+        run: |
+          uname -m
+          swift --version
+          npm ci --ignore-scripts --prefix Tools/NodeDependencies
+          export SWIFTMD_NODE="$(command -v node)"
+          export SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex"
+          export SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js"
+          export SWIFTMD_KATEX_JS="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex/dist/katex.js"
+          export SWIFTMD_PELE_GLOBAL_JS="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.global.js"
+          swift test --package-path Adapters/SwiftMDBlocks --build-system native -j 4
+          swift test --package-path Adapters/SwiftMDDOCX --build-system native -j 4
   linux-archive:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Resolve and verify the pinned SwiftHTML release
+        run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -88,7 +115,7 @@ jobs:
             "$RUNNER_TEMP/archive-test/test/Tools/NodeDependencies"
           tar -xzf "$RUNNER_TEMP/swiftmd-candidate.tar.gz" -C "$RUNNER_TEMP/archive-test"
           cp "$(command -v node)" "$RUNNER_TEMP/archive-test/node"
-          cp Scripts/test-cli.py "$RUNNER_TEMP/archive-test/test/Scripts/"
+          cp Scripts/test-cli.py Scripts/test-markdown-math-cli.py "$RUNNER_TEMP/archive-test/test/Scripts/"
           cp Tools/SwiftMDCLI/Package.resolved "$RUNNER_TEMP/archive-test/test/Tools/SwiftMDCLI/"
           cp -a Tools/NodeDependencies/node_modules "$RUNNER_TEMP/archive-test/test/Tools/NodeDependencies/"
       - name: Test candidate on clean Ubuntu without Swift
@@ -101,8 +128,15 @@ jobs:
             sha256sum -c SHA256SUMS
             test -f licenses/SwiftSoup-MIT.txt
             test -f licenses/SwiftSoup-jsoup-MIT.txt
+            test -f licenses/SwiftHTML-Apache-2.0.txt
+            test -f licenses/SwiftHTML-SwiftSoup-2.14.4-MIT.txt
+            test -f licenses/SwiftHTML-LRUCache-MIT.txt
             if ldd bin/swift-md | grep "not found"; then exit 1; fi
             SWIFTMD_NODE=/work/node SWIFTMD_CLI=/work/SwiftMD/bin/swift-md python3 /work/test/Scripts/test-cli.py
+            SWIFTMD_NODE=/work/node SWIFTMD_CLI=/work/SwiftMD/bin/swift-md \
+              SWIFTMD_KATEX=/work/test/Tools/NodeDependencies/node_modules/katex \
+              SWIFTMD_PELE=/work/test/Tools/NodeDependencies/node_modules/pele/dist/pele.js \
+              python3 /work/test/Scripts/test-markdown-math-cli.py
           '
   integration:
     runs-on: ubuntu-latest
@@ -111,6 +145,12 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Install integration prerequisites
+        run: apt-get update && apt-get install -y --no-install-recommends cmake build-essential curl python3 util-linux
+      - name: Resolve and verify the pinned SwiftHTML release
+        run: |
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -118,8 +158,6 @@ jobs:
         run: npm ci --ignore-scripts --prefix Tools/NodeDependencies
       - name: Build independent cmark-gfm reference
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends cmake build-essential curl python3 util-linux
           git clone --no-checkout https://github.com/github/cmark-gfm.git /tmp/cmark-reference
           git -C /tmp/cmark-reference checkout --detach 27d942c8b0a62d192f616e5bf3578f4b6a89e180
           cmake -S /tmp/cmark-reference -B /tmp/cmark-reference/build -DCMARK_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
@@ -130,14 +168,13 @@ jobs:
         run: Scripts/test-all.sh
       - name: Check committed example HTML
         run: python3 Scripts/render-examples.py --binary Tools/SwiftMDCLI/.build/debug/swift-md --node "$(command -v node)" --check
-      - name: Verify vendored SwiftSoup against upstream source only
+      - name: Verify SwiftHTML's vendored source against upstream source only
         run: |
-          git clone --filter=blob:none --no-checkout --depth 1 --branch 2.11.3 https://github.com/scinfu/SwiftSoup.git /tmp/swiftsoup-reference
+          git clone --filter=blob:none --no-checkout --depth 1 --branch 2.14.4 https://github.com/scinfu/SwiftSoup.git /tmp/swiftsoup-reference
           git -C /tmp/swiftsoup-reference sparse-checkout set --cone Sources
-          git -C /tmp/swiftsoup-reference checkout --detach d86f244ed497d48012782e2f59c985a55e77b3f5
+          git -C /tmp/swiftsoup-reference checkout --detach 8397a860c6955924b584c50c5265c6aac0970015
           test ! -e /tmp/swiftsoup-reference/Tests-macOS/corpus
-          python3 Scripts/audit-vendored-swiftsoup.py --upstream-source /tmp/swiftsoup-reference
-          python3 Scripts/test-vendored-swiftsoup.py
+          python3 Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML/Scripts/verify-upstream.py --reference /tmp/swiftsoup-reference
       - name: Verify pinned notices, fixtures, and npm archives
         run: |
           curl --fail --silent --show-error --location \
@@ -162,17 +199,27 @@ jobs:
           SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex" \
           SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
           python3 Scripts/test-distribution.py
-      # Only an advertised branch commit can be checked against public refs;
-      # the synthetic local mirror gate above still runs on pull requests.
+      # A compatible public Core tag must exist before this publication gate
+      # can run. The synthetic local mirror gate above still runs on every PR.
       - name: Test mirror with verified public dependencies
-        if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && !github.event.repository.private }}
+        if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && !github.event.repository.private && vars.SWIFTMD_PUBLIC_CORE_VERSION != '' }}
+        env:
+          SWIFTMD_PUBLIC_CORE_VERSION: ${{ vars.SWIFTMD_PUBLIC_CORE_VERSION }}
         run: |
+          SWIFTHTML_URL="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_repository"] or "")')"
+          SWIFTHTML_VERSION="$(python3 -c 'import json; print(json.load(open("Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json"))["public_version"] or "")')"
+          test -n "$SWIFTHTML_URL" && test -n "$SWIFTHTML_VERSION" || { echo 'Public SwiftHTML version is not configured; publication gate blocked' >&2; exit 1; }
           CANDIDATE="$(mktemp -d)/mirror"
           python3 Scripts/generate-adapter-mirror.py "$CANDIDATE" \
-            --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+            --core-version "$SWIFTMD_PUBLIC_CORE_VERSION" --gfm-version 1.1.0 --highlight-version 1.0.1 \
+            --swifthtml-url "$SWIFTHTML_URL" --swifthtml-version "$SWIFTHTML_VERSION" \
             --verify-public-dependencies --include-locked-renderers
           python3 Scripts/test-public-candidate.py "$CANDIDATE" --node "$(command -v node)"
       - name: Build and test Linux release CLI
         run: |
           swift build --package-path Tools/SwiftMDCLI -c release -j 4 -Xswiftc -no-whole-module-optimization
           SWIFTMD_NODE="$(command -v node)" SWIFTMD_CLI="$GITHUB_WORKSPACE/Tools/SwiftMDCLI/.build/release/swift-md" python3 Scripts/test-cli.py
+          SWIFTMD_NODE="$(command -v node)" SWIFTMD_CLI="$GITHUB_WORKSPACE/Tools/SwiftMDCLI/.build/release/swift-md" \
+            SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex" \
+            SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js" \
+            python3 Scripts/test-markdown-math-cli.py

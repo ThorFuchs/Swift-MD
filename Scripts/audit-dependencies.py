@@ -33,8 +33,6 @@ NOTICES = (
     ('Swift-Highlight', 'swift-highlight', 'THIRD_PARTY_NOTICES.md', 'SwiftHighlight-THIRD-PARTY.md'),
     ('Swift-Highlight', 'swift-highlight', 'Licenses/HighlightKit-MIT.txt', 'SwiftHighlight-HighlightKit-MIT.txt'),
     ('Swift-Highlight', 'swift-highlight', 'Licenses/highlight.js-BSD-3-Clause.txt', 'SwiftHighlight-highlight.js-BSD-3-Clause.txt'),
-    ('LRUCache', 'lrucache', 'LICENSE.md', 'LRUCache-MIT.txt'),
-    ('swift-atomics', 'swift-atomics', 'LICENSE.txt', 'swift-atomics-Apache-2.0.txt'),
 )
 NPM_NOTICES = {'katex': 'KaTeX-MIT.txt', 'pele': 'Pele-MIT.txt', 'commander': 'commander-MIT.txt'}
 
@@ -69,7 +67,28 @@ def main():
     cli_pins = {p['identity']: p['state']['revision'] for p in json.loads(
         (ROOT / 'Tools/SwiftMDCLI/Package.resolved').read_text())['pins']}
     require(cli_pins == pins, 'CLI and adapter lockfiles must resolve the same dependencies without SwiftSoup')
-    subprocess.run([sys.executable, str(ROOT / 'Scripts/audit-vendored-swiftsoup.py')], check=True)
+    provenance = json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())
+    html = CHECKOUTS / 'Swift-HTML'
+    revision = provenance['tested_revision']
+    require(git(html, 'rev-parse', 'HEAD').decode().strip() == revision, 'SwiftHTML checkout differs from tested revision')
+    require(not git(html, 'status', '--porcelain', '--untracked-files=all', '--',
+                    'Package.swift', 'Sources', 'Vendor/SwiftSoup', 'Scripts/verify-upstream.py').strip(),
+            'SwiftHTML package source contains uncommitted changes')
+    subprocess.run([sys.executable, str(html / 'Scripts/verify-upstream.py')], check=True)
+    subprocess.run([sys.executable, str(html / 'Scripts/verify-notices.py')], check=True)
+    resources = ROOT / 'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Resources'
+    soup_license = git(html, 'show', revision + ':Vendor/SwiftSoup/LICENSE')
+    require(soup_license == (NOTICE / 'SwiftHTML-SwiftSoup-2.14.4-MIT.txt').read_bytes() ==
+            (resources / 'SwiftSoup-2.14.4-LICENSE.txt').read_bytes(), 'SwiftHTML SwiftSoup notice mismatch')
+    lru_source = git(html, 'show', revision + ':Vendor/SwiftSoup/Sources/LRUCache.swift')
+    require('Copyright © 2021 Nick Lockwood'.encode() in lru_source and
+            b'Permission is hereby granted, free of charge' in lru_source, 'SwiftHTML LRUCache license marker changed')
+    require(git(html, 'show', revision + ':Sources/SwiftHTML/Resources/ThirdPartyLicenses/LRUCache-MIT.txt') ==
+            (NOTICE / 'SwiftHTML-LRUCache-MIT.txt').read_bytes() == (resources / 'LRUCache-MIT.txt').read_bytes(),
+            'SwiftHTML LRUCache notice mismatch')
+    require(git(html, 'show', revision + ':LICENSE') == (NOTICE / 'SwiftHTML-Apache-2.0.txt').read_bytes() ==
+            (resources / 'SwiftHTML-Apache-2.0.txt').read_bytes(), 'SwiftHTML Apache license mismatch')
+    print(f'SwiftHTML resolved revision and three license resources: {revision}; SwiftMD release review remains required')
 
     for name, digest in FIXTURE_HASHES.items():
         content = (FIXTURES / name).read_bytes()
