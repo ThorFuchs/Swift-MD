@@ -1,5 +1,31 @@
 # Public release preparation
 
+## Optional Markdown mathematics candidate
+
+The normal build resolves the public SwiftGFM 1.1.0 release and exposes its
+math-aware API through an explicit opt-in. Before publishing, re-run the full
+Core/reference suite, real Node and JavaScriptCore adapters, strict CLI and
+browser tests, Linux runtime tests, and fresh public versioned consumers for
+the final SwiftMD and generated-mirror commits. Re-run the automated security
+scan with coverage of the new SwiftGFM C bridge and SwiftMD integration; the
+local Clang analysis and ASan checks do not replace that gate.
+The SwiftMD security workflow prepares a marked local-only mirror with a
+disposable Core tag for pre-release analysis, so scanning the candidate does
+not require a release tag to exist first. It separately builds an archived
+copy of the exact resolved SwiftHTML sources and requires key parser files in
+the CodeQL extraction report. This scan mirror is never a release artifact;
+the public-dependency and provenance gates still apply before publication.
+
+The math profile recognizes inline and display math outside code, image
+descriptions and GFM table cells. Unsafe raw HTML cannot be combined with the
+math-aware parser: document-level parser errors produce escaped source and a
+diagnostic, and strict CLI mode emits no output. Its delimiter/currency rules
+are intentionally limited and do not claim universal Markdown-math parity.
+An additive public math API generally calls for a SwiftMD minor release; choose
+the final version after the compatibility review. The implementation, tested
+commits and platform boundaries are documented in
+[integrated rendering](INTEGRATED_RENDERING.md).
+
 The 1.0 API, deployment and platform boundaries are recorded in the
 [release contract](V1_RELEASE_CONTRACT.md) and
 [security contract](SECURITY_CONTRACT.md).
@@ -21,7 +47,9 @@ feature: see [GFM029_PROFILE.md](GFM029_PROFILE.md).
 absolute path to Node. It fetches the lockfile-pinned KaTeX and Pele archives
 and verifies their SHA-512 integrity while generating the test mirror. It creates
 disposable local Git repositories, synthetic `1.0.0` tags for SwiftMD and its
-generated mirror, and fresh version-based consumers. It never creates
+generated mirror, and fresh version-based consumers using the real public
+SwiftHTML release. The resolved SwiftHTML checkout must match the release revision in
+`Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json`. It never creates
 tags in the source repository or publishes a mirror. The mirror is generated
 with `--local-test` and is marked unpublishable. The gate resolves the actual
 public SwiftGFM and Swift-Highlight versions from the committed lockfile, checks
@@ -37,11 +65,13 @@ SWIFTMD_NODE="$(command -v node)" \
 python3 Scripts/test-distribution.py
 ```
 
-The integration CI job runs this gate; it is distinct from the full test suite
-in `Scripts/test-all.sh`. Synthetic local tags do not demonstrate that SwiftMD
-or its adapter mirror is publicly available. Before publication, verify each
-public tag, its commit, dependency accessibility, mirror provenance and the
-distribution's licenses again, then test against the actual release identities.
+This gate is distinct from `Scripts/test-all.sh`. Synthetic local tags do not
+demonstrate a public SwiftHTML release. SwiftHTML 0.1.0 is public; the existing
+SwiftMD 1.0.0 mirror uses the prior backend, while this integration is local
+only. The candidate's own
+code is Apache-2.0, with retained MIT notices for its bundled dependencies;
+review the actual distributed notices before publication. Verify each public tag, its commit,
+dependency accessibility, mirror provenance and distribution licenses again.
 
 The generator requires exactly one mode: `--local-test` explicitly marks its
 output unpublishable and permits `file://` URLs; `--verify-public-dependencies`
@@ -55,28 +85,33 @@ to publish. `MIRROR-ORIGIN.json` records the checks and explicitly retains
 `release_review_required: true`. Containerized Git operations trust only the
 explicit source checkout for each invocation and do not modify global config.
 
-For a reviewed, publicly advertised source commit, generate a local candidate
-and test it against the real public SwiftPM versions:
+For a disposable local test, `Scripts/test-distribution.py` verifies the public
+SwiftHTML tag but keeps the generated mirror explicitly local. Public candidate generation requires
+explicit `--swifthtml-url` and `--swifthtml-version` values and is fail-closed
+if `public_repository` or `public_version` is unset in the provenance file.
+A public-dependency candidate can be generated with:
 
 ```sh
 python3 Scripts/generate-adapter-mirror.py /tmp/swiftmd-candidate \
-  --core-version 0.1.0 --gfm-version 1.0.1 --highlight-version 1.0.1 \
+  --core-version "$VERIFIED_SWIFTMD_CORE_VERSION" --gfm-version 1.1.0 --highlight-version 1.0.1 \
+  --swifthtml-url "$VERIFIED_SWIFTHTML_URL" --swifthtml-version "$VERIFIED_SWIFTHTML_VERSION" \
   --verify-public-dependencies --include-locked-renderers
 python3 Scripts/test-public-candidate.py /tmp/swiftmd-candidate --node "$(command -v node)"
 ```
 
-The latter creates a disposable synthetic tag for the mirror only. Core and
-all four Swift upstream dependencies resolve from their real public tags and are checked
-against the verified revisions. On a public branch push, the Linux integration
-job runs this additional check; pull requests explicitly skip it because their
-merge commits need not be advertised branches or tags. The separate synthetic
-local mirror test remains mandatory for both pushes and pull requests.
+The latter creates a disposable synthetic tag for the mirror only. Core,
+SwiftGFM, Swift-Highlight and SwiftHTML must resolve from verified public tags.
+Set `SWIFTMD_PUBLIC_CORE_VERSION` in the repository only when a compatible
+public Core tag is available; the public-dependency CI gate uses that value.
+Hosted jobs resolve the pinned public SwiftHTML release; they are not release
+evidence for this branch until they run for its actual commit. The separate
+synthetic local mirror test remains mandatory.
 
 ## Dependencies and current boundaries
 
-* SwiftGFM 1.0.1 is public and resolves to commit
-  `2cb9450cf755858d338525fe64081b5f04864a2d`. Its annotated tag is unsigned;
-  the tag and commit must be checked again before a real release. It is a
+* SwiftGFM 1.1.0 is public and resolves to commit
+  `9a4176be3bda0953f4ddb91ec63de77d1ad230fa`. The tag and commit must be
+  checked again before a real release. It is a
   Swift wrapper around C, and its parser output is not a sanitizer or a claim
   of full GFM conformance.
 * Swift-Highlight 1.0.1 is public and resolves to commit

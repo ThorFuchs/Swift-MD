@@ -12,19 +12,15 @@ process on Linux. The generated MathML and SVG are embedded in the HTML; their
 display does not require client-side JavaScript. See the security contract
 before using the adapters with untrusted input.
 
-The adapter distribution includes the SwiftSoup library source as the private
-`SwiftMDSoup` module, without SwiftSoup's test fixtures. Its original MIT notice
-and an additional jsoup license reference accompany that source. SwiftSoup is
-not fetched as a separate dependency unless an application requests it itself.
-
-Version 1.0.0 distributes the Core and its optional adapters as separate
-packages. Available versions are listed on the
-[releases page](https://github.com/ThorFuchs/Swift-MD/releases).
+The optional adapter package uses SwiftHTML 0.1.0 and its fixture-free
+SwiftSoup 2.14.4 backend. SwiftMD Core and the generated adapters are separate
+packages; see the [releases page](https://github.com/ThorFuchs/Swift-MD/releases)
+for published versions.
 
 ## Install the core library
 
 ```swift
-.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "1.0.0")
+.package(url: "https://github.com/ThorFuchs/Swift-MD.git", from: "1.1.0")
 ```
 
 Add `.product(name: "SwiftMD", package: "Swift-MD")` to your target.
@@ -42,7 +38,7 @@ print(result.html)
 Add the generated adapter mirror to the package dependencies:
 
 ```swift
-.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "1.0.0")
+.package(url: "https://github.com/ThorFuchs/Swift-MD-Adapters.git", from: "1.2.0")
 ```
 
 Add `.product(name: "SwiftMDBundled", package: "Swift-MD-Adapters")` to the
@@ -55,7 +51,8 @@ import SwiftMDBundled
 let result = try SwiftMDIntegrated.render(
     markdown,
     svgPrefix: "unique-page-id",
-    nodeExecutable: "/trusted/absolute/path/to/node" // Linux; omit on Apple
+    nodeExecutable: "/trusted/absolute/path/to/node", // Linux; omit on Apple
+    recognizeMath: true // opt in to inline and display Markdown math
 )
 print(result.html)
 for diagnostic in result.diagnostics { print(diagnostic.message) }
@@ -71,6 +68,7 @@ scripts and their notices are SwiftPM resources; Linux still requires Node.
 | --- | --- | --- | --- |
 | GFM | Tables, task lists, autolinks and strikethrough | SwiftGFM / cmark-gfm | HTML |
 | Syntax highlighting | A supported language code fence | Swift-Highlight | HTML with CSS classes |
+| Markdown mathematics | `$...$` inline and `$$` delimiter lines, opt-in | KaTeX on JavaScriptCore or Node | MathML |
 | Block mathematics | A `math` code fence | KaTeX on JavaScriptCore or Node | MathML |
 | Diagrams | A `mermaid` code fence | Pele on JavaScriptCore or Node | SVG |
 
@@ -86,8 +84,9 @@ includes the core API, extension guide and security boundaries.
 ## Experimental DOCX projection
 
 The source checkout includes an [experimental DOCX adapter](Adapters/SwiftMDDOCX/README.md)
-that projects the SwiftGFM AST into editable WordprocessingML. It is not part of
-the published 1.0.0 packages. Its documented fallbacks and errors apply.
+that projects the SwiftGFM AST into editable WordprocessingML. Add the
+`SwiftMDDOCX` product from the adapter package; its documented fallbacks and
+errors apply.
 
 ## Local CLI
 
@@ -111,9 +110,11 @@ Both executable and module paths must be trusted absolute paths. Node 26.5.0 was
 used in the present local test; the lockfile requires Node >=22.12.0 for its
 `commander` dependency. See [adapter documentation](Adapters/SwiftMDBlocks/README.md).
 
-`math` and `mermaid` code fences opt into the respective renderer. `$$` block
-syntax and inline math are not implemented: SwiftGFM parses those as ordinary
-Markdown, so adding them correctly requires parser integration. `--unsafe-html`
+Pass `--markdown-math` alongside
+the KaTeX options to recognize `$...$` and `$$...$$`; it is disabled by
+default, including when KaTeX is configured for `math` fences. The equivalent
+Swift API option is `recognizeMath: true`. See the [math profile](Documentation/INTEGRATED_RENDERING.md)
+for syntax limitations and error handling. `--unsafe-html`
 explicitly enables raw HTML and unsafe links; neither it nor ordinary rendering
 is a sanitizer. Extension renderers and host CSS are separate trust boundaries.
 The Node adapters themselves enforce no hard process time, memory or live

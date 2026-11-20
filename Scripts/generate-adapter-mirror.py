@@ -17,10 +17,11 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PATHS = ['Adapters/SwiftMDDOCX/Sources', 'Adapters/SwiftMDDOCX/Tests', 'Adapters/SwiftMDDOCX/README.md',
-         'Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests', 'Adapters/SwiftMDBlocks/Vendor',
+         'Adapters/SwiftMDBlocks/Sources', 'Adapters/SwiftMDBlocks/Tests', 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json',
          'Adapters/SwiftMDBlocks/README.md', 'Adapters/SwiftMDBlocks/MIRROR_README.md', 'Tools/SwiftMDCLI/Sources',
          'Tools/NodeDependencies/package.json', 'Tools/NodeDependencies/package-lock.json',
          'Scripts/run-linux-constrained.sh', 'Scripts/run-linux-supervised.py',
@@ -56,6 +57,10 @@ def public_tag(url, version):
     return refs.get(name + '^{}', refs[name])
 
 
+def swifthtml_provenance():
+    return json.loads((ROOT / 'Adapters/SwiftMDBlocks/SwiftHTML-PROVENANCE.json').read_text())
+
+
 def core_matches_published_runtime(core, commit):
     """Allow DocC-only edits; the manifest and all other Core files must match."""
     if git('rev-parse', core + ':Package.swift') != git('rev-parse', commit + ':Package.swift'):
@@ -65,6 +70,11 @@ def core_matches_published_runtime(core, commit):
                for path in changes.split(b'\0') if path)
 
 def verify_public_dependencies(args, commit):
+    html = swifthtml_provenance()
+    if not html['public_repository'] or not html['public_version']:
+        raise ValueError('SwiftHTML has no verified public stable release; mirror publication is blocked')
+    if args.swifthtml_url != html['public_repository'] or args.swifthtml_version != html['public_version']:
+        raise ValueError('SwiftHTML URL or version differs from the approved release provenance')
     canonical = ('https://github.com/ThorFuchs/Swift-MD.git',
                  'https://github.com/ThorFuchs/Swift-GFM.git',
                  'https://github.com/ThorFuchs/Swift-Highlight.git')
@@ -78,13 +88,10 @@ def verify_public_dependencies(args, commit):
     checks = (
         ('swift-gfm', args.gfm_url, args.gfm_version),
         ('swift-highlight', args.highlight_url, args.highlight_version),
-        ('lrucache', 'https://github.com/nicklockwood/LRUCache.git', '1.3.0'),
-        ('swift-atomics', 'https://github.com/apple/swift-atomics.git', '1.3.1'),
     )
     verified = {}
-    soup = json.loads((ROOT / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup/UPSTREAM.json').read_text())
-    if 'swiftsoup' in pins or public_tag(soup['upstream_repository'], soup['upstream_version']) != soup['upstream_commit']:
-        raise ValueError('vendored SwiftSoup source does not match the public tag or remains a remote dependency')
+    if 'swiftsoup' in pins:
+        raise ValueError('SwiftSoup must not remain a remote adapter dependency')
     for identity, url, version in checks:
         pin = pins[identity]
         if 'version' in pin and pin['version'] != version:
@@ -93,6 +100,12 @@ def verify_public_dependencies(args, commit):
         if revision != pin['revision']:
             raise ValueError(f'{identity}: public tag differs from tested lockfile commit')
         verified[identity] = {'url': url, 'version': version, 'revision': revision}
+    html_revision = public_tag(args.swifthtml_url, args.swifthtml_version)
+    if html_revision != html['tested_revision']:
+        raise ValueError('SwiftHTML public tag differs from the tested revision')
+    if pins.get('swift-html', {}).get('version') != args.swifthtml_version or pins.get('swift-html', {}).get('revision') != html_revision:
+        raise ValueError('SwiftHTML public tag differs from the adapter lockfile')
+    verified['swift-html'] = {'url': args.swifthtml_url, 'version': args.swifthtml_version, 'revision': html_revision}
     core = public_tag(args.core_url, args.core_version)
     refs = public_refs(args.core_url, 'refs/heads/*', 'refs/tags/*')
     if commit not in refs.values():
@@ -113,9 +126,11 @@ def main():
     parser.add_argument('--core-version', required=True)
     parser.add_argument('--gfm-version', required=True)
     parser.add_argument('--highlight-version', required=True)
+    parser.add_argument('--swifthtml-version', required=True)
     parser.add_argument('--core-url', default='https://github.com/ThorFuchs/Swift-MD.git')
     parser.add_argument('--gfm-url', default='https://github.com/ThorFuchs/Swift-GFM.git')
     parser.add_argument('--highlight-url', default='https://github.com/ThorFuchs/Swift-Highlight.git')
+    parser.add_argument('--swifthtml-url', required=True)
     parser.add_argument('--local-test', action='store_true')
     parser.add_argument('--verify-public-dependencies', action='store_true',
                         help='check public tags, lockfile commits and published Core compatibility')
@@ -124,19 +139,22 @@ def main():
     args = parser.parse_args()
     if args.local_test == args.verify_public_dependencies:
         parser.error('choose exactly one of --local-test and --verify-public-dependencies')
-    for version in (args.core_version, args.gfm_version, args.highlight_version):
+    for version in (args.core_version, args.gfm_version, args.highlight_version, args.swifthtml_version):
         if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version):
             parser.error('versions must be stable numeric major.minor.patch versions')
-    for url in (args.core_url, args.gfm_url, args.highlight_url):
+    for url in (args.core_url, args.gfm_url, args.highlight_url, args.swifthtml_url):
         if not (url.startswith('https://') or (args.local_test and url.startswith('file:///'))):
             parser.error('dependencies require HTTPS; file URLs require --local-test')
+    if Path(unquote(urlsplit(args.swifthtml_url).path)).name.removesuffix('.git').lower() != 'swift-html':
+        parser.error('SwiftHTML URL must identify the Swift-HTML package')
     destination = args.destination.resolve()
     if destination.exists(): parser.error('destination already exists')
     if git('status', '--porcelain', '--untracked-files=all').strip():
         parser.error('source checkout must be clean, including untracked files')
-    subprocess.run([sys.executable, str(ROOT / 'Scripts/audit-vendored-swiftsoup.py')], check=True)
     commit = git('rev-parse', 'HEAD').decode().strip()
     verified = verify_public_dependencies(args, commit) if args.verify_public_dependencies else {}
+    if args.local_test and public_tag(args.swifthtml_url, args.swifthtml_version) != swifthtml_provenance()['tested_revision']:
+        raise ValueError('local SwiftHTML test tag differs from the tested revision')
     # Archive contains committed files only; no symlinks or traversal are accepted.
     archive = git('archive', '--format=tar', commit, '--', *PATHS)
     renderer_resources = {}
@@ -215,13 +233,11 @@ let package = Package(
         .package(url: CORE_URL, exact: CORE_VERSION),
         .package(url: GFM_URL, exact: GFM_VERSION),
         .package(url: HIGHLIGHT_URL, exact: HIGHLIGHT_VERSION),
-        .package(url: "https://github.com/nicklockwood/LRUCache.git", exact: "1.3.0"),
-        .package(url: "https://github.com/apple/swift-atomics.git", exact: "1.3.1"),
+        .package(url: SWIFTHTML_URL, exact: SWIFTHTML_VERSION),
     ],
     targets: [
         .target(name: "SwiftMDDOCX", dependencies: [.product(name: "SwiftGFM", package: "Swift-GFM")], path: "Adapters/SwiftMDDOCX/Sources/SwiftMDDOCX"),
-        .target(name: "SwiftMDSoup", dependencies: [.product(name: "LRUCache", package: "LRUCache"), .product(name: "Atomics", package: "swift-atomics")], path: "Adapters/SwiftMDBlocks/Vendor/SwiftSoup", exclude: ["UPSTREAM.json"], sources: ["Sources"], resources: [.copy("LICENSE"), .copy("JSOUP-LICENSE.txt")], swiftSettings: [.swiftLanguageMode(.v5)]),
-        .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), "SwiftMDSoup"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks"),
+        .target(name: "SwiftMDBlocks", dependencies: [.product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftHTML", package: "Swift-HTML"), .product(name: "SwiftGFM", package: "Swift-GFM")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks", resources: [.copy("Resources/SwiftSoup-2.14.4-LICENSE.txt"), .copy("Resources/LRUCache-MIT.txt"), .copy("Resources/SwiftHTML-Apache-2.0.txt")]),
         .target(name: "SwiftMDHighlight", dependencies: ["SwiftMDBlocks", .product(name: "SwiftHighlight", package: "Swift-Highlight"), .product(name: "SwiftHighlightHTML", package: "Swift-Highlight")], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDHighlight"),
         .target(name: "SwiftMDKaTeXNode", dependencies: ["SwiftMDBlocks"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDKaTeXNode"),
         .target(name: "SwiftMDPeleNode", dependencies: ["SwiftMDBlocks", "SwiftMDKaTeXNode"], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDPeleNode"),
@@ -230,20 +246,21 @@ let package = Package(
         BUNDLED_TARGET
         .executableTarget(name: "SwiftMDCLI", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", .product(name: "SwiftMD", package: "Swift-MD"), .product(name: "SwiftGFM", package: "Swift-GFM")], path: "Tools/SwiftMDCLI/Sources/SwiftMDCLI"),
         .testTarget(name: "SwiftMDDOCXTests", dependencies: ["SwiftMDDOCX"], path: "Adapters/SwiftMDDOCX/Tests/SwiftMDDOCXTests", resources: [.copy("Fixtures")]),
-        .testTarget(name: "SwiftMDBlocksTests", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", "SwiftMDCompiler", "SwiftMDJavaScriptCore", "SwiftMDSoup", .product(name: "SwiftGFM", package: "Swift-GFM"), .product(name: "SwiftMD", package: "Swift-MD")], path: "Adapters/SwiftMDBlocks/Tests/SwiftMDBlocksTests"),
+        .testTarget(name: "SwiftMDBlocksTests", dependencies: ["SwiftMDBlocks", "SwiftMDHighlight", "SwiftMDKaTeXNode", "SwiftMDPeleNode", "SwiftMDCompiler", "SwiftMDJavaScriptCore", .product(name: "SwiftHTML", package: "Swift-HTML"), .product(name: "SwiftGFM", package: "Swift-GFM"), .product(name: "SwiftMD", package: "Swift-MD")], path: "Adapters/SwiftMDBlocks/Tests/SwiftMDBlocksTests"),
     ], swiftLanguageModes: [.v6]
 )
 '''
     values = {'CORE_URL':args.core_url, 'CORE_VERSION':args.core_version, 'GFM_URL':args.gfm_url,
-              'GFM_VERSION':args.gfm_version, 'HIGHLIGHT_URL':args.highlight_url, 'HIGHLIGHT_VERSION':args.highlight_version}
+              'GFM_VERSION':args.gfm_version, 'HIGHLIGHT_URL':args.highlight_url, 'HIGHLIGHT_VERSION':args.highlight_version,
+              'SWIFTHTML_URL':args.swifthtml_url, 'SWIFTHTML_VERSION':args.swifthtml_version}
     for key, value in values.items(): manifest = manifest.replace(key, q(value))
     manifest = manifest.replace('BUNDLED_PRODUCT', '.library(name: "SwiftMDBundled", targets: ["SwiftMDBundled"]),' if args.include_locked_renderers else '')
     manifest = manifest.replace('BUNDLED_TARGET', '''.target(name: "SwiftMDBundled", dependencies: ["SwiftMDBlocks", .target(name: "SwiftMDJavaScriptCore", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])), .target(name: "SwiftMDCompiler", condition: .when(platforms: [.linux]))], path: "Adapters/SwiftMDBlocks/Sources/SwiftMDBundled", resources: [.copy("RendererAssets")]),''' if args.include_locked_renderers else '')
     if args.local_test: manifest = manifest.replace('\n', '\n// LOCAL TEST ONLY — NEVER PUBLISH\n', 1)
     (destination / 'Package.swift').write_text(manifest)
     (destination / 'README.md').write_bytes((destination / 'Adapters/SwiftMDBlocks/MIRROR_README.md').read_bytes())
-    soup = json.loads((ROOT / 'Adapters/SwiftMDBlocks/Vendor/SwiftSoup/UPSTREAM.json').read_text())
-    (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources, 'verified_public_tags':verified, 'vendored_swiftsoup': {'repository': soup['upstream_repository'], 'version': soup['upstream_version'], 'revision': soup['upstream_commit'], 'sources_tree': soup['upstream_sources_tree']}, 'release_review_required':True}, indent=2) + '\n')
+    html = swifthtml_provenance()
+    (destination / 'MIRROR-ORIGIN.json').write_text(json.dumps({'source_commit':commit, 'local_test_only':args.local_test, 'dependencies':values, 'renderer_resources':renderer_resources, 'verified_public_tags':verified, 'swifthtml_tested_revision':html['tested_revision'], 'release_review_required':True}, indent=2) + '\n')
     print(f'Generated {destination} from {commit}; local test only: {args.local_test}')
 
 if __name__ == '__main__':

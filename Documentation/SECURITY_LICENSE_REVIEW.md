@@ -1,5 +1,10 @@
 # SVG, process and source-distribution review
 
+**Historical scope:** This review predates the local SwiftHTML integration.
+Its SwiftSoup 2.11.3 provenance and scan results do not establish security or
+licensing for the SwiftHTML 2.14.4 backend. The new dependency requires its own
+review and tested release before a public adapter update.
+
 Review scope: SwiftMD source and its pinned dependencies on 17 November 2026.
 This is a reproducible engineering review, not an independent penetration
 test, a general sanitizer certification, or legal advice. Changes in dependencies,

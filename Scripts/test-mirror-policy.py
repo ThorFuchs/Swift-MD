@@ -25,6 +25,12 @@ class MirrorPolicyTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='swiftmd-mirror-policy-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        self.html = self.root / 'Swift-HTML.git'
+        subprocess.run(['git', 'clone', '--quiet', '--bare', '--no-hardlinks',
+                        str(ROOT / 'Adapters/SwiftMDBlocks/.build/checkouts/Swift-HTML'), str(self.html)], check=True)
+        subprocess.run(['git', '-C', str(self.html), 'update-ref', '-d', 'refs/tags/0.0.1'], check=True)
+        subprocess.run(['git', '-C', str(self.html), 'tag', '0.0.1',
+                        generator.swifthtml_provenance()['tested_revision']], check=True)
 
     def run_generator(self, destination, *flags):
         env = os.environ.copy()
@@ -35,8 +41,9 @@ class MirrorPolicyTests(unittest.TestCase):
             index += 1
         env['GIT_CONFIG_COUNT'] = str(index)
         return subprocess.run([sys.executable, str(GENERATOR), str(destination),
-                               '--core-version', '0.1.0', '--gfm-version', '1.0.1',
-                               '--highlight-version', '1.0.1', *flags],
+                               '--core-version', '0.1.0', '--gfm-version', '1.1.0',
+                               '--highlight-version', '1.0.1', '--swifthtml-url', self.html.as_uri(),
+                               '--swifthtml-version', '0.0.1', *flags],
                               capture_output=True, text=True, env=env, timeout=30)
 
     def test_mode_must_be_explicit_and_unambiguous(self):
@@ -71,38 +78,56 @@ class MirrorPolicyTests(unittest.TestCase):
     def test_public_preflight_rejects_wrong_tag_and_unadvertised_source(self):
         pins = {p['identity']: p['state']['revision'] for p in
                 json.loads((ROOT / 'Adapters/SwiftMDBlocks/Package.resolved').read_text())['pins']}
+        html = generator.swifthtml_provenance()
         revisions = {
             'https://github.com/ThorFuchs/Swift-MD.git': 'f' * 40,
             'https://github.com/ThorFuchs/Swift-GFM.git': pins['swift-gfm'],
             'https://github.com/ThorFuchs/Swift-Highlight.git': pins['swift-highlight'],
-            'https://github.com/scinfu/SwiftSoup.git': 'd86f244ed497d48012782e2f59c985a55e77b3f5',
-            'https://github.com/nicklockwood/LRUCache.git': pins['lrucache'],
-            'https://github.com/apple/swift-atomics.git': pins['swift-atomics'],
+            html['public_repository']: html['tested_revision'],
         }
         args = SimpleNamespace(core_url='https://github.com/ThorFuchs/Swift-MD.git',
                                gfm_url='https://github.com/ThorFuchs/Swift-GFM.git',
                                highlight_url='https://github.com/ThorFuchs/Swift-Highlight.git',
-                               core_version='0.1.0', gfm_version='1.0.1', highlight_version='1.0.1')
+                               core_version='0.1.0', gfm_version='1.1.0', highlight_version='1.0.1',
+                               swifthtml_url=html['public_repository'], swifthtml_version=html['public_version'])
         head = subprocess.check_output(['git', '-c', f'safe.directory={ROOT}', '-C', str(ROOT),
                                         'rev-parse', 'HEAD'], text=True).strip()
-        with patch.object(generator, 'public_tag', side_effect=lambda url, version: revisions[url]), \
+        with patch.object(generator, 'swifthtml_provenance', return_value=html), \
+             patch.object(generator, 'public_tag', side_effect=lambda url, version: revisions[url]), \
              patch.object(generator, 'public_refs', return_value={'refs/heads/other': '0' * 40}):
             with self.assertRaisesRegex(ValueError, 'source commit is not an advertised'):
                 generator.verify_public_dependencies(args, head)
         revisions[args.gfm_url] = '0' * 40
-        with patch.object(generator, 'public_tag', side_effect=lambda url, version: revisions[url]):
+        with patch.object(generator, 'swifthtml_provenance', return_value=html), \
+             patch.object(generator, 'public_tag', side_effect=lambda url, version: revisions[url]):
             with self.assertRaisesRegex(ValueError, 'public tag differs'):
                 generator.verify_public_dependencies(args, head)
 
     def test_corrupt_renderer_archive_does_not_create_destination(self):
         dest = self.root / 'corrupt-mirror'
-        argv = [str(GENERATOR), str(dest), '--core-version', '0.1.0', '--gfm-version', '1.0.1',
-                '--highlight-version', '1.0.1', '--local-test', '--include-locked-renderers']
+        argv = [str(GENERATOR), str(dest), '--core-version', '0.1.0', '--gfm-version', '1.1.0',
+                '--highlight-version', '1.0.1', '--swifthtml-url', self.html.as_uri(),
+                '--swifthtml-version', '0.0.1', '--local-test', '--include-locked-renderers']
         with patch.object(sys, 'argv', argv), \
              patch.object(generator, 'git', side_effect=[b'', b'0' * 40, b'']), \
              patch.object(generator.urllib.request, 'urlopen', return_value=io.BytesIO(b'corrupt archive')):
             with self.assertRaisesRegex(ValueError, 'archive integrity or size mismatch'):
                 generator.main()
+        self.assertFalse(dest.exists())
+
+    def test_public_mode_is_blocked_until_swifthtml_is_released(self):
+        args = SimpleNamespace(swifthtml_url='https://example.invalid/Swift-HTML.git', swifthtml_version='0.0.1')
+        html = dict(generator.swifthtml_provenance(), public_repository=None, public_version=None)
+        with patch.object(generator, 'swifthtml_provenance', return_value=html):
+            with self.assertRaisesRegex(ValueError, 'no verified public stable release'):
+                generator.verify_public_dependencies(args, '0' * 40)
+
+    def test_local_mirror_rejects_a_different_swifthtml_revision(self):
+        subprocess.run(['git', '-C', str(self.html), 'tag', '-f', '0.0.1', 'HEAD^'], check=True, capture_output=True)
+        dest = self.root / 'wrong-html'
+        result = self.run_generator(dest, '--local-test')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('test tag differs', result.stderr)
         self.assertFalse(dest.exists())
 
     def test_core_preflight_allows_only_docc_changes(self):
