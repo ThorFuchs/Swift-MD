@@ -9,6 +9,7 @@ REQUIRED = {
     'swift': {
         'Sources/SwiftMD/MarkdownCompiler.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/Blocks.swift',
+        'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/ExperimentalMathParser.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDBlocks/ValidatedSVG.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDHighlight/Highlight.swift',
         'Adapters/SwiftMDBlocks/Sources/SwiftMDKaTeXNode/KaTeX.swift',
