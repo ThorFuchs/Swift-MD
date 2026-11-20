@@ -67,9 +67,8 @@ python3 Scripts/test-distribution.py
 
 This gate is distinct from `Scripts/test-all.sh`. Synthetic local tags do not
 demonstrate a public SwiftHTML release. SwiftHTML 0.1.0 is public; the existing
-SwiftMD 1.0.0 mirror uses the prior backend, while this integration is local
-only. The candidate's own
-code is Apache-2.0, with retained MIT notices for its bundled dependencies;
+SwiftMD 1.0.0 and 1.0.1 Core releases use the prior backend. This integration
+uses SwiftHTML 0.1.0. Its own code is Apache-2.0, with retained MIT notices for its bundled dependencies;
 review the actual distributed notices before publication. Verify each public tag, its commit,
 dependency accessibility, mirror provenance and distribution licenses again.
 

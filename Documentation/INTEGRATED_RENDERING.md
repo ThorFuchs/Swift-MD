@@ -5,8 +5,8 @@ package now contains two experimental renderers over the same block processing
 and SVG validation: `SwiftMDCompiler` uses Node on macOS/Linux, and
 `SwiftMDJavaScriptCore` uses JavaScriptCore on Apple platforms. Both accept
 trusted renderer code/configuration and return HTML plus block diagnostics.
-The released 1.0.0 mirror uses the prior backend; this SwiftHTML integration is
-currently a local development candidate.
+This integration uses public SwiftHTML 0.1.0. The earlier 1.0.0 and 1.1.0
+adapter-mirror releases use the prior backend.
 
 `Scripts/generate-adapter-mirror.py --include-locked-renderers` additionally
 prepares an experimental `SwiftMDBundled` product in the generated mirror. It
@@ -233,8 +233,8 @@ all three real renderers and coexistence with an independently requested
 SwiftSoup package. The SwiftMD, SwiftHTML and mirror tags used by this test
 were synthetic, temporary and local to the container; no mirror was published.
 
-No hosted SwiftMD CI run has been completed for this integration. A normal container
-run does not establish the separately configured systemd/cgroup security
+At the time of this historical Linux run, no hosted SwiftMD CI had completed
+for this integration. A normal container run does not establish the separately configured systemd/cgroup security
 boundary. No browser test was run in this Linux environment. The
 previously published 1.0.0 mirror still uses its original backend. The locally
 copied license resources help package applications preserve notices; they do
