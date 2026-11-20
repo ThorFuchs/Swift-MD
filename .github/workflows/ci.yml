@@ -96,7 +96,7 @@ jobs:
             "$RUNNER_TEMP/archive-test/test/Tools/NodeDependencies"
           tar -xzf "$RUNNER_TEMP/swiftmd-candidate.tar.gz" -C "$RUNNER_TEMP/archive-test"
           cp "$(command -v node)" "$RUNNER_TEMP/archive-test/node"
-          cp Scripts/test-cli.py "$RUNNER_TEMP/archive-test/test/Scripts/"
+          cp Scripts/test-cli.py Scripts/test-markdown-math-cli.py "$RUNNER_TEMP/archive-test/test/Scripts/"
           cp Tools/SwiftMDCLI/Package.resolved "$RUNNER_TEMP/archive-test/test/Tools/SwiftMDCLI/"
           cp -a Tools/NodeDependencies/node_modules "$RUNNER_TEMP/archive-test/test/Tools/NodeDependencies/"
       - name: Test candidate on clean Ubuntu without Swift
@@ -109,8 +109,15 @@ jobs:
             sha256sum -c SHA256SUMS
             test -f licenses/SwiftSoup-MIT.txt
             test -f licenses/SwiftSoup-jsoup-MIT.txt
+            test -f licenses/SwiftHTML-Apache-2.0.txt
+            test -f licenses/SwiftHTML-SwiftSoup-2.14.4-MIT.txt
+            test -f licenses/SwiftHTML-LRUCache-MIT.txt
             if ldd bin/swift-md | grep "not found"; then exit 1; fi
             SWIFTMD_NODE=/work/node SWIFTMD_CLI=/work/SwiftMD/bin/swift-md python3 /work/test/Scripts/test-cli.py
+            SWIFTMD_NODE=/work/node SWIFTMD_CLI=/work/SwiftMD/bin/swift-md \
+              SWIFTMD_KATEX=/work/test/Tools/NodeDependencies/node_modules/katex \
+              SWIFTMD_PELE=/work/test/Tools/NodeDependencies/node_modules/pele/dist/pele.js \
+              python3 /work/test/Scripts/test-markdown-math-cli.py
           '
   integration:
     runs-on: ubuntu-latest
@@ -119,6 +126,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Install integration prerequisites
+        run: apt-get update && apt-get install -y --no-install-recommends cmake build-essential curl python3 util-linux
       - name: Resolve and verify the pinned SwiftHTML release
         run: |
           swift package --package-path Adapters/SwiftMDBlocks resolve
@@ -130,8 +139,6 @@ jobs:
         run: npm ci --ignore-scripts --prefix Tools/NodeDependencies
       - name: Build independent cmark-gfm reference
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends cmake build-essential curl python3 util-linux
           git clone --no-checkout https://github.com/github/cmark-gfm.git /tmp/cmark-reference
           git -C /tmp/cmark-reference checkout --detach 27d942c8b0a62d192f616e5bf3578f4b6a89e180
           cmake -S /tmp/cmark-reference -B /tmp/cmark-reference/build -DCMARK_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
