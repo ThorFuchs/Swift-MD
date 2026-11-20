@@ -61,9 +61,12 @@ jobs:
         if: ${{ matrix.language == 'swift' }}
         run: |
           swift --version
-          swift build --package-path Adapters/SwiftMDBlocks --arch "$(uname -m)" -j 4
-          swift build --package-path _security_scan_mirror --arch "$(uname -m)" -j 4
-          swift build --package-path _security_scan_swifthtml --arch "$(uname -m)" -j 4
+          # SwiftHTML 0.1.0 does not declare platform minimums. Scan at the
+          # adapter's declared macOS 15 minimum, on the runner's native CPU.
+          TARGET="$(uname -m)-apple-macos15.0"
+          swift build --package-path Adapters/SwiftMDBlocks --build-system native -j 4 -Xswiftc -target -Xswiftc "$TARGET"
+          swift build --package-path _security_scan_mirror --build-system native -j 4 -Xswiftc -target -Xswiftc "$TARGET"
+          swift build --package-path _security_scan_swifthtml --build-system native -j 4 -Xswiftc -target -Xswiftc "$TARGET"
       - name: Analyze without publishing repository alerts
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:

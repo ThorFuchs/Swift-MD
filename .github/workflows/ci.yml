@@ -73,6 +73,25 @@ jobs:
         run: |
           SWIFTMDDOCX_TEST_OUTPUT=/tmp/swiftmd-example.docx swift test --package-path Adapters/SwiftMDDOCX -j 4
           python3 Scripts/check-docx-fixture.py /tmp/swiftmd-example.docx
+  macos-integration:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.22.1'
+      - name: Test ordinary macOS builds and real renderers
+        run: |
+          uname -m
+          swift --version
+          npm ci --ignore-scripts --prefix Tools/NodeDependencies
+          export SWIFTMD_NODE="$(command -v node)"
+          export SWIFTMD_KATEX="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex"
+          export SWIFTMD_PELE="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.js"
+          export SWIFTMD_KATEX_JS="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/katex/dist/katex.js"
+          export SWIFTMD_PELE_GLOBAL_JS="$GITHUB_WORKSPACE/Tools/NodeDependencies/node_modules/pele/dist/pele.global.js"
+          swift test --package-path Adapters/SwiftMDBlocks --build-system native -j 4
+          swift test --package-path Adapters/SwiftMDDOCX --build-system native -j 4
   linux-archive:
     runs-on: ubuntu-24.04
     steps:
