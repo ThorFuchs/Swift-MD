@@ -153,3 +153,9 @@ See the [SVG, process and license review](Documentation/SECURITY_LICENSE_REVIEW.
 for the current evidence and remaining release boundaries.
 The proposed [security and resource contract](Documentation/SECURITY_CONTRACT.md)
 defines the deployment responsibilities for deployed renderers.
+
+## Optional native Typst source projection (research preview)
+
+The new [SwiftMDTypst adapter](Adapters/SwiftMDTypst/README.md) is a separate SwiftPM product of this repository. It projects a strict supported subset of the copied SwiftGFM semantic AST directly to **native Typst document body source**, with snapshot-local heading keys and explicit failure for unsupported rich content. It never translates rendered HTML back into Typst and adds no Typst runtime dependency to the core SwiftMD renderer.
+
+Use the independent Adapters/SwiftMDTypst package or the root optional SwiftMDTypst product. [CI verifies an actual generated PDF and outline bookmarks](Adapters/SwiftMDTypst/VERIFICATION-2026-11-21.md). The released Swift-Typst backend is a separately pinned consumer. Math code fences can be supplied through a trusted, allowlisted TeX converter; inline math and SVG/diagram asset projection still require more semantic source adapters. No production Markdown→PDF exporter or application integration is implied by this research preview.
