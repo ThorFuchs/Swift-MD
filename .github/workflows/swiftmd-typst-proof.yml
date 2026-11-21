@@ -1,0 +1,67 @@
+name: SwiftMDTypst strict AST projection proof
+on:
+  push:
+    branches: [feature/typst-ast-adapter]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ast-to-pdf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Swift toolchain and run adapter tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift --version
+          swift test --package-path Adapters/SwiftMDTypst -j 4
+          swift build --product SwiftMDTypst -j 4
+
+      - name: Generate source through actual SwiftGFM AST converter
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Adapters/SwiftMDTypst/Proof/Results
+          swift run --package-path Adapters/SwiftMDTypst -j 4 SwiftMDTypstProof \
+            Adapters/SwiftMDTypst/Fixtures/gfm-proof.md \
+            Adapters/SwiftMDTypst/Proof/Results/document.typ \
+            Adapters/SwiftMDTypst/Proof/Results/headings.json
+
+      - name: Install exact sha256-verified Typst CLI 0.15.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error \
+            -o "$RUNNER_TEMP/typst-0.15.1.tar.xz" \
+            "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz"
+          echo "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c  $RUNNER_TEMP/typst-0.15.1.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/typst-0.15.1.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
+
+      - name: Compile actual generated Typst document
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=Adapters/SwiftMDTypst/Proof/Results
+          typst --version | tee "$p/compiler-version.txt"
+          typst compile "$p/document.typ" "$p/document.pdf" 2>"$p/compiler.stderr"
+          test -s "$p/document.pdf"
+          test "$(head -c 4 "$p/document.pdf")" = '%PDF'
+          test ! -s "$p/compiler.stderr"
+
+      - name: Verify PDF bookmark destinations and main semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --break-system-packages --quiet 'pypdf==5.9.0'
+          python3 Adapters/SwiftMDTypst/Scripts/verify-pdf.py
+
+      - name: Retain exact source, real PDF and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftmdtypst-ast-pdf-proof
+          path: Adapters/SwiftMDTypst/Proof/Results/
+          if-no-files-found: warn
