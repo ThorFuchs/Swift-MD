@@ -10,7 +10,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "SwiftMDTypst", dependencies: [.product(name: "SwiftGFM", package: "Swift-GFM")]),
-        .testTarget(name: "SwiftMDTypstTests", dependencies: ["SwiftMDTypst"])
+        .testTarget(name: "SwiftMDTypstTests", dependencies: ["SwiftMDTypst"]),
+        .executableTarget(name: "SwiftMDTypstProof", dependencies: ["SwiftMDTypst"])
     ],
     swiftLanguageModes: [.v6]
 )
