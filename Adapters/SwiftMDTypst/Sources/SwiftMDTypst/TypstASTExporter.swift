@@ -122,7 +122,7 @@ private struct Writer {
         var result = ""
         for node in nodes {
             result += try inline(node, depth: depth)
-            try _ = budget(result)
+            _ = try budget(result)
         }
         return result
     }
