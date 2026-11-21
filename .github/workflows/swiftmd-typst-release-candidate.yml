@@ -1,0 +1,71 @@
+name: SwiftMD 1.2.0 Typst release-candidate gates
+on:
+  push:
+    branches: [release/typst-1.2.0]
+  pull_request:
+    paths:
+      - "Package.swift"
+      - "Adapters/SwiftMDTypst/**"
+      - "Scripts/prepare-typst-adapter-mirror.sh"
+      - ".github/workflows/swiftmd-typst-release-candidate.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  core-and-typst:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Verify release candidate identity without publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift --version
+          python3 - <<'PY'
+          from pathlib import Path
+          core = Path("Package.swift").read_text()
+          nested = Path("Adapters/SwiftMDTypst/Package.swift").read_text()
+          assert '.library(name: "SwiftMDTypst"' in core
+          assert '.product(name: "SwiftGFM", package: "Swift-GFM")' in core
+          assert 'exact: "1.1.0"' in core
+          assert 'exact: "1.1.0"' in nested
+          assert Path("Adapters/SwiftMDTypst/Sources/SwiftMDTypst/TypstASTExporter.swift").is_file()
+          print("Core+Typst optional product with GFM 1.1.0: verified")
+          PY
+          bash -n Scripts/prepare-typst-adapter-mirror.sh
+      - name: Test normal SwiftMD Core
+        shell: bash
+        run: swift test -j 4
+      - name: Test real optional AST-to-Typst product
+        shell: bash
+        run: |
+          swift test --package-path Adapters/SwiftMDTypst -j 4
+          swift build --product SwiftMDTypst -j 4
+
+  synthetic-mirror:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.22.1'
+      - name: Verify public SwiftHTML and locked mirror inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift package --package-path Adapters/SwiftMDBlocks resolve
+          python3 Scripts/check-swifthtml-checkout.py
+          npm ci --ignore-scripts --prefix Tools/NodeDependencies
+      - name: Run isolated synthetic-tag mirror distribution gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          SWIFTMD_NODE="$(command -v node)" python3 Scripts/test-distribution.py
+      - name: Verify mirror-generator policy and refusal boundaries
+        shell: bash
+        run: python3 Scripts/test-mirror-policy.py
