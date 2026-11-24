@@ -1,0 +1,37 @@
+name: SwiftMDEPUB static publication proof
+on:
+  pull_request:
+    paths:
+      - 'Adapters/SwiftMDEPUB/**'
+      - '.github/workflows/swiftmdepub-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  proof:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test isolated EPUB profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift --version
+          cd Adapters/SwiftMDEPUB
+          mkdir -p "$RUNNER_TEMP/swiftmdepub-evidence"
+          export SWIFTMDEPUB_TEST_OUTPUT="$RUNNER_TEMP/swiftmdepub-evidence"
+          swift test -j 4
+          python3 verify_reference.py "$SWIFTMDEPUB_TEST_OUTPUT"
+          cp Package.resolved "$SWIFTMDEPUB_TEST_OUTPUT/Package.resolved"
+      - name: Retain Swift-generated artifacts and resolved dependency evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftmdepub-${{ matrix.os }}
+          path: ${{ runner.temp }}/swiftmdepub-evidence
+          if-no-files-found: warn

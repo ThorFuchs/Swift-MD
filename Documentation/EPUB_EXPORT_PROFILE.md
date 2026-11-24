@@ -1,0 +1,11 @@
+# EPUB export profile — architecture decision (candidate)
+
+**Status:** accepted architectural direction; experimental adapter extraction, not a release.
+
+SwiftMD owns reusable Markdown projection adapters. EPUB is an optional export target alongside HTML, Typst and DOCX. Parse with the same pinned SwiftGFM semantic AST; generate static XHTML, typed resources, semantic navigation and OCF output. Preserve original source bytes separately, never reverse-compile rendered XHTML to reconstruct Markdown. The package model is reusable by consumers that persist a logical publication without first producing a ZIP. Reading-only is the default; source inclusion is explicit.
+
+`Adapters/SwiftMDEPUB` is the source of truth after candidate acceptance. The generic model and writer are extracted from a same-owner Apache-2.0 prototype, with the caller retaining app-specific SwiftData, file grants, network/capture, user identity and UI. Until parity and adoption are verified, the precursor remains frozen at its accepted visual proof. The adapter admits trusted supplied raster data only; no filesystem/network or browser/JavaScript authority. Strict export must not silently omit resources. Rich static MathML/SVG/highlighting and broader semantic support are separate gates.
+
+The root SwiftMD target retains its existing minimal dependency contract. The standalone EPUB adapter has a deliberately isolated portable Swift Crypto dependency for SHA-256. It uses the SwiftGFM 1.1.0 parser pin; Swift Crypto 4.2.0 is an initial exact compatibility pin, subject to dependency/security/license review. The generated mirror is not edited directly. Before adding EPUB to the public mirror or other distribution, resolve and record tested dependency revisions, review the generator/provenance contract (including additional dependencies), demonstrate actual macOS and Linux builds and real EPUBCheck/Books validation, and verify clean versioned consumer parity. If this would unnecessarily impose Swift Crypto on unrelated consumers, consider a separate generated EPUB distribution rather than weakening Core isolation. No release, tag, platform certification or CLI format flag is authorized by this extraction alone.
+
+See [profile and acceptance runbook](../Adapters/SwiftMDEPUB/README.md).
