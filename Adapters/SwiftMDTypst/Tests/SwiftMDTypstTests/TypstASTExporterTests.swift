@@ -141,3 +141,80 @@ import Testing
     #expect(result.contains("#text(\"Child\")"))
     #expect(result.contains("#line(length: 100%)"))
 }
+
+
+@Test func readerPreviewKeepsSupportedFormattingAndHeadingIDsAroundUnsupportedNodes() throws {
+    let source = """
+    # Report
+
+    **Important** [local reference](../notes.md) and [web](https://example.org).
+
+    ![Architecture diagram](file:///private/diagram.png)
+
+    - [x] Done
+    - [ ] Next
+
+    <script>#read("/private/file")</script>
+
+    ~~~mermaid
+    graph TD; A-->B
+    ~~~
+
+    ## Results
+
+    *Preserved text.*
+    """
+    let result = try TypstASTExporter(unsupportedContentPolicy: .readerPreview).render(source)
+    #expect(result.headings.map(\.key) == ["vm-0", "vm-1"])
+    #expect(result.headings.map(\.title) == ["Report", "Results"])
+    #expect(result.body.contains("#strong["))
+    #expect(result.body.contains("#emph["))
+    #expect(result.body.contains("#link(\"https://example.org\")"))
+    #expect(result.body.contains("#text(\"local reference\")"))
+    #expect(!result.body.contains("#link(\"../notes.md\")"))
+    #expect(result.body.contains("[Image: Architecture diagram]"))
+    #expect(!result.body.contains("file:///private/diagram.png"))
+    #expect(result.body.contains("#text(\"[x] \")"))
+    #expect(result.body.contains("#text(\"[ ] \")"))
+    #expect(result.body.contains("#raw("))
+    #expect(!result.body.contains("\n#read("))
+    #expect(Set(result.degradations) == [.linkAsText, .imageAsPlaceholder, .htmlAsText, .taskListAsText, .mermaidAsCode])
+    #expect(throws: TypstProjectionError.self) {
+        _ = try TypstASTExporter().render(source)
+    }
+}
+
+@Test func readerPreviewHeadingLabelMatchesInertLinkAndImageText() throws {
+    let source = "# [Local](#target) ![diagram](https://example.org/diagram.png)"
+    let result = try TypstASTExporter(unsupportedContentPolicy: .readerPreview).render(source)
+    #expect(result.headings.map(\.title) == ["Local [Image: diagram]"])
+    #expect(result.body.contains("#text(\"Local\")"))
+    #expect(result.body.contains("#text(\"[Image: diagram]\")"))
+    #expect(!result.body.contains("#link("))
+    #expect(result.degradations == [.linkAsText, .imageAsPlaceholder])
+}
+
+@Test func readerPreviewRetainsMathAsCodeOnlyWithoutTrustedConverter() throws {
+    let source = "~~~math\n\\frac{1}{2}\n~~~"
+    let result = try TypstASTExporter(unsupportedContentPolicy: .readerPreview).render(source)
+    #expect(result.degradations == [.mathAsCode])
+    #expect(result.body.contains("#raw("))
+    #expect(throws: TypstProjectionError.resourceBudget("trusted math budget")) {
+        _ = try TypstASTExporter(
+            unsupportedContentPolicy: .readerPreview,
+            trustedMathRenderer: { _ in throw TypstProjectionError.resourceBudget("trusted math budget") }
+        ).render(source)
+    }
+}
+
+@Test func readerPreviewDoesNotBypassOutputBudgetOrUnsafeStringGuard() throws {
+    #expect(throws: TypstProjectionError.self) {
+        _ = try TypstASTExporter(
+            maximumOutputUTF8Bytes: 16, unsupportedContentPolicy: .readerPreview
+        ).render("![A long description](file:///private/file)")
+    }
+    #expect(throws: TypstProjectionError.resourceBudget("source exceeds 1 MB")) {
+        _ = try TypstASTExporter(unsupportedContentPolicy: .readerPreview)
+            .render(String(repeating: "x", count: 1_000_001))
+    }
+}

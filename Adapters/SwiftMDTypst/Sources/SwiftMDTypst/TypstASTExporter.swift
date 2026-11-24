@@ -26,9 +26,28 @@ public struct TypstHeading: Sendable, Equatable {
     public let sourceRange: MarkdownSourceRange?
 }
 
+/// Strict export stays the default. A Reader may explicitly request
+/// bounded, inert representations for specific unsupported AST nodes.
+public enum TypstUnsupportedContentPolicy: Sendable, Equatable {
+    case strict
+    case readerPreview
+}
+
+/// Finite, source-independent degradation diagnostics. No diagnostic
+/// contains arbitrary input, file paths, or executable content.
+public enum TypstPreviewDegradation: String, Sendable, CaseIterable, Hashable {
+    case linkAsText
+    case imageAsPlaceholder
+    case htmlAsText
+    case taskListAsText
+    case mermaidAsCode
+    case mathAsCode
+}
+
 public struct TypstASTDocument: Sendable {
     public let body: String
     public let headings: [TypstHeading]
+    public let degradations: [TypstPreviewDegradation]
 }
 
 /// Strict SwiftGFM semantic AST to Typst source projection.
@@ -38,13 +57,16 @@ public struct TypstASTExporter: Sendable {
     public typealias TrustedMathRenderer = @Sendable (String) throws -> String
     public let maximumOutputUTF8Bytes: Int
     public let maximumNestingDepth: Int
+    public let unsupportedContentPolicy: TypstUnsupportedContentPolicy
     private let trustedMathRenderer: TrustedMathRenderer?
 
     public init(maximumOutputUTF8Bytes: Int = 2_000_000,
                 maximumNestingDepth: Int = 32,
+                unsupportedContentPolicy: TypstUnsupportedContentPolicy = .strict,
                 trustedMathRenderer: TrustedMathRenderer? = nil) {
         self.maximumOutputUTF8Bytes = maximumOutputUTF8Bytes
         self.maximumNestingDepth = maximumNestingDepth
+        self.unsupportedContentPolicy = unsupportedContentPolicy
         self.trustedMathRenderer = trustedMathRenderer
     }
 
@@ -71,12 +93,18 @@ public struct TypstASTExporter: Sendable {
         }
         var writer = Writer(limit: maximumOutputUTF8Bytes,
                             depthLimit: maximumNestingDepth,
-                            math: trustedMathRenderer)
+                            math: trustedMathRenderer,
+                            policy: unsupportedContentPolicy)
         let result = try writer.blocks(document.root.children, depth: 0)
         guard result.utf8.count <= maximumOutputUTF8Bytes else {
             throw TypstProjectionError.resourceBudget("output bytes")
         }
-        return TypstASTDocument(body: result, headings: writer.headings)
+        return TypstASTDocument(
+            body: result, headings: writer.headings,
+            degradations: TypstPreviewDegradation.allCases.filter {
+                writer.degradations.contains($0)
+            }
+        )
     }
 }
 
@@ -84,7 +112,9 @@ private struct Writer {
     let limit: Int
     let depthLimit: Int
     let math: TypstASTExporter.TrustedMathRenderer?
+    let policy: TypstUnsupportedContentPolicy
     var headings: [TypstHeading] = []
+    var degradations: Set<TypstPreviewDegradation> = []
 
     private let codeLanguages: Set<String> = [
         "swift", "json", "python", "javascript", "typescript", "html", "css",
@@ -117,7 +147,7 @@ private struct Writer {
         return try budget(result)
     }
 
-    private func inlineSequence(_ nodes: [MarkdownNode], depth: Int) throws -> String {
+    private mutating func inlineSequence(_ nodes: [MarkdownNode], depth: Int) throws -> String {
         guard depth <= depthLimit else { throw TypstProjectionError.resourceBudget("inline depth") }
         var result = ""
         for node in nodes {
@@ -152,24 +182,39 @@ private struct Writer {
             case .codeBlock(let text, let info, _):
                 let lang = info.split(whereSeparator: \.isWhitespace).first.map(String.init)?.lowercased() ?? ""
                 if ["math", "tex", "latex"].contains(lang) {
-                    guard let math else {
-                        throw TypstProjectionError.unsupported("math fence requires trusted converter")
+                    if let math {
+                        // Never swallow failures from the trusted converter,
+                        // including its own security and resource checks.
+                        let converted = try math(text)
+                        guard converted.hasPrefix("$"), converted.hasSuffix("$") else {
+                            throw TypstProjectionError.invalidStructure("math provider must return bounded Typst math")
+                        }
+                        value = try budget(converted)
+                    } else {
+                        guard policy == .readerPreview else {
+                            throw TypstProjectionError.unsupported("math fence requires trusted converter")
+                        }
+                        degradations.insert(.mathAsCode)
+                        value = "#raw(\(try literal(text)), block: true)"
                     }
-                    let converted = try math(text)
-                    guard converted.hasPrefix("$"), converted.hasSuffix("$") else {
-                        throw TypstProjectionError.invalidStructure("math provider must return bounded Typst math")
-                    }
-                    value = try budget(converted)
                 } else if lang == "mermaid" {
-                    throw TypstProjectionError.unsupported("Mermaid requires validated SVG asset")
+                    guard policy == .readerPreview else {
+                        throw TypstProjectionError.unsupported("Mermaid requires validated SVG asset")
+                    }
+                    degradations.insert(.mermaidAsCode)
+                    value = "#raw(\(try literal(text)), block: true)"
                 } else {
                     let language = codeLanguages.contains(lang) ? ", lang: \(try literal(lang))" : ""
                     value = "#raw(\(try literal(text)), block: true\(language))"
                 }
             case .thematicBreak:
                 value = "#line(length: 100%)"
-            case .htmlBlock:
-                throw TypstProjectionError.unsupported("raw HTML block")
+            case .htmlBlock(let html):
+                guard policy == .readerPreview else {
+                    throw TypstProjectionError.unsupported("raw HTML block")
+                }
+                degradations.insert(.htmlAsText)
+                value = "#raw(\(try literal(html)), block: true)"
             case .customBlock:
                 throw TypstProjectionError.unsupported("custom block")
             case .footnoteDefinition:
@@ -201,15 +246,36 @@ private struct Writer {
         }
         var items: [String] = []
         for item in nodes {
-            guard case .listItem = item.kind else {
+            switch item.kind {
+            case .listItem:
+                items.append("[\(try blocks(item.children, depth: depth + 1))]")
+            case .taskListItem(_, let checked):
+                guard policy == .readerPreview else {
+                    throw TypstProjectionError.unsupported("task list or unknown list item")
+                }
+                degradations.insert(.taskListAsText)
+                let marker = checked ? "[x] " : "[ ] "
+                let children = item.children
+                var rendered: String
+                if let first = children.first, case .paragraph = first.kind {
+                    let content = try inlineSequence(first.children, depth: depth + 2)
+                    rendered = "#par[#text(\(try literal(marker)))\(content)]"
+                    let rest = try blocks(Array(children.dropFirst()), depth: depth + 1)
+                    if !rest.isEmpty { rendered += "\n\n" + rest }
+                } else {
+                    rendered = "#text(\(try literal(marker)))"
+                    let rest = try blocks(children, depth: depth + 1)
+                    if !rest.isEmpty { rendered += "\n\n" + rest }
+                }
+                items.append("[\(try budget(rendered))]")
+            default:
                 throw TypstProjectionError.unsupported("task list or unknown list item")
             }
-            items.append("[\(try blocks(item.children, depth: depth + 1))]")
         }
         return "#\(head)\(items.map { ", " + $0 }.joined()))"
     }
 
-    private func table(
+    private mutating func table(
         _ rows: [MarkdownNode], alignments: [MarkdownTableAlignment], depth: Int
     ) throws -> String {
         let n = alignments.count
@@ -225,11 +291,12 @@ private struct Writer {
             guard case .tableRow(let header) = row.kind, row.children.count == n else {
                 throw TypstProjectionError.invalidStructure("nonrectangular table")
             }
-            let values = try row.children.map { cell -> String in
+            var values: [String] = []
+            for cell in row.children {
                 guard case .tableCell = cell.kind else {
                     throw TypstProjectionError.invalidStructure("unexpected table child")
                 }
-                return "[\(try inlineSequence(cell.children, depth: depth + 1))]"
+                values.append("[\(try inlineSequence(cell.children, depth: depth + 1))]")
             }
             if header {
                 guard rowNumber == 0, !hasHeader else {
@@ -252,15 +319,47 @@ private struct Writer {
             switch node.kind {
             case .text(let s), .code(let s): result += s
             case .softBreak, .lineBreak: result += " "
-            case .emphasis, .strong, .strikethrough, .link:
+            case .emphasis, .strong, .strikethrough:
                 result += try plainText(node.children, depth: depth + 1)
+            case .link(let target, _):
+                if policy == .readerPreview, linkFailure(target) != nil, node.children.isEmpty {
+                    result += "[Link]"
+                } else {
+                    result += try plainText(node.children, depth: depth + 1)
+                }
+            case .image where policy == .readerPreview:
+                result += try imagePlaceholder(node, depth: depth + 1)
+            case .htmlInline(let html) where policy == .readerPreview:
+                result += html
             default: throw TypstProjectionError.unsupported("heading child \(node.kind)")
             }
         }
         return try budget(result.split(whereSeparator: \.isWhitespace).joined(separator: " "))
     }
 
-    private func inline(_ node: MarkdownNode, depth: Int) throws -> String {
+    private func imagePlaceholder(_ node: MarkdownNode, depth: Int) throws -> String {
+        let alt = try plainText(node.children, depth: depth)
+        return try budget(alt.isEmpty ? "[Image not loaded]" : "[Image: \(alt)]")
+    }
+
+    private func linkFailure(_ target: String) -> TypstProjectionError? {
+        guard let url = URLComponents(string: target),
+              let scheme = url.scheme?.lowercased(),
+              ["http", "https", "mailto"].contains(scheme),
+              target.utf8.count <= 4_096,
+              !target.unicodeScalars.contains(where: { $0.value <= 32 || $0.value == 127 }) else {
+            return .unsupported("link URL requires safe absolute HTTP(S) or mailto")
+        }
+        if scheme != "mailto" {
+            guard let host = url.host, !host.isEmpty,
+                  url.user == nil, url.password == nil else {
+                return .unsupported("link host or credentials")
+            }
+        }
+        return nil
+    }
+
+    private mutating func inline(_ node: MarkdownNode, depth: Int) throws -> String {
         guard depth <= depthLimit else { throw TypstProjectionError.resourceBudget("inline depth") }
         switch node.kind {
         case .text(let text): return "#text(\(try literal(text)))"
@@ -271,22 +370,28 @@ private struct Writer {
         case .emphasis: return "#emph[\(try inlineSequence(node.children, depth: depth + 1))]"
         case .strikethrough: return "#strike[\(try inlineSequence(node.children, depth: depth + 1))]"
         case .link(let target, _):
-            guard let url = URLComponents(string: target),
-                  let scheme = url.scheme?.lowercased(),
-                  ["http", "https", "mailto"].contains(scheme),
-                  target.utf8.count <= 4_096,
-                  !target.unicodeScalars.contains(where: { $0.value <= 32 || $0.value == 127 }) else {
-                throw TypstProjectionError.unsupported("link URL requires safe absolute HTTP(S) or mailto")
-            }
-            if scheme != "mailto" {
-                guard let host = url.host, !host.isEmpty,
-                      url.user == nil, url.password == nil else {
-                    throw TypstProjectionError.unsupported("link host or credentials")
-                }
+            if let failure = linkFailure(target) {
+                guard policy == .readerPreview else { throw failure }
+                degradations.insert(.linkAsText)
+                // Keep formatted visible link text, not an active link or a
+                // guessed relative target. The exact URL remains in Source.
+                return node.children.isEmpty
+                    ? "#text(\"[Link]\")"
+                    : try inlineSequence(node.children, depth: depth + 1)
             }
             return "#link(\(try literal(target)))[\(try inlineSequence(node.children, depth: depth + 1))]"
-        case .image: throw TypstProjectionError.unsupported("image needs validated asset")
-        case .htmlInline: throw TypstProjectionError.unsupported("raw HTML inline")
+        case .image:
+            guard policy == .readerPreview else {
+                throw TypstProjectionError.unsupported("image needs validated asset")
+            }
+            degradations.insert(.imageAsPlaceholder)
+            return "#text(\(try literal(imagePlaceholder(node, depth: depth + 1))))"
+        case .htmlInline(let html):
+            guard policy == .readerPreview else {
+                throw TypstProjectionError.unsupported("raw HTML inline")
+            }
+            degradations.insert(.htmlAsText)
+            return "#text(\(try literal(html)))"
         case .customInline: throw TypstProjectionError.unsupported("custom inline")
         case .footnoteReference: throw TypstProjectionError.unsupported("uncorrelated footnote")
         default: throw TypstProjectionError.invalidStructure("unexpected inline \(node.kind)")
