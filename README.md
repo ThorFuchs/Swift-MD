@@ -159,3 +159,13 @@ defines the deployment responsibilities for deployed renderers.
 The new [SwiftMDTypst adapter](Adapters/SwiftMDTypst/README.md) is a separate SwiftPM product of this repository. It projects a strict supported subset of the copied SwiftGFM semantic AST directly to **native Typst document body source**, with snapshot-local heading keys and explicit failure for unsupported rich content. It never translates rendered HTML back into Typst and adds no Typst runtime dependency to the core SwiftMD renderer.
 
 Use the independent Adapters/SwiftMDTypst package or the root optional SwiftMDTypst product. [CI verifies an actual generated PDF and outline bookmarks](Adapters/SwiftMDTypst/VERIFICATION-2026-11-21.md). The released Swift-Typst backend is a separately pinned consumer. Math code fences can be supplied through a trusted, allowlisted TeX converter; inline math and SVG/diagram asset projection still require more semantic source adapters. No production Markdown→PDF exporter or application integration is implied by this research preview.
+
+## Optional EPUB export profile (experimental source candidate)
+
+[SwiftMDEPUB](Adapters/SwiftMDEPUB/README.md) is a separate optional SwiftPM
+source package for a static, reflowable Markdown-to-EPUB projection from the
+same typed SwiftGFM AST. It exposes a reading-only profile and explicit
+source-inclusive profile, an inspectable publication snapshot and an in-memory
+OCF writer. No root package or generated mirror dependency changes in the
+initial extraction draft. Native/Linux, EPUBCheck and clean distribution gates
+remain open; no released EPUB product is claimed yet.
