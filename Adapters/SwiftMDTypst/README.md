@@ -36,3 +36,9 @@ No changes to ViewMarkdown Reader, its running Wave 07, Swift-GFM core, existing
 ## Verification (21 November 2026)
 
 The [real SwiftGFM AST → Typst 0.15.1 PDF proof](VERIFICATION-2026-11-21.md) passed [GitHub Actions #44925722007](https://github.com/ThorFuchs/Swift-MD/actions/runs/44925722007): **nine Swift Testing tests**, optional root SwiftMDTypst product build, and one SHA-pinned Typst CLI PDF with **three valid outline/bookmark destinations**. A [separate ViewMarkdown consumer](https://github.com/ThorFuchs/ViewMarkdown/pull/31) pinned to that tested adapter revision also passed [GFM+math+Theme→PDF and macOS PDFKit CI](https://github.com/ThorFuchs/ViewMarkdown/actions/runs/44926631715). This remains a strict subset and **not** a claim of full 27-kind GFM export or running ViewMarkdown UI support.
+
+## Opt-in Reader preview policy (proposed, not released)
+
+Strict export remains the default. The additional readerPreview policy preserves the existing semantic rendering around specific unsupported AST nodes: relative/fragment/disallowed links render their visible text without an active destination; images render an alt-text placeholder without accessing their URL; raw HTML is escaped literal text; task markers remain visible; Mermaid and math fences without a trusted converter render as literal code. The returned degradations array reports finite categories without arbitrary source strings. The same heading stream and output/AST/depth budgets remain authoritative. No network, file access, asset resolver, arbitrary Typst or HTML execution. Trusted converter errors, unknown structure, unsupported custom/footnote nodes and resource errors still fail closed. This draft is not a complete GFM export, not a release, and is not yet consumed by ViewMarkdown. A future version alignment must update Swift-MD and the exact Swift-MD-Adapters pin together after real adapter and Typst PDF tests.
+
+    swift test --package-path Adapters/SwiftMDTypst
