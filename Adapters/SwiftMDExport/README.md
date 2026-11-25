@@ -11,3 +11,9 @@ On platforms providing Core Graphics, ImageIO and UniformTypeIdentifiers, PDFPag
 ## Native PDF output
 
 On macOS, PDFOutputWriter uses PDFKit to copy selected pages and optionally apply the existing screen/JPEG options. Original all-page mode returns the original input. Rewritten selections normalize in ascending original order, check text/geometry/rotation, and have a 200-page limit. Links, outlines, tags, metadata and conformance are not certified; callers must disclose that limitation. Native test gate remains open.
+
+## EX02C/E/F follow-up
+
+GeneratedArchiveInventory inspects actual produced stored ZIP (directory/local headers, contiguous entries, sizes, CRC-32), binary WebArchive plist, generated MIME boundaries/base64, and WARC record lengths/IDs. Bounded, read-only, no arbitrary archive extraction, schema validation or browser replay. ZIP support intentionally matches existing writers (no compression/encryption/ZIP64/comments/extra fields). Text output helper offers LF/CRLF and an explicitly generated LaTeX article envelope; it never executes TeX. Native macOS QuartzPDFOutput enumerates only regular system .qfilter files in /System/Library/Filters, applies the public context API, redraws only matching zero-origin unrotated page geometries, verifies text/boxes/page count, does not certify filter effects, tags, links, outlines or conformance. The actual native API and filter results must be tested on macOS. Independent PDF/A and PDF/X validation is not implemented in this library.
+
+Executed Linux Swift 6.2.1: exact portable sources GeneratedArchiveInventory.swift 9bf1d8a74054056a04d4204d0f9ad86c54d2d450, ExportTextOutput.swift 3d6b2e6abfe1ac435ca8a9b06ba1625322b6a24c and ArchiveAndTextTests.swift aa3134d9e8576e8c9188e194f89db1ac362b9de7 plus existing support sources/tests; 7/7 Swift Testing methods passed (0.008s). Native Quartz tests authored, not executed.
