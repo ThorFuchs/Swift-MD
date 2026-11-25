@@ -84,11 +84,10 @@ import Testing
     #expect(result.body.contains("$ frac(1, 2) $"))
 }
 
-@Test func rawHTMLImagesTasksAndFootnotesFailClosed() throws {
+@Test func rawHTMLImagesAndUnrenderedMermaidFailClosed() throws {
     let unsafe = [
         "<script>alert('x')</script>\n",
         "![image](file:///etc/passwd)\n",
-        "- [x] done\n",
         "~~~mermaid\ngraph TD; A-->B\n~~~\n"
     ]
     for input in unsafe {
@@ -178,7 +177,7 @@ import Testing
     #expect(result.body.contains("#text(\"[ ] \")"))
     #expect(result.body.contains("#raw("))
     #expect(!result.body.contains("\n#read("))
-    #expect(Set(result.degradations) == [.linkAsText, .imageAsPlaceholder, .htmlAsText, .taskListAsText, .mermaidAsCode])
+    #expect(Set(result.degradations) == [.linkAsText, .imageAsPlaceholder, .htmlAsText, .mermaidAsCode])
     #expect(throws: TypstProjectionError.self) {
         _ = try TypstASTExporter().render(source)
     }
@@ -216,5 +215,51 @@ import Testing
     #expect(throws: TypstProjectionError.resourceBudget("source exceeds 1 MB")) {
         _ = try TypstASTExporter(unsupportedContentPolicy: .readerPreview)
             .render(String(repeating: "x", count: 1_000_001))
+    }
+}
+
+
+@Test func strictTaskListsKeepStateNestedBlocksInlineFormattingAndHeadings() throws {
+    let source = """
+    # Start
+
+    Introductory **formatted** prose.
+
+    - [x] Completed **task**
+      - [ ] Nested *pending* task
+    - Ordinary bullet
+    - [ ] Open task
+
+    3) [x] Ordered completed
+    4) [ ] Ordered pending
+
+    ## Finish
+
+    Trailing ~~removed~~ text.
+    """
+    let strict = try TypstASTExporter().render(source)
+    let preview = try TypstASTExporter(unsupportedContentPolicy: .readerPreview).render(source)
+    #expect(strict.body == preview.body)
+    #expect(strict.headings == preview.headings)
+    #expect(strict.degradations.isEmpty && preview.degradations.isEmpty)
+    #expect(strict.headings.map(\.title) == ["Start", "Finish"])
+    #expect(strict.headings.map(\.key) == ["vm-0", "vm-1"])
+    #expect(strict.body.components(separatedBy: "#text(\"[x] \")").count == 3)
+    #expect(strict.body.components(separatedBy: "#text(\"[ ] \")").count == 4)
+    #expect(strict.body.contains("#enum(start: 3, numbering: \"1)\""))
+    #expect(strict.body.components(separatedBy: "#list(").count >= 3)
+    #expect(strict.body.contains("#strong["))
+    #expect(strict.body.contains("#emph["))
+    #expect(strict.body.contains("#strike["))
+    #expect(!strict.body.contains("#raw("))
+}
+
+@Test func taskLabelsCannotInjectTypstAndBudgetRemainsEnforced() throws {
+    let source = "- [x] #read(\"private.txt\")"
+    let projection = try TypstASTExporter().render(source)
+    #expect(projection.body.contains("#text(\"[x] \")"))
+    #expect(!projection.body.contains("\n#read("))
+    #expect(throws: TypstProjectionError.self) {
+        _ = try TypstASTExporter(maximumOutputUTF8Bytes: 12).render(source)
     }
 }

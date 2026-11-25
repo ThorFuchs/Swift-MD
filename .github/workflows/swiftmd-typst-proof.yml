@@ -1,7 +1,7 @@
 name: SwiftMDTypst strict AST projection proof
 on:
   push:
-    branches: [feature/typst-ast-adapter]
+    branches: [feature/typst-ast-adapter, feature/typst-task-list-quality]
   workflow_dispatch:
 permissions:
   contents: read
