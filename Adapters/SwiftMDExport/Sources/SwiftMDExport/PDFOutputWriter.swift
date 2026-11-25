@@ -19,12 +19,13 @@ public struct PDFOutputResult: Sendable {
 @MainActor
 public enum PDFOutputWriter {
     public enum Failure: LocalizedError, Equatable, Sendable {
-        case invalidPDF, changedPDF, budget
+        case invalidPDF, changedPDF, budget, optimizationUnavailable
         public var errorDescription: String? {
             switch self {
             case .invalidPDF: "The PDF could not be opened or rewritten."
             case .changedPDF: "The PDF rewrite changed page geometry or extracted text."
             case .budget: "The PDF rewrite exceeds the 200-page limit."
+            case .optimizationUnavailable: "PDF image optimization requires macOS 13.4 or later."
             }
         }
     }
@@ -69,8 +70,15 @@ public enum PDFOutputWriter {
             }
         }
         var options: [AnyHashable: Any] = [:]
-        if optimization != .original { options[PDFDocumentWriteOption.optimizeImagesForScreenOption] = true }
-        if optimization == .compact { options[PDFDocumentWriteOption.saveImagesAsJPEGOption] = true }
+        if optimization != .original {
+            // The package supports macOS 13.0, but these PDFKit keys were
+            // introduced in 13.4. Never silently substitute original quality.
+            guard #available(macOS 13.4, *) else { throw Failure.optimizationUnavailable }
+            options[PDFDocumentWriteOption.optimizeImagesForScreenOption] = true
+            if optimization == .compact {
+                options[PDFDocumentWriteOption.saveImagesAsJPEGOption] = true
+            }
+        }
         guard let encoded = selected.dataRepresentation(options: options),
               let decoded = PDFDocument(data: encoded) else { throw Failure.invalidPDF }
         try Task.checkCancellation()
