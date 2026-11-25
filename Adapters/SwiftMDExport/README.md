@@ -7,3 +7,7 @@ Run swift test and python3 Scripts/prove-web-page-export.py from this package. N
 ## Optional native PDF raster adapter
 
 On platforms providing Core Graphics, ImageIO and UniformTypeIdentifiers, PDFPageRasterizer plans selected crop-box dimensions and renders white sRGB PNG/JPEG from the supplied PDF. No AppKit or View Markdown dependency. 64 pages, 16M pixels per page (40M for a single 600 DPI page), 120M aggregate pixels, 64 MiB encoded bytes. Plan reports actual page numbers, geometry, total pixels and largest raw 4-byte pixel buffer, not a predicted compressed size or peak-process-memory guarantee. Render preflights the entire selection before encoding, preserves original numbering and checks cancellation between pages. Packaging is separate. Native compilation and visual/DPI proof remain pending.
+
+## Native PDF output
+
+On macOS, PDFOutputWriter uses PDFKit to copy selected pages and optionally apply the existing screen/JPEG options. Original all-page mode returns the original input. Rewritten selections normalize in ascending original order, check text/geometry/rotation, and have a 200-page limit. Links, outlines, tags, metadata and conformance are not certified; callers must disclose that limitation. Native test gate remains open.
