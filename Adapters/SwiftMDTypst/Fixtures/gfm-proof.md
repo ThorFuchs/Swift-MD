@@ -10,6 +10,13 @@ A **strong** observation with *emphasis*, ~~deleted text~~ and [research](https:
 - First bullet
 - Second bullet
 
+- [x] Completed proof task
+  - [ ] Nested pending proof task
+- [ ] Open proof task
+
+3) [x] Ordered proof task
+4) [ ] Ordered pending task
+
 | Metric | Value | State |
 | :----- | ----: | :---: |
 | Alpha | 42 | OK |

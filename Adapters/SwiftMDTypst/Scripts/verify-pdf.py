@@ -9,11 +9,16 @@ assert [h["key"] for h in headings]==["vm-0","vm-1","vm-2"],headings
 assert [h["title"] for h in headings]==["Methods and Results","Methods","Methods"],headings
 source=(output/"document.typ").read_text(encoding="utf-8")
 assert all("<"+h["key"]+">" in source for h in headings)
+assert source.count('#text("[x] ")') == 2
+assert source.count('#text("[ ] ")') == 3
+assert "#raw(" in source  # only the explicitly authored Swift fence
 reader=PdfReader(str(output/"document.pdf"))
 assert len(reader.pages)>=1
 text="\n".join(page.extract_text() or "" for page in reader.pages)
-for word in ["Methods and Results","Collect data","Record values","Alpha","42","Beta","Quoted note","let sample"]:
+for word in ["Methods and Results","Collect data","Record values","Alpha","42","Beta","Quoted note","let sample","Completed proof task","Nested pending proof task","Open proof task","Ordered proof task","Ordered pending task"]:
     assert word in text,(word,text)
+assert text.count("[x]") >= 2, text
+assert text.count("[ ]") >= 3, text
 bookmarks=[]
 def visit(tree):
     for entry in tree:

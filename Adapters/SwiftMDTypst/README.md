@@ -10,7 +10,7 @@ This is a separate SwiftPM product of Swift-MD, modelled after SwiftMDDOCX. It d
 - Ordinary unordered and ordered lists, including original ordered start/delimiter and nesting.
 - GFM tables with original per-column alignment and typed table headers; block quotes, thematic rules and verbatim fenced code, preserving source text.
 - **Trusted, opt-in TeX code-fence seam**: application-owned allowlisted math converter supplies a completed Typst math expression. No raw Typst from Markdown or model prompts. Inline math remains a separate unresolved SwiftGFM math-occurrence slot problem.
-- Fail-closed on Mermaid, raw HTML, images needing a verified asset, task list checkbox semantics, footnotes without correlated AST identifiers, custom nodes, unknown nested node shapes or unsupported source/URL values.
+- Fail-closed on Mermaid, raw HTML, images needing a verified asset, footnotes without correlated AST identifiers, custom nodes, unknown nested node shapes or unsupported source/URL values.
 
 ## Important ownership split
 
@@ -39,6 +39,13 @@ The [real SwiftGFM AST → Typst 0.15.1 PDF proof](VERIFICATION-2026-11-21.md) p
 
 ## Opt-in Reader preview policy (proposed, not released)
 
-Strict export remains the default. The additional readerPreview policy preserves the existing semantic rendering around specific unsupported AST nodes: relative/fragment/disallowed links render their visible text without an active destination; images render an alt-text placeholder without accessing their URL; raw HTML is escaped literal text; task markers remain visible; Mermaid and math fences without a trusted converter render as literal code. The returned degradations array reports finite categories without arbitrary source strings. The same heading stream and output/AST/depth budgets remain authoritative. No network, file access, asset resolver, arbitrary Typst or HTML execution. Trusted converter errors, unknown structure, unsupported custom/footnote nodes and resource errors still fail closed. This draft is not a complete GFM export, not a release, and is not yet consumed by ViewMarkdown. A future version alignment must update Swift-MD and the exact Swift-MD-Adapters pin together after real adapter and Typst PDF tests.
+Strict export remains the default. The additional readerPreview policy preserves the existing semantic rendering around specific unsupported AST nodes: relative/fragment/disallowed links render their visible text without an active destination; images render an alt-text placeholder without accessing their URL; raw HTML is escaped literal text; Mermaid and math fences without a trusted converter render as literal code. The returned degradations array reports finite categories without arbitrary source strings. The same heading stream and output/AST/depth budgets remain authoritative. No network, file access, asset resolver, arbitrary Typst or HTML execution. Trusted converter errors, unknown structure, unsupported custom/footnote nodes and resource errors still fail closed. This draft is not a complete GFM export, not a release, and is not yet consumed by ViewMarkdown. A future version alignment must update Swift-MD and the exact Swift-MD-Adapters pin together after real adapter and Typst PDF tests.
 
     swift test --package-path Adapters/SwiftMDTypst
+
+
+## TQ01 — task list semantic coverage candidate
+
+The previously strict-rejected GFM taskListItem node now participates in the same native list/enum projection as ordinary list items. Checked and unchecked states use inert ASCII [x] and [ ] labels inside the first paragraph, not a whole-document literal fallback. Nested and loose lists retain their child blocks, numbering, heading identities and inline semantics. This is not an interactive checkbox or typographic checkbox glyph; the state itself is preserved. The existing taskListAsText diagnostic enum case stays source-compatible, but is not emitted for supported task items. All previous refusal, input, output and nesting limits remain. Uncorrelated footnotes, custom AST nodes, trusted math failure and validated asset support remain separate gates.
+
+Expanded real GFM fixture and PDF verification check five task texts, exact checked/unchecked state markers, existing headings/bookmark destinations and a clean native Typst compilation. Two added Swift Testing methods exercise strict/preview equivalence, nesting, numbering, formatting and safe literal encoding. Proof workflow now also runs for this feature branch. Native compiler/CI result not yet observed; no version tag or consumer pin change.

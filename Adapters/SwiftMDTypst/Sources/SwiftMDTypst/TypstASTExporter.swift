@@ -250,10 +250,11 @@ private struct Writer {
             case .listItem:
                 items.append("[\(try blocks(item.children, depth: depth + 1))]")
             case .taskListItem(_, let checked):
-                guard policy == .readerPreview else {
-                    throw TypstProjectionError.unsupported("task list or unknown list item")
-                }
-                degradations.insert(.taskListAsText)
+                // Native Typst list/enum item containing an explicit,
+                // inert checkbox-state label. Preserve both checked states,
+                // nested blocks and inline formatting. ASCII state labels
+                // avoid depending on optional checkbox-glyph font coverage.
+                // This is a semantic list, not a raw Markdown block.
                 let marker = checked ? "[x] " : "[ ] "
                 let children = item.children
                 var rendered: String
@@ -269,7 +270,7 @@ private struct Writer {
                 }
                 items.append("[\(try budget(rendered))]")
             default:
-                throw TypstProjectionError.unsupported("task list or unknown list item")
+                throw TypstProjectionError.invalidStructure("unexpected list child")
             }
         }
         return "#\(head)\(items.map { ", " + $0 }.joined()))"
