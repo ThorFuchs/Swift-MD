@@ -44,6 +44,14 @@ public enum TypstPreviewDegradation: String, Sendable, CaseIterable, Hashable {
     case mathAsCode
 }
 
+/// Optional consumer-owned semantic functions. The caller supplies the
+/// named, trusted publication definitions; Markdown cannot select names.
+/// Default strict and reader-preview byte output remain unchanged.
+public enum TypstListProjection: Sendable, Equatable {
+    case native
+    case semanticItemHooks
+}
+
 public struct TypstASTDocument: Sendable {
     public let body: String
     public let headings: [TypstHeading]
@@ -58,15 +66,18 @@ public struct TypstASTExporter: Sendable {
     public let maximumOutputUTF8Bytes: Int
     public let maximumNestingDepth: Int
     public let unsupportedContentPolicy: TypstUnsupportedContentPolicy
+    public let listProjection: TypstListProjection
     private let trustedMathRenderer: TrustedMathRenderer?
 
     public init(maximumOutputUTF8Bytes: Int = 2_000_000,
                 maximumNestingDepth: Int = 32,
                 unsupportedContentPolicy: TypstUnsupportedContentPolicy = .strict,
+                listProjection: TypstListProjection = .native,
                 trustedMathRenderer: TrustedMathRenderer? = nil) {
         self.maximumOutputUTF8Bytes = maximumOutputUTF8Bytes
         self.maximumNestingDepth = maximumNestingDepth
         self.unsupportedContentPolicy = unsupportedContentPolicy
+        self.listProjection = listProjection
         self.trustedMathRenderer = trustedMathRenderer
     }
 
@@ -94,7 +105,8 @@ public struct TypstASTExporter: Sendable {
         var writer = Writer(limit: maximumOutputUTF8Bytes,
                             depthLimit: maximumNestingDepth,
                             math: trustedMathRenderer,
-                            policy: unsupportedContentPolicy)
+                            policy: unsupportedContentPolicy,
+                            listProjection: listProjection)
         let result = try writer.blocks(document.root.children, depth: 0)
         guard result.utf8.count <= maximumOutputUTF8Bytes else {
             throw TypstProjectionError.resourceBudget("output bytes")
@@ -113,8 +125,11 @@ private struct Writer {
     let depthLimit: Int
     let math: TypstASTExporter.TrustedMathRenderer?
     let policy: TypstUnsupportedContentPolicy
+    let listProjection: TypstListProjection
     var headings: [TypstHeading] = []
     var degradations: Set<TypstPreviewDegradation> = []
+    // Snapshot-local preorder identity, not a persistent source ID.
+    var nextListID = 0
 
     private let codeLanguages: Set<String> = [
         "swift", "json", "python", "javascript", "typescript", "html", "css",
@@ -235,21 +250,35 @@ private struct Writer {
     ) throws -> String {
         guard depth <= depthLimit else { throw TypstProjectionError.resourceBudget("list depth") }
         let head: String
+        let semantic = listProjection == .semanticItemHooks
+        let listID = nextListID
+        if semantic { nextListID += 1 }
         switch style {
-        case .bullet: head = "list(tight: \(tight ? "true" : "false")"
+        case .bullet:
+            head = (semantic ? "vm-bullet-list" : "list") + "(tight: \(tight ? "true" : "false")"
         case .ordered(let start, let delimiter):
             guard (1...1_000_000).contains(start) else {
                 throw TypstProjectionError.unsupported("list start")
             }
             let numbering = delimiter == .period ? "1." : "1)"
-            head = "enum(start: \(start), numbering: \(try literal(numbering)), tight: \(tight ? "true" : "false")"
+            head = (semantic ? "vm-ordered-list" : "enum") +
+                "(start: \(start), numbering: \(try literal(numbering)), tight: \(tight ? "true" : "false")"
         }
         var items: [String] = []
         for item in nodes {
             switch item.kind {
             case .listItem:
-                items.append("[\(try blocks(item.children, depth: depth + 1))]")
+                let body = try blocks(item.children, depth: depth + 1)
+                if semantic {
+                    // Typed argument data, not markup inferred from text.
+                    items.append("(checked: none, body: [\(body)])")
+                } else { items.append("[\(body)]") }
             case .taskListItem(_, let checked):
+                if semantic {
+                    let body = try blocks(item.children, depth: depth + 1)
+                    items.append("(checked: \(checked ? "true" : "false"), body: [\(body)])")
+                    continue
+                }
                 guard policy == .readerPreview else {
                     throw TypstProjectionError.unsupported("task list or unknown list item")
                 }
@@ -272,7 +301,8 @@ private struct Writer {
                 throw TypstProjectionError.unsupported("task list or unknown list item")
             }
         }
-        return "#\(head)\(items.map { ", " + $0 }.joined()))"
+        let identity = semantic ? ", list-id: \(listID)" : ""
+        return "#\(head)\(identity)\(items.map { ", " + $0 }.joined()))"
     }
 
     private mutating func table(
