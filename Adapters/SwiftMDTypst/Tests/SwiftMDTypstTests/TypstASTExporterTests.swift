@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import Foundation
 import Testing
 @testable import SwiftMDTypst
 
@@ -270,4 +271,29 @@ import Testing
         _ = try TypstASTExporter(maximumOutputUTF8Bytes: 16,
             listProjection: .semanticItemHooks).render("- [x] Text")
     }
+}
+
+
+@Test func semanticListHookIdentityIsUniquePreorderAndDoesNotLeakIntoNativeMode() throws {
+    let source = """
+    - First
+      - [x] Nested
+        - [ ] Deeper
+    - [ ] Second
+
+    3) Third
+    4) [x] Fourth
+
+    > - [x] In quote
+    """
+    let exporter = TypstASTExporter(listProjection: .semanticItemHooks)
+    let one = try exporter.render(source).body
+    #expect(one == (try exporter.render(source)).body)
+    for id in 0..<5 {
+        #expect(one.components(separatedBy: "list-id: \(id),").count == 2)
+    }
+    #expect(!one.contains("list-id: 5,"))
+    let native = try TypstASTExporter(unsupportedContentPolicy: .readerPreview).render(source)
+    #expect(!native.body.contains("list-id:"))
+    #expect(native.degradations.contains(.taskListAsText))
 }

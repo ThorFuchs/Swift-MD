@@ -128,6 +128,8 @@ private struct Writer {
     let listProjection: TypstListProjection
     var headings: [TypstHeading] = []
     var degradations: Set<TypstPreviewDegradation> = []
+    // Snapshot-local preorder identity, not a persistent source ID.
+    var nextListID = 0
 
     private let codeLanguages: Set<String> = [
         "swift", "json", "python", "javascript", "typescript", "html", "css",
@@ -249,6 +251,8 @@ private struct Writer {
         guard depth <= depthLimit else { throw TypstProjectionError.resourceBudget("list depth") }
         let head: String
         let semantic = listProjection == .semanticItemHooks
+        let listID = nextListID
+        if semantic { nextListID += 1 }
         switch style {
         case .bullet:
             head = (semantic ? "vm-bullet-list" : "list") + "(tight: \(tight ? "true" : "false")"
@@ -297,7 +301,8 @@ private struct Writer {
                 throw TypstProjectionError.unsupported("task list or unknown list item")
             }
         }
-        return "#\(head)\(items.map { ", " + $0 }.joined()))"
+        let identity = semantic ? ", list-id: \(listID)" : ""
+        return "#\(head)\(identity)\(items.map { ", " + $0 }.joined()))"
     }
 
     private mutating func table(
