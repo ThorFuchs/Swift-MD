@@ -218,3 +218,56 @@ import Testing
             .render(String(repeating: "x", count: 1_000_001))
     }
 }
+
+
+@Test func optInListHooksPreserveTaskStateStartDelimiterAndNestedAST() throws {
+    let source = """
+    # Plan
+
+    3) [x] Checked **one**
+    4) [ ] Unchecked
+    5) Regular
+       - Nested ordinary
+       - [x] Nested checked
+
+    - Ordinary first
+    - [ ] Task second
+    - Ordinary third
+
+    ## End
+    """
+    let result = try TypstASTExporter(listProjection: .semanticItemHooks).render(source)
+    #expect(result.headings.map(\.key) == ["vm-0", "vm-1"])
+    #expect(result.degradations.isEmpty)
+    #expect(result.body.contains("#vm-ordered-list(start: 3, numbering: \"1)\", tight: true"))
+    #expect(result.body.contains("#vm-bullet-list(tight:"))
+    #expect(result.body.contains("(checked: true, body: ["))
+    #expect(result.body.contains("(checked: false, body: ["))
+    #expect(result.body.contains("(checked: none, body: ["))
+    #expect(result.body.contains("#strong["))
+    #expect(result.body.contains("#text(\"Nested checked\")"))
+    #expect(!result.body.contains("#text(\"[x] \")"))
+    #expect(throws: TypstProjectionError.self) {
+        _ = try TypstASTExporter().render(source)
+    }
+}
+
+@Test func semanticListHooksAreOptInAndDoNotBroadenOtherAdmission() throws {
+    let plain = "3. one\n4. two\n\n- alpha\n- beta"
+    let original = try TypstASTExporter().render(plain)
+    #expect(original.body == (try TypstASTExporter(listProjection: .native).render(plain)).body)
+    #expect(original.body.contains("#enum(start: 3, numbering: \"1.\""))
+    let hooks = try TypstASTExporter(listProjection: .semanticItemHooks).render(plain)
+    #expect(hooks.body.contains("checked: none"))
+    #expect(!hooks.body.contains("checked: true"))
+    for input in ["![image](file:///private/file)", "<script>bad</script>",
+                  "- [x] [bad](file:///private/file)", "~~~mermaid\ngraph TD; A-->B\n~~~"] {
+        #expect(throws: TypstProjectionError.self) {
+            _ = try TypstASTExporter(listProjection: .semanticItemHooks).render(input)
+        }
+    }
+    #expect(throws: TypstProjectionError.self) {
+        _ = try TypstASTExporter(maximumOutputUTF8Bytes: 16,
+            listProjection: .semanticItemHooks).render("- [x] Text")
+    }
+}
