@@ -110,6 +110,36 @@ import Testing
     #expect(!result.body.contains("lang: \"unknown-super-language\""))
 }
 
+@Test func imageHooksUseOnlyExactSlotsAndLeaveOtherStrictnessInForce() throws {
+    let source = """
+    # Report
+
+    Before ![Captured **image**](capture.png) after.
+
+    ![Standalone](capture.png)
+
+    ![Missing](unselected.png)
+
+    ![External](https://example.invalid/image.png)
+    """
+    let projection = try TypstImageProjection(slots: [Data("capture.png".utf8): 4])
+    let exporter = TypstASTExporter(imageProjection: projection)
+    let result = try exporter.render(source)
+    #expect(result.body.contains(#"#vm-image(4, alt: "Captured image", block: false)"#))
+    #expect(result.body.contains(#"#vm-image(4, alt: "Standalone", block: true)"#))
+    #expect(result.body.contains(#"#vm-missing-image("Missing", block: true)"#))
+    #expect(result.body.contains(#"#vm-missing-image("External", block: true)"#))
+    #expect(result.body.contains("#text(\"Before \")") && result.body.contains("#text(\" after.\")"))
+    #expect(!result.body.contains("capture.png") && !result.body.contains("example.invalid"))
+    #expect(result.degradations == [.imageAsPlaceholder])
+    #expect(throws: TypstProjectionError.self) {
+        _ = try exporter.render("[File](file:///unselected.txt)")
+    }
+    #expect(throws: TypstProjectionError.self) {
+        _ = try TypstImageProjection(slots: [Data("capture.png".utf8): 512])
+    }
+}
+
 @Test func outputBudgetAndSourceSizeBounded() throws {
     #expect(throws: TypstProjectionError.self) {
         _ = try TypstASTExporter(maximumOutputUTF8Bytes: 16).render("# Hello\n")
