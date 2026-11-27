@@ -52,6 +52,19 @@ public enum TypstListProjection: Sendable, Equatable {
     case semanticItemHooks
 }
 
+/// An exact UTF-8 destination can select a consumer-owned image slot.
+/// The adapter never emits a destination or loads image bytes.
+public struct TypstImageProjection: Sendable, Equatable {
+    fileprivate let slots: [Data: Int]
+
+    public init(slots: [Data: Int] = [:]) throws {
+        guard slots.count <= 4_096, slots.allSatisfy({ destination, slot in
+            (1...4_096).contains(destination.count) && (0..<512).contains(slot)
+        }) else { throw TypstProjectionError.resourceBudget("invalid image slots") }
+        self.slots = slots
+    }
+}
+
 public struct TypstASTDocument: Sendable {
     public let body: String
     public let headings: [TypstHeading]
@@ -67,18 +80,21 @@ public struct TypstASTExporter: Sendable {
     public let maximumNestingDepth: Int
     public let unsupportedContentPolicy: TypstUnsupportedContentPolicy
     public let listProjection: TypstListProjection
+    public let imageProjection: TypstImageProjection?
     private let trustedMathRenderer: TrustedMathRenderer?
 
     public init(maximumOutputUTF8Bytes: Int = 2_000_000,
                 maximumNestingDepth: Int = 32,
                 unsupportedContentPolicy: TypstUnsupportedContentPolicy = .strict,
                 listProjection: TypstListProjection = .native,
-                trustedMathRenderer: TrustedMathRenderer? = nil) {
+                trustedMathRenderer: TrustedMathRenderer? = nil,
+                imageProjection: TypstImageProjection? = nil) {
         self.maximumOutputUTF8Bytes = maximumOutputUTF8Bytes
         self.maximumNestingDepth = maximumNestingDepth
         self.unsupportedContentPolicy = unsupportedContentPolicy
         self.listProjection = listProjection
         self.trustedMathRenderer = trustedMathRenderer
+        self.imageProjection = imageProjection
     }
 
     public func render(_ markdown: String) throws -> TypstASTDocument {
@@ -106,7 +122,8 @@ public struct TypstASTExporter: Sendable {
                             depthLimit: maximumNestingDepth,
                             math: trustedMathRenderer,
                             policy: unsupportedContentPolicy,
-                            listProjection: listProjection)
+                            listProjection: listProjection,
+                            imageProjection: imageProjection)
         let result = try writer.blocks(document.root.children, depth: 0)
         guard result.utf8.count <= maximumOutputUTF8Bytes else {
             throw TypstProjectionError.resourceBudget("output bytes")
@@ -126,6 +143,7 @@ private struct Writer {
     let math: TypstASTExporter.TrustedMathRenderer?
     let policy: TypstUnsupportedContentPolicy
     let listProjection: TypstListProjection
+    let imageProjection: TypstImageProjection?
     var headings: [TypstHeading] = []
     var degradations: Set<TypstPreviewDegradation> = []
     // Snapshot-local preorder identity, not a persistent source ID.
@@ -357,6 +375,9 @@ private struct Writer {
                 } else {
                     result += try plainText(node.children, depth: depth + 1)
                 }
+            case .image where imageProjection != nil:
+                let alt = try plainText(node.children, depth: depth + 1)
+                result += alt.isEmpty ? "Image" : alt
             case .image where policy == .readerPreview:
                 result += try imagePlaceholder(node, depth: depth + 1)
             case .htmlInline(let html) where policy == .readerPreview:
@@ -410,7 +431,15 @@ private struct Writer {
                     : try inlineSequence(node.children, depth: depth + 1)
             }
             return "#link(\(try literal(target)))[\(try inlineSequence(node.children, depth: depth + 1))]"
-        case .image:
+        case .image(let destination, _):
+            if let imageProjection {
+                let alt = try literal(plainText(node.children, depth: depth + 1))
+                if let slot = imageProjection.slots[Data(destination.utf8)] {
+                    return "#vm-image(\(slot), alt: \(alt))"
+                }
+                degradations.insert(.imageAsPlaceholder)
+                return "#vm-missing-image(\(alt))"
+            }
             guard policy == .readerPreview else {
                 throw TypstProjectionError.unsupported("image needs validated asset")
             }
