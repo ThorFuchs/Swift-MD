@@ -7,7 +7,7 @@ let package = Package(
     products: [.library(name: "SwiftMD", targets: ["SwiftMD"]),
                .library(name: "SwiftMDTypst", targets: ["SwiftMDTypst"])],
     dependencies: [
-        .package(url: "https://github.com/ThorFuchs/Swift-GFM.git", exact: "1.1.0")
+        .package(url: "https://github.com/ThorFuchs/Swift-GFM.git", from: "1.1.0")
     ],
     targets: [
         .target(name: "SwiftMD", dependencies: [.product(name: "SwiftGFM", package: "Swift-GFM")]),
