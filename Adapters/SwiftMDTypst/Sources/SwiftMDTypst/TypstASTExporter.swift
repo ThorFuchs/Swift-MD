@@ -198,7 +198,13 @@ private struct Writer {
             let value: String
             switch node.kind {
             case .paragraph:
-                value = "#par[\(try inlineSequence(node.children, depth: depth + 1))]"
+                if let imageProjection, node.children.count == 1,
+                   let child = node.children.first, case .image(let destination, _) = child.kind {
+                    value = try imageHook(child, destination: destination,
+                        projection: imageProjection, block: true, depth: depth + 2)
+                } else {
+                    value = "#par[\(try inlineSequence(node.children, depth: depth + 1))]"
+                }
             case .heading(let level):
                 guard (1...6).contains(level) else { throw TypstProjectionError.invalidStructure("heading level") }
                 let key = "vm-\(headings.count)"
@@ -393,6 +399,16 @@ private struct Writer {
         return try budget(alt.isEmpty ? "[Image not loaded]" : "[Image: \(alt)]")
     }
 
+    private mutating func imageHook(_ node: MarkdownNode, destination: String,
+                                    projection: TypstImageProjection, block: Bool, depth: Int) throws -> String {
+        let alt = try literal(plainText(node.children, depth: depth))
+        if let slot = projection.slots[Data(destination.utf8)] {
+            return "#vm-image(\(slot), alt: \(alt), block: \(block))"
+        }
+        degradations.insert(.imageAsPlaceholder)
+        return "#vm-missing-image(\(alt), block: \(block))"
+    }
+
     private func linkFailure(_ target: String) -> TypstProjectionError? {
         guard let url = URLComponents(string: target),
               let scheme = url.scheme?.lowercased(),
@@ -433,12 +449,8 @@ private struct Writer {
             return "#link(\(try literal(target)))[\(try inlineSequence(node.children, depth: depth + 1))]"
         case .image(let destination, _):
             if let imageProjection {
-                let alt = try literal(plainText(node.children, depth: depth + 1))
-                if let slot = imageProjection.slots[Data(destination.utf8)] {
-                    return "#vm-image(\(slot), alt: \(alt))"
-                }
-                degradations.insert(.imageAsPlaceholder)
-                return "#vm-missing-image(\(alt))"
+                return try imageHook(node, destination: destination,
+                    projection: imageProjection, block: false, depth: depth + 1)
             }
             guard policy == .readerPreview else {
                 throw TypstProjectionError.unsupported("image needs validated asset")

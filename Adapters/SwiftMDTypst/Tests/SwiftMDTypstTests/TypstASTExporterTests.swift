@@ -116,6 +116,8 @@ import Testing
 
     Before ![Captured **image**](capture.png) after.
 
+    ![Standalone](capture.png)
+
     ![Missing](unselected.png)
 
     ![External](https://example.invalid/image.png)
@@ -123,9 +125,10 @@ import Testing
     let projection = try TypstImageProjection(slots: [Data("capture.png".utf8): 4])
     let exporter = TypstASTExporter(imageProjection: projection)
     let result = try exporter.render(source)
-    #expect(result.body.contains(#"#vm-image(4, alt: "Captured image")"#))
-    #expect(result.body.contains(#"#vm-missing-image("Missing")"#))
-    #expect(result.body.contains(#"#vm-missing-image("External")"#))
+    #expect(result.body.contains(#"#vm-image(4, alt: "Captured image", block: false)"#))
+    #expect(result.body.contains(#"#vm-image(4, alt: "Standalone", block: true)"#))
+    #expect(result.body.contains(#"#vm-missing-image("Missing", block: true)"#))
+    #expect(result.body.contains(#"#vm-missing-image("External", block: true)"#))
     #expect(result.body.contains("#text(\"Before \")") && result.body.contains("#text(\" after.\")"))
     #expect(!result.body.contains("capture.png") && !result.body.contains("example.invalid"))
     #expect(result.degradations == [.imageAsPlaceholder])
