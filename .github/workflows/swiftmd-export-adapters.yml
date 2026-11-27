@@ -1,0 +1,37 @@
+name: SwiftMD export adapter packages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Adapters/SwiftMDODT/**'
+      - 'Adapters/SwiftMDExport/**'
+      - '.github/workflows/swiftmd-export-adapters.yml'
+  pull_request:
+    paths:
+      - 'Adapters/SwiftMDODT/**'
+      - 'Adapters/SwiftMDExport/**'
+      - '.github/workflows/swiftmd-export-adapters.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adapter-tests:
+    name: ${{ matrix.adapter }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [SwiftMDODT, SwiftMDExport]
+        os: [macos-15, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2.1'
+      - name: Run package tests
+        env:
+          ADAPTER: ${{ matrix.adapter }}
+        run: |
+          swift --version
+          swift test --package-path "Adapters/$ADAPTER" -j 4
