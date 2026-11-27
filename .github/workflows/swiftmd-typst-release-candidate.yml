@@ -24,12 +24,16 @@ jobs:
           set -euo pipefail
           swift --version
           python3 - <<'PY'
+          import json
           from pathlib import Path
           core = Path("Package.swift").read_text()
           nested = Path("Adapters/SwiftMDTypst/Package.swift").read_text()
           assert '.library(name: "SwiftMDTypst"' in core
           assert '.product(name: "SwiftGFM", package: "Swift-GFM")' in core
-          assert 'exact: "1.1.0"' in core
+          assert 'from: "1.1.0"' in core
+          pins = json.loads(Path("Package.resolved").read_text())["pins"]
+          gfm = next(pin for pin in pins if pin["identity"] == "swift-gfm")
+          assert gfm["state"] == {"version": "1.1.0", "revision": "9a4176be3bda0953f4ddb91ec63de77d1ad230fa"}
           assert 'exact: "1.1.0"' in nested
           assert Path("Adapters/SwiftMDTypst/Sources/SwiftMDTypst/TypstASTExporter.swift").is_file()
           print("Core+Typst optional product with GFM 1.1.0: verified")
